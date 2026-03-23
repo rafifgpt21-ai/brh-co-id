@@ -9,7 +9,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
     redirect("/admin/login");
   }
 
-  if (session.user?.role !== "ADMIN") {
+  if (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN") {
     redirect("/");
   }
 

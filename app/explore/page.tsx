@@ -8,12 +8,23 @@ export const metadata = {
 
 import { Suspense } from "react";
 
-export default async function KaryaPage() {
-  const posts = await getPosts({ status: 'Published' });
+import KatalogSkeleton from "@/components/katalog/KatalogSkeleton";
+
+export default async function KaryaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; category?: string }>;
+}) {
+  const { search, category } = await searchParams;
+  const posts = await getPosts({ 
+    status: 'Published',
+    search: search || undefined,
+    category: category && category !== 'Semua' ? category : undefined
+  });
 
   return (
     <main className="min-h-screen pt-12">
-      <Suspense fallback={<div></div>}>
+      <Suspense key={`${search}-${category}`} fallback={<KatalogSkeleton />}>
         <KatalogClient initialPosts={posts} />
       </Suspense>
     </main>

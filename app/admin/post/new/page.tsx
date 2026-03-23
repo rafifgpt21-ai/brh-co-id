@@ -8,7 +8,7 @@ export default async function NewPostPage() {
     redirect("/admin/login");
   }
 
-  if (session.user?.role !== "ADMIN") {
+  if (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN") {
     redirect("/");
   }
 

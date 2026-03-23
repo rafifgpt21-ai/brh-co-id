@@ -22,8 +22,36 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
   const [activeTab, setActiveTab] = useState<'all' | 'Published' | 'Draft'>('all');
   const [isPending, startTransition] = useTransition();
   const [deleteModal, setDeleteModal] = useState<{ id: string, title: string } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Post; direction: 'asc' | 'desc' } | null>({
+    key: 'updatedAt',
+    direction: 'desc',
+  });
 
-  const filteredPosts = posts.filter((post) => {
+  const requestSort = (key: keyof Post) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    
+    const valA = a[key];
+    const valB = b[key];
+
+    if (valA < valB) {
+      return direction === 'asc' ? -1 : 1;
+    }
+    if (valA > valB) {
+      return direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  const filteredPosts = sortedPosts.filter((post) => {
     const matchSearch = post.title.toLowerCase().includes(search.toLowerCase());
     const matchStatus = activeTab === 'all' || post.status === activeTab;
     return matchSearch && matchStatus;
@@ -37,7 +65,7 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
     if (!deleteModal) return;
     const { id } = deleteModal;
     setDeleteModal(null);
-    
+
     startTransition(async () => {
       const result = await deletePost(id);
       if (result.success) {
@@ -118,10 +146,54 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
 
         {/* Desktop Header Row */}
         <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-4 bg-surface-container-low/30 border-b border-outline-variant/30 text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-widest">
-          <div className="col-span-5">Judul Karya</div>
-          <div className="col-span-2">Kategori</div>
-          <div className="col-span-2">Terakhir Diubah</div>
-          <div className="col-span-1 text-center">Status</div>
+          <button 
+            onClick={() => requestSort('title')}
+            className="col-span-1 lg:col-span-5 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
+          >
+            Judul Karya
+            {sortConfig?.key === 'title' && (
+              <span className="material-symbols-outlined text-[16px] animate-in fade-in duration-300">
+                {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+            )}
+          </button>
+          
+          <button 
+            onClick={() => requestSort('category')}
+            className="col-span-2 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
+          >
+            Kategori
+            {sortConfig?.key === 'category' && (
+              <span className="material-symbols-outlined text-[16px] animate-in fade-in duration-300">
+                {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+            )}
+          </button>
+
+          <button 
+            onClick={() => requestSort('updatedAt')}
+            className="col-span-2 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
+          >
+            Terakhir Diubah
+            {sortConfig?.key === 'updatedAt' && (
+              <span className="material-symbols-outlined text-[16px] animate-in fade-in duration-300">
+                {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+            )}
+          </button>
+
+          <button 
+            onClick={() => requestSort('status')}
+            className="col-span-1 flex items-center justify-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer"
+          >
+            Status
+            {sortConfig?.key === 'status' && (
+              <span className="material-symbols-outlined text-[16px] animate-in fade-in duration-300">
+                {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+            )}
+          </button>
+
           <div className="col-span-2 text-right">Aksi</div>
         </div>
 
@@ -231,7 +303,7 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
       {/* 3. Custom Modal Delete */}
       <AnimatePresence>
         {deleteModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -243,7 +315,7 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-surface-container-lowest rounded-[2rem] p-8 shadow-2xl border border-outline-variant/20"
+              className="relative w-full max-w-sm bg-surface-container-lowest rounded-4xl p-8 shadow-2xl border border-outline-variant/20"
             >
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 rounded-3xl bg-error-container/20 flex items-center justify-center text-error mb-6">

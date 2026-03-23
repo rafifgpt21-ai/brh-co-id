@@ -3,12 +3,13 @@
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { TiptapEditor } from './TiptapEditor';
+import { BlockItem } from './BlockItem';
 import { savePost } from '@/lib/actions/post';
-import { uploadFiles } from '@/lib/uploadthing'; // Ganti useUploadThing dengan uploadFiles
+import { uploadFiles } from '@/lib/uploadthing';
 import { deleteFilesFromStorage } from '@/lib/uploadthing-server';
 import { deletePost } from '@/lib/actions/post';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCallback } from 'react';
 
 type Block = {
   id: string;
@@ -112,29 +113,31 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     }
   };
 
-  const onBlockFileChange = (blockId: string, file: File) => {
-    if (previews[blockId]) URL.revokeObjectURL(previews[blockId]);
+  const onBlockFileChange = useCallback((blockId: string, file: File) => {
+    setPreviews(prev => {
+      if (prev[blockId]) URL.revokeObjectURL(prev[blockId]);
+      const objectUrl = URL.createObjectURL(file);
+      return { ...prev, [blockId]: objectUrl };
+    });
     setStagedFiles(prev => ({ ...prev, [blockId]: file }));
-    const objectUrl = URL.createObjectURL(file);
-    setPreviews(prev => ({ ...prev, [blockId]: objectUrl }));
-  };
+  }, []);
 
-  const onBlockFileSelect = (blockId: string) => {
+  const onBlockFileSelect = useCallback((blockId: string) => {
     const block = blocks.find(b => b.id === blockId);
     if (blockFileInputRef.current) {
       blockFileInputRef.current.accept = block?.type === 'image' ? 'image/*' : 'application/pdf';
     }
     setActiveBlockTarget(blockId);
     blockFileInputRef.current?.click();
-  };
+  }, [blocks]);
 
-  const handleBlockFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBlockFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && activeBlockTarget) {
       onBlockFileChange(activeBlockTarget, file);
       e.target.value = ''; // Reset for same file selection
     }
-  };
+  }, [activeBlockTarget, onBlockFileChange]);
 
   // Consolidated Revocation Effect
   useEffect(() => {
@@ -156,42 +159,90 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     setBlocks((prev) => [...prev, newBlock]);
   };
 
-  const moveBlock = (index: number, direction: 'up' | 'down') => {
+  const moveBlock = useCallback((index: number, direction: 'up' | 'down') => {
     if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === blocks.length - 1) return;
-    const newBlocks = [...blocks];
-    const swapIndex = direction === 'up' ? index - 1 : index + 1;
-    [newBlocks[index], newBlocks[swapIndex]] = [newBlocks[swapIndex], newBlocks[index]];
-    setBlocks(newBlocks);
-  };
+    const currentBlocks = [...blocks]; // Need latest blocks, but to keep stable we can use functional update if possible
+    setBlocks((prev) => {
+      if (direction === 'up' && index === 0) return prev;
+      if (direction === 'down' && index === prev.length - 1) return prev;
+      const newBlocks = [...prev];
+      const swapIndex = direction === 'up' ? index - 1 : index + 1;
+      [newBlocks[index], newBlocks[swapIndex]] = [newBlocks[swapIndex], newBlocks[index]];
+      return newBlocks;
+    });
+  }, []);
 
-  const removeBlock = (id: string) => {
-    const block = blocks.find((b) => b.id === id);
-    if (!block) return;
+  const updateBlock = useCallback((id: string, data: Partial<Block>) => {
+    setBlocks((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, ...data } : b))
+    );
+  }, []);
 
-    const isEmpty = block.type === 'text'
-      ? (!block.content || block.content.replace(/<[^>]*>/g, '').trim() === '')
-      : (!block.url && !block.title && !block.caption && !stagedFiles[id]);
+  const removeBlock = useCallback((id: string) => {
+    setBlocks((prev) => {
+      const block = prev.find((b) => b.id === id);
+      if (!block) return prev;
 
-    if (isEmpty) {
-      setBlocks((prev) => prev.filter((b) => b.id !== id));
-      // Cleanup staged files and previews
-      if (stagedFiles[id]) {
-        const newStaged = { ...stagedFiles };
-        delete newStaged[id];
-        setStagedFiles(newStaged);
+      // Note: stagedFiles and previews access from outer scope might be stale if not careful
+      // But they are state, so we should use functional updates if we need them.
+      // However, check if empty logic depends on state.
+      return prev; // We'll handle state-dependent logic outside functional update or pass needed info
+    });
+
+    // Re-implementing with access to current state
+    setBlocks((prev) => {
+      const block = prev.find((b) => b.id === id);
+      if (!block) return prev;
+      
+      const isEmpty = block.type === 'text'
+        ? (!block.content || block.content.replace(/<[^>]*>/g, '').trim() === '')
+        : (!block.url && !block.title && !block.caption && !stagedFiles[id]);
+
+      if (isEmpty) {
+        // Cleanup side effects
+        if (stagedFiles[id]) {
+          setStagedFiles(s => {
+            const next = { ...s };
+            delete next[id];
+            return next;
+          });
+        }
+        if (previews[id]) {
+          URL.revokeObjectURL(previews[id]);
+          setPreviews(p => {
+            const next = { ...p };
+            delete next[id];
+            return next;
+          });
+        }
+        return prev.filter((b) => b.id !== id);
       }
-      if (previews[id]) {
-        URL.revokeObjectURL(previews[id]);
-        const newPreviews = { ...previews };
-        delete newPreviews[id];
-        setPreviews(newPreviews);
-      }
-      return;
+      
+      setBlockToDelete(id);
+      return prev;
+    });
+  }, [stagedFiles, previews]); // Dependencies might cause re-renders of all blocks if not careful
+
+  const confirmRemoveBlock = useCallback((id: string) => {
+    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setBlockToDelete(null);
+    
+    if (stagedFiles[id]) {
+      setStagedFiles(s => {
+        const next = { ...s };
+        delete next[id];
+        return next;
+      });
     }
-
-    setBlockToDelete(id);
-  };
+    if (previews[id]) {
+      URL.revokeObjectURL(previews[id]);
+      setPreviews(p => {
+        const next = { ...p };
+        delete next[id];
+        return next;
+      });
+    }
+  }, [stagedFiles, previews]);
 
   const handleSave = async (status: 'Published' | 'Draft') => {
     if (!title.trim()) {
@@ -286,8 +337,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     } catch (error: any) {
       console.error("Upload/Save error:", error);
       setSaveStatus('Error');
-      alert(`Terjadi kesalahan: ${error.message}`);
-      setSaveStatus('Idle');
+      // No more blocking alert() here, the overlay shows 'Gagal Menyimpan' with a toggle button.
     } finally {
       setIsSavingInProgress(false);
     }
@@ -360,17 +410,17 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
             {/* Save Button */}
             <button
               onClick={() => handleSave(initialData?.status || 'Published')}
-              disabled={isSavingInProgress}
-              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl transition-all shadow-sm active:scale-95 disabled:opacity-50 ${isDirty
+              disabled={isPending || isSavingInProgress}
+              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl transition-all shadow-sm active:scale-95 disabled:opacity-50 ${(isDirty || isSavingInProgress)
                 ? 'bg-secondary text-on-secondary shadow-secondary/20'
                 : 'bg-surface-container text-on-surface-variant border border-outline-variant/20'}`}
               title="Simpan Perubahan"
             >
               <span className="material-symbols-outlined text-[20px]">
-                {isPending ? 'sync' : 'save'}
+                {(isPending || isSavingInProgress) ? 'sync' : 'save'}
               </span>
               <span className="text-[11px] font-bold uppercase tracking-wide hidden xs:inline">
-                {isPending ? 'Saving...' : 'Simpan'}
+                {(isPending || isSavingInProgress) ? 'Saving...' : 'Simpan'}
               </span>
             </button>
 
@@ -563,271 +613,22 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
           )}
 
           {blocks.map((block, i) => (
-            <div
+            <BlockItem
               key={block.id}
-              className="group relative bg-surface-container-lowest/90 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-outline-variant/15 hover:border-outline-variant/30 hover:shadow-md transition-all"
-            >
-              {/* Block control row */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-secondary uppercase tracking-[0.2em] flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">
-                    {block.type === 'text' && 'notes'}
-                    {block.type === 'image' && 'image'}
-                    {block.type === 'video' && 'smart_display'}
-                    {block.type === 'pdf' && 'picture_as_pdf'}
-                    {block.type === 'link' && 'link'}
-                  </span>
-                  Balok {block.type === 'link' ? 'Tautan / Sumber' : block.type}
-                </span>
-
-                {/* Action pills */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-surface-container-lowest border border-outline-variant/20 shadow-sm rounded-full px-1 py-1 z-10 pointer-events-auto">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); moveBlock(i, 'up'); }}
-                    className="w-7 h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-secondary hover:bg-surface-container-low transition-colors"
-                    title="Naik"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); moveBlock(i, 'down'); }}
-                    className="w-7 h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-secondary hover:bg-surface-container-low transition-colors"
-                    title="Turun"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
-                  </button>
-                  <div className="w-px h-4 bg-outline-variant/30 mx-0.5" />
-
-                  {blockToDelete === block.id ? (
-                    <div className="flex items-center gap-1.5 px-1 animate-in slide-in-from-right-2 duration-200">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setBlocks(prev => prev.filter(b => b.id !== block.id));
-                          setBlockToDelete(null);
-                        }}
-                        className="h-7 px-3 rounded-full bg-error text-on-error text-[9px] font-black uppercase tracking-wider hover:bg-error-container hover:text-on-error-container transition-colors shadow-sm"
-                      >
-                        Hapus
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setBlockToDelete(null); }}
-                        className="h-7 px-3 rounded-full bg-surface-container-high text-on-surface-variant text-[9px] font-black uppercase tracking-wider hover:bg-surface-container-highest transition-colors"
-                      >
-                        Batal
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
-                      className="w-7 h-7 flex items-center justify-center rounded-full text-error hover:bg-error/10 transition-colors"
-                      title="Hapus"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Text block */}
-              {block.type === 'text' && (
-                <TiptapEditor
-                  content={block.content}
-                  onChange={(html) => {
-                    setBlocks((prev) =>
-                      prev.map((b, index) =>
-                        index === i ? { ...b, content: html } : b
-                      )
-                    );
-                  }}
-                />
-              )}
-
-              {/* Image / PDF block */}
-              {(block.type === 'image' || block.type === 'pdf') && (
-                <div className="space-y-4">
-                  <input
-                    placeholder="Judul Konten (Opsional)..."
-                    value={block.title || ''}
-                    onChange={(e) => {
-                      setBlocks((prev) =>
-                        prev.map((b, index) =>
-                          index === i ? { ...b, title: e.target.value } : b
-                        )
-                      );
-                    }}
-                    className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold focus:outline-none focus:border-secondary transition-colors"
-                  />
-
-                  {block.url || previews[block.id] ? (
-                    <div className="relative group/media rounded-2xl overflow-hidden border border-outline-variant/20 shadow-sm bg-surface-container-low">
-                      {block.type === 'image' ? (
-                        <div className="relative aspect-video flex items-center justify-center bg-surface-container-low/50">
-                          <img src={previews[block.id] || block.url} alt={block.title || 'Upload'} className="max-w-full max-h-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="py-12 flex flex-col items-center justify-center gap-3">
-                          <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
-                            <span className="material-symbols-outlined text-4xl">picture_as_pdf</span>
-                          </div>
-                          <p className="text-sm font-bold text-primary truncate max-w-[250px] px-4">
-                            {stagedFiles[block.id] ? stagedFiles[block.id].name : (block.url ? 'PDF Terlampir' : 'PDF Terpilih')}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="absolute inset-x-0 bottom-0 p-4 bg-linear-to-t from-black/80 to-transparent flex items-center justify-between translate-y-2 opacity-0 group-hover/media:translate-y-0 group-hover/media:opacity-100 transition-all">
-                        <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                          {stagedFiles[block.id] ? 'Staged' : 'Ready'}
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => onBlockFileSelect(block.id)}
-                            className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 text-[10px] font-bold transition-colors"
-                          >
-                            Ganti File
-                          </button>tombol search berfungsi dengan baik di pdf view
-                          sepertinya pdf view ini sangat berat, apalah ada cara untuk membuatnya lebih ringan untuk di muat, gunakan hacks atau trik kalau bisa
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-outline-variant/40 bg-primary-container/10 hover:bg-primary-container/20 transition-colors rounded-2xl p-10 flex flex-col items-center justify-center text-center">
-                      <div className="w-14 h-14 bg-surface-container-lowest shadow-sm rounded-full flex items-center justify-center mb-3">
-                        <span className="material-symbols-outlined text-3xl text-secondary">
-                          {block.type === 'pdf' ? 'description' : 'add_photo_alternate'}
-                        </span>
-                      </div>
-                      <p className="text-primary font-headline font-bold mb-1">
-                        Unggah {block.type === 'image' ? 'Gambar' : 'Dokumen PDF'}
-                      </p>
-                      <p className="text-on-surface-variant text-xs mb-4">Maks: {block.type === 'image' ? '4MB' : '16MB'}</p>
-                      <button
-                        onClick={() => onBlockFileSelect(block.id)}
-                        className="px-6 py-2.5 rounded-full bg-secondary text-on-secondary font-headline font-bold text-xs hover:scale-105 transition-transform shadow-md"
-                      >
-                        Pilih File
-                      </button>
-                    </div>
-                  )}
-
-                  <textarea
-                    placeholder="Keterangan atau Sumber (Opsional)..."
-                    value={block.caption || ''}
-                    onChange={(e) => {
-                      setBlocks((prev) =>
-                        prev.map((b, index) =>
-                          index === i ? { ...b, caption: e.target.value } : b
-                        )
-                      );
-                    }}
-                    rows={2}
-                    className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
-                  />
-                </div>
-              )}
-
-              {/* Video block */}
-              {block.type === 'video' && (
-                <div className="space-y-4">
-                  <input
-                    placeholder="Judul Video (Opsional)..."
-                    value={block.title || ''}
-                    onChange={(e) => {
-                      setBlocks((prev) =>
-                        prev.map((b, index) =>
-                          index === i ? { ...b, title: e.target.value } : b
-                        )
-                      );
-                    }}
-                    className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold focus:outline-none focus:border-secondary transition-colors"
-                  />
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">link</span>
-                    <input
-                      placeholder="Masukkan URL YouTube..."
-                      value={block.url || ''}
-                      onChange={(e) => {
-                        setBlocks((prev) =>
-                          prev.map((b, index) =>
-                            index === i ? { ...b, url: e.target.value } : b
-                          )
-                        );
-                      }}
-                      className="w-full bg-surface-container-lowest/50 border border-outline-variant/50 rounded-xl py-3.5 pl-12 pr-4 text-primary focus:outline-none focus:border-secondary transition-colors"
-                    />
-                  </div>
-                  <textarea
-                    placeholder="Keterangan Video (Opsional)..."
-                    value={block.caption || ''}
-                    onChange={(e) => {
-                      setBlocks((prev) =>
-                        prev.map((b, index) =>
-                          index === i ? { ...b, caption: e.target.value } : b
-                        )
-                      );
-                    }}
-                    rows={2}
-                    className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
-                  />
-                </div>
-              )}
-
-              {/* Link block */}
-              {block.type === 'link' && (
-                <div className="space-y-4">
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">title</span>
-                    <input
-                      placeholder="Judul Tautan / Sumber (misal: Dokumentasi Resmi)..."
-                      value={block.title || ''}
-                      onChange={(e) => {
-                        setBlocks((prev) =>
-                          prev.map((b, index) =>
-                            index === i ? { ...b, title: e.target.value } : b
-                          )
-                        );
-                      }}
-                      className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold focus:outline-none focus:border-secondary transition-colors"
-                    />
-                  </div>
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">link</span>
-                    <input
-                      placeholder="https://example.com/sumber-data"
-                      value={block.url || ''}
-                      onChange={(e) => {
-                        setBlocks((prev) =>
-                          prev.map((b, index) =>
-                            index === i ? { ...b, url: e.target.value } : b
-                          )
-                        );
-                      }}
-                      className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary focus:outline-none focus:border-secondary transition-colors"
-                    />
-                  </div>
-                  <textarea
-                    placeholder="Keterangan singkat tentang sumber ini (Opsional)..."
-                    value={block.caption || ''}
-                    onChange={(e) => {
-                      setBlocks((prev) =>
-                        prev.map((b, index) =>
-                          index === i ? { ...b, caption: e.target.value } : b
-                        )
-                      );
-                    }}
-                    rows={2}
-                    className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
-                  />
-                </div>
-              )}
-            </div>
+              block={block}
+              index={i}
+              isFirst={i === 0}
+              isLast={i === blocks.length - 1}
+              isDeleting={blockToDelete === block.id}
+              preview={previews[block.id]}
+              stagedFile={stagedFiles[block.id]}
+              onUpdate={updateBlock}
+              onRemove={removeBlock}
+              onCancelDelete={() => setBlockToDelete(null)}
+              onMove={moveBlock}
+              onFileSelect={onBlockFileSelect}
+              saveStatus={saveStatus}
+            />
           ))}
         </div>
       </main>
@@ -1046,12 +847,12 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                 <>
                   <button
                     onClick={() => handleSave(initialData?.status || 'Published')}
-                    disabled={isPending}
-                    className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-secondary text-on-secondary hover:bg-primary transition-all shadow-md disabled:opacity-50 cursor-pointer ${isDirty ? 'pulse-green' : ''}`}
+                    disabled={isPending || isSavingInProgress}
+                    className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-secondary text-on-secondary hover:bg-primary transition-all shadow-md disabled:opacity-50 cursor-pointer ${(isDirty || isSavingInProgress) ? 'pulse-green' : ''}`}
                   >
-                    <span className="material-symbols-outlined text-[20px]">save</span>
+                    <span className="material-symbols-outlined text-[20px]">{(isPending || isSavingInProgress) ? 'sync' : 'save'}</span>
                     <span className="text-[11px] font-bold uppercase tracking-widest">
-                      {isPending ? 'Menyimpan…' : 'Simpan Perubahan'}
+                      {(isPending || isSavingInProgress) ? 'Menyimpan…' : 'Simpan Perubahan'}
                     </span>
                   </button>
 
@@ -1068,11 +869,11 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                     {initialData?.status === 'Published' ? (
                       <button
                         onClick={() => handleSave('Draft')}
-                        disabled={isPending}
+                        disabled={isPending || isSavingInProgress}
                         className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/15 disabled:opacity-50 cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">drafts</span>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Jadikan Draft</span>
+                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{(isPending || isSavingInProgress) ? 'sync' : 'drafts'}</span>
+                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider text-center">{(isPending || isSavingInProgress) ? '...' : 'Jadikan Draft'}</span>
                       </button>
                     ) : (
                       <button

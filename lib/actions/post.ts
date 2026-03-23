@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { revalidatePath, unstable_cache } from "next/cache";
+import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
 import { deleteFilesFromStorage } from "@/lib/uploadthing-server";
 
 // Helper: generate slug from title
@@ -35,7 +35,7 @@ export type PostFormData = {
 // CREATE or UPDATE a post
 export async function savePost(data: PostFormData) {
   const session = await auth();
-  if (!session || session.user?.role !== "ADMIN") {
+  if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
     return { success: false, error: "Unauthorized" };
   }
 
@@ -99,6 +99,8 @@ export async function savePost(data: PostFormData) {
       revalidatePath("/admin");
       revalidatePath(`/post/${post.slug}`);
       revalidatePath("/");
+      revalidateTag("posts", "max");
+      revalidateTag(`post-${post.id}`, "max");
       return { success: true, post };
     } else {
       // CREATE new post
@@ -130,6 +132,7 @@ export async function savePost(data: PostFormData) {
       });
       revalidatePath("/admin");
       revalidatePath("/");
+      revalidateTag("posts", "max");
       return { success: true, post };
     }
   } catch (error: unknown) {
@@ -141,7 +144,7 @@ export async function savePost(data: PostFormData) {
 // DELETE a post
 export async function deletePost(id: string) {
   const session = await auth();
-  if (!session || session.user?.role !== "ADMIN") {
+  if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
     return { success: false, error: "Unauthorized" };
   }
 
@@ -164,6 +167,8 @@ export async function deletePost(id: string) {
     await prisma.post.delete({ where: { id } });
     revalidatePath("/admin");
     revalidatePath("/");
+    revalidateTag("posts", "max");
+    revalidateTag(`post-${id}`, "max");
     return { success: true };
   } catch (error: unknown) {
     console.error("Error deleting post:", error);
@@ -171,83 +176,95 @@ export async function deletePost(id: string) {
   }
 }
 
+const getPostsCached = unstable_cache(
+  async (options?: {
+    search?: string;
+    status?: string;
+    category?: string;
+  }, isAdmin?: boolean) => {
+    try {
+      const where: Record<string, any> = {};
+
+      if (!isAdmin) {
+        where.status = "Published";
+      } else if (options?.status) {
+        where.status = options.status;
+      }
+
+      if (options?.search) {
+        where.title = { contains: options.search, mode: "insensitive" };
+      }
+      if (options?.category) {
+        where.category = options.category;
+      }
+
+      return await prisma.post.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (error: unknown) {
+      console.error("Error fetching posts:", error);
+      return [];
+    }
+  },
+  ["get-posts"],
+  { tags: ["posts"], revalidate: 3600 }
+);
+
 export async function getPosts(options?: {
   search?: string;
   status?: string;
   category?: string;
 }) {
   const session = await auth();
-  const role = session?.user?.role;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-
-  try {
-    const where: Record<string, any> = {};
-
-    // For non-admin, always force Published status.
-    // Admins can filter by any status, or see all if none specified.
-    if (!isAdmin) {
-      where.status = "Published";
-    } else if (options?.status) {
-      where.status = options.status;
-    }
-
-    if (options?.search) {
-      where.title = { contains: options.search, mode: "insensitive" };
-    }
-    if (options?.category) {
-      where.category = options.category;
-    }
-
-    const posts = await prisma.post.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-    });
-
-    return posts;
-  } catch (error: unknown) {
-    console.error("Error fetching posts:", error);
-    return [];
-  }
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  return getPostsCached(options, isAdmin);
 }
 
 // GET single post by id
-export async function getPostById(id: string) {
-  const session = await auth();
-  const role = session?.user?.role;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-
-  try {
-    const post = await prisma.post.findUnique({ where: { id } });
-    
-    // If post is not published and user is not admin, hide it
-    if (post && post.status !== "Published" && !isAdmin) {
+const getPostByIdCached = unstable_cache(
+  async (id: string, isAdmin: boolean) => {
+    try {
+      const post = await prisma.post.findUnique({ where: { id } });
+      if (post && post.status !== "Published" && !isAdmin) {
+        return null;
+      }
+      return post;
+    } catch {
       return null;
     }
+  },
+  ["post-by-id"],
+  { tags: ["posts"] }
+);
 
-    return post;
-  } catch {
-    return null;
-  }
+export async function getPostById(id: string) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  return getPostByIdCached(id, isAdmin);
 }
 
 // GET single post by slug (for public view)
-export async function getPostBySlug(slug: string) {
-  const session = await auth();
-  const role = session?.user?.role;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-
-  try {
-    const post = await prisma.post.findUnique({ where: { slug } });
-    
-    // If post is not published and user is not admin, hide it
-    if (post && post.status !== "Published" && !isAdmin) {
+const getPostBySlugCached = unstable_cache(
+  async (slug: string, isAdmin: boolean) => {
+    try {
+      const post = await prisma.post.findUnique({ where: { slug } });
+      if (post && post.status !== "Published" && !isAdmin) {
+        return null;
+      }
+      return post;
+    } catch {
       return null;
     }
+  },
+  ["post-by-slug"],
+  { tags: ["posts"] }
+);
 
-    return post;
-  } catch {
-    return null;
-  }
+export async function getPostBySlug(slug: string) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  return getPostBySlugCached(slug, isAdmin);
 }
 
 // Check if a file URL (PDF/Image) is authorized to be viewed

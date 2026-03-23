@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { Post } from "@/app/generated/prisma/client";
 
@@ -54,17 +55,21 @@ export default function ArchiveCard({ post }: ArchiveCardProps) {
       {/* Thumbnail (Right) */}
       <div className="w-full sm:w-40 md:w-56 lg:w-48 xl:w-52 aspect-square shrink-0 relative overflow-hidden order-1 sm:order-2">
         {post.thumbnail ? (
-          <img
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
-            alt={post.title}
-            src={post.thumbnail}
-          />
+          <>
+            <Image
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
+              alt={post.title}
+              src={post.thumbnail}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 200px, 250px"
+            />
+            <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
+          </>
         ) : (
           <div className="w-full h-full bg-linear-to-br from-secondary/5 to-primary/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-secondary/20 text-4xl">book</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
       </div>
     </Link>
   );

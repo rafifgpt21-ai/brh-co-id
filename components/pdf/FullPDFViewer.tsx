@@ -145,6 +145,11 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [isTypingPage, setIsTypingPage] = useState(false);
 
+  // Use proxy for external URLs to bypass CORS
+  const proxiedUrl = url.startsWith('http') && !url.includes(window.location.hostname)
+    ? `/api/proxy-pdf?url=${encodeURIComponent(url)}`
+    : url;
+
   useEffect(() => {
     if (!containerRef.current || !numPages) return;
 
@@ -504,7 +509,7 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
         onContextMenu={(e) => e.preventDefault()}
       >
         <Document
-          file={url}
+          file={proxiedUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           className="flex flex-col gap-8"
           loading={

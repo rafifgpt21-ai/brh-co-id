@@ -8,7 +8,8 @@ const f = createUploadthing();
 // Function to check for actual admin user
 const checkAuth = async () => {
   const session = await auth();
-  if (!session || session.user?.role !== "ADMIN") return null;
+  const role = session?.user?.role;
+  if (!session || (role !== "ADMIN" && role !== "SUPER_ADMIN")) return null;
   return session.user;
 };
 
