@@ -1,20 +1,26 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
+import { auth } from "@/auth";
+
 const f = createUploadthing();
 
-// Function to simulate auth, change to actual auth check later
-const auth = (req: Request) => ({ id: "fakeId" }); 
+// Function to check for actual admin user
+const checkAuth = async () => {
+  const session = await auth();
+  if (!session || session.user?.role !== "ADMIN") return null;
+  return session.user;
+};
 
 export const ourFileRouter = {
   imageUploader: f({
     image: {
       maxFileSize: "4MB",
-      maxFileCount: 1,
+      maxFileCount: 50,
     },
   })
-    .middleware(async ({ req }) => {
-      const user = await auth(req);
+    .middleware(async () => {
+      const user = await checkAuth();
       if (!user) throw new UploadThingError("Unauthorized");
       return { userId: user.id };
     })
@@ -27,11 +33,11 @@ export const ourFileRouter = {
   pdfUploader: f({
     pdf: {
       maxFileSize: "16MB",
-      maxFileCount: 1,
+      maxFileCount: 50,
     },
   })
-    .middleware(async ({ req }) => {
-      const user = await auth(req);
+    .middleware(async () => {
+      const user = await checkAuth();
       if (!user) throw new UploadThingError("Unauthorized");
       return { userId: user.id };
     })

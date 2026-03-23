@@ -26,10 +26,15 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
         id: post.id,
         title: post.title,
         category: post.category,
-        blocks: post.blocks.map((b) => ({
+        status: post.status,
+        thumbnail: post.thumbnail,
+        blocks: post.blocks.map((b: any) => ({
           id: b.id,
           type: b.type,
           content: b.content,
+          url: b.url || '',
+          title: b.title || '',
+          caption: b.caption || '',
           isLocked: b.isLocked ?? false,
         })),
       }}

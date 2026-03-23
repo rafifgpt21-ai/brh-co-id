@@ -6,12 +6,16 @@ export const metadata = {
   description: "Telusuri kumpulan pemikiran, riset, dan opini terbaik di BRH Intellectual.",
 };
 
+import { Suspense } from "react";
+
 export default async function KaryaPage() {
   const posts = await getPosts({ status: 'Published' });
 
   return (
     <main className="min-h-screen pt-12">
-      <KatalogClient initialPosts={posts} />
+      <Suspense fallback={<div>Loading Katalog...</div>}>
+        <KatalogClient initialPosts={posts} />
+      </Suspense>
     </main>
   );
 }

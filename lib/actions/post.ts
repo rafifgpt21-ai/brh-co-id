@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { deleteFilesFromStorage } from "@/lib/uploadthing-server";
 
 // Helper: generate slug from title
 function generateSlug(title: string): string {
@@ -24,6 +25,9 @@ export type PostFormData = {
     id: string;
     type: string;
     content: string;
+    url?: string;
+    title?: string;
+    caption?: string;
     isLocked?: boolean;
   }[];
 };
@@ -40,6 +44,33 @@ export async function savePost(data: PostFormData) {
 
     if (data.id) {
       // UPDATE existing post
+      // 1. Fetch old post to compare files
+      const oldPost = await prisma.post.findUnique({ where: { id: data.id } });
+      if (!oldPost) return { success: false, error: "Post tidak ditemukan" };
+
+      const filesToDelete: string[] = [];
+
+      // Check thumbnail
+      if (oldPost.thumbnail && oldPost.thumbnail !== data.thumbnail) {
+        filesToDelete.push(oldPost.thumbnail);
+      }
+
+      // Check blocks
+      const oldUrls = (oldPost.blocks as any[])
+        .map((b) => b.url)
+        .filter((url): url is string => !!url);
+      const newUrls = data.blocks
+        .map((b) => b.url)
+        .filter((url): url is string => !!url);
+
+      // Find URLs in old that are NOT in new
+      oldUrls.forEach((url) => {
+        if (!newUrls.includes(url)) {
+          filesToDelete.push(url);
+        }
+      });
+
+      // 2. Update post
       const post = await prisma.post.update({
         where: { id: data.id },
         data: {
@@ -52,10 +83,19 @@ export async function savePost(data: PostFormData) {
             id: b.id,
             type: b.type,
             content: b.content,
+            url: b.url || null,
+            title: b.title || null,
+            caption: b.caption || null,
             isLocked: b.isLocked ?? false,
           })),
         },
       });
+
+      // 3. Clean up deleted files
+      if (filesToDelete.length > 0) {
+        await deleteFilesFromStorage(filesToDelete);
+      }
+
       revalidatePath("/admin");
       revalidatePath(`/post/${post.slug}`);
       revalidatePath("/");
@@ -81,6 +121,9 @@ export async function savePost(data: PostFormData) {
             id: b.id,
             type: b.type,
             content: b.content,
+            url: b.url || null,
+            title: b.title || null,
+            caption: b.caption || null,
             isLocked: b.isLocked ?? false,
           })),
         },
@@ -103,6 +146,21 @@ export async function deletePost(id: string) {
   }
 
   try {
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (post) {
+      const filesToDelete: string[] = [];
+      if (post.thumbnail) filesToDelete.push(post.thumbnail);
+      
+      // Clean up blocks
+      post.blocks.forEach((block: any) => {
+        if (block.url) filesToDelete.push(block.url);
+      });
+
+      if (filesToDelete.length > 0) {
+        await deleteFilesFromStorage(filesToDelete);
+      }
+    }
+
     await prisma.post.delete({ where: { id } });
     revalidatePath("/admin");
     revalidatePath("/");
@@ -113,20 +171,27 @@ export async function deletePost(id: string) {
   }
 }
 
-// GET posts with optional search & filter
 export async function getPosts(options?: {
   search?: string;
   status?: string;
   category?: string;
 }) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
+
   try {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, any> = {};
+
+    // For non-admin, always force Published status.
+    // Admins can filter by any status, or see all if none specified.
+    if (!isAdmin) {
+      where.status = "Published";
+    } else if (options?.status) {
+      where.status = options.status;
+    }
 
     if (options?.search) {
       where.title = { contains: options.search, mode: "insensitive" };
-    }
-    if (options?.status) {
-      where.status = options.status;
     }
     if (options?.category) {
       where.category = options.category;
@@ -146,8 +211,17 @@ export async function getPosts(options?: {
 
 // GET single post by id
 export async function getPostById(id: string) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
+
   try {
     const post = await prisma.post.findUnique({ where: { id } });
+    
+    // If post is not published and user is not admin, hide it
+    if (post && post.status !== "Published" && !isAdmin) {
+      return null;
+    }
+
     return post;
   } catch {
     return null;
@@ -156,10 +230,51 @@ export async function getPostById(id: string) {
 
 // GET single post by slug (for public view)
 export async function getPostBySlug(slug: string) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
+
   try {
     const post = await prisma.post.findUnique({ where: { slug } });
+    
+    // If post is not published and user is not admin, hide it
+    if (post && post.status !== "Published" && !isAdmin) {
+      return null;
+    }
+
     return post;
   } catch {
     return null;
+  }
+}
+
+// Check if a file URL (PDF/Image) is authorized to be viewed
+export async function getPostByFileUrl(url: string) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  try {
+    // Find any post containing this URL in its blocks
+    const post = await prisma.post.findFirst({
+      where: {
+        blocks: {
+          some: {
+            url: { equals: url }
+          }
+        }
+      }
+    });
+
+    // If post not found, we assume it's OK (could be a public asset not tied to a post)
+    // BUT for PDF viewer, we want to be safe.
+    if (!post) return { authorized: true };
+
+    if (post.status !== "Published" && !isAdmin) {
+      return { authorized: false, status: post.status };
+    }
+
+    return { authorized: true, status: post.status };
+  } catch (error) {
+    console.error("Error checking file authorization:", error);
+    return { authorized: false };
   }
 }

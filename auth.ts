@@ -1,10 +1,8 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@/app/generated/prisma/client"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-
-const prisma = new PrismaClient()
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET || "rahasia-super-aman-untuk-dev-12345",
@@ -59,6 +57,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/admin/login",
   },
   callbacks: {
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isAdmin = auth?.user?.role === 'ADMIN';
+      const isProtectedPath = nextUrl.pathname.startsWith('/admin') && nextUrl.pathname !== '/admin/login';
+
+      if (isProtectedPath) {
+        if (isLoggedIn && isAdmin) return true;
+        return false; // Redirect to sign in
+      }
+      return true;
+    },
     jwt: async ({ token, user }) => {
       if (user) {
         token.role = user.role

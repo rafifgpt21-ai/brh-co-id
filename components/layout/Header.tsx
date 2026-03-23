@@ -8,7 +8,7 @@ export const Header = async () => {
   const isAdmin = session?.user?.role === "ADMIN";
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-[#fcf8fa]/80 backdrop-blur-xl border-b border-black/5">
+    <nav className="fixed top-0 w-full z-50 bg-[#fcf8fa]/80 backdrop-blur-xl transition-all duration-300">
       <div className="w-full px-6 md:px-8 lg:px-12 xl:px-24 flex justify-between items-center h-20">
         <div className="flex items-center gap-4">
           <MobileMenu isAdmin={isAdmin} />

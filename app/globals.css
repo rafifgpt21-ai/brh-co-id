@@ -94,3 +94,64 @@ html.lenis body {
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
 }
+
+/* Custom Scrollbar Styles */
+@layer base {
+  /* Hide scrollbar for mobile */
+  @media (max-width: 768px) {
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+  }
+
+  /* Custom scrollbar for desktop */
+  @media (min-width: 769px) {
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--color-secondary) 20%, transparent);
+      border-radius: 20px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--color-secondary) 40%, transparent);
+    }
+
+    /* Support for Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--color-secondary) 20%, transparent) transparent;
+    }
+  }
+}
+
+/* Custom Animations */
+@keyframes pulse-green {
+  0% { 
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6); 
+    border-color: rgba(74, 222, 128, 0.8);
+  }
+  70% { 
+    box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); 
+    border-color: rgba(74, 222, 128, 0.4);
+  }
+  100% { 
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); 
+    border-color: rgba(74, 222, 128, 0.8);
+  }
+}
+
+.pulse-green {
+  animation: pulse-green 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}

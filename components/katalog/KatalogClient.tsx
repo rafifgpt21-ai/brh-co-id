@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Post } from "@/app/generated/prisma/client";
 import ArchiveCard from "./ArchiveCard";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface KatalogClientProps {
   initialPosts: Post[];
@@ -11,99 +13,211 @@ interface KatalogClientProps {
 const categories = ["Semua", "Buku", "Jurnal", "Artikel", "Opini"];
 
 export default function KatalogClient({ initialPosts }: KatalogClientProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const searchFromUrl = searchParams.get("search") || "";
+  
+  // Real-time input value
+  const [inputValue, setInputValue] = useState(searchFromUrl);
+  // Confirmed search value used for filtering
+  const [activeSearch, setActiveSearch] = useState(searchFromUrl);
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (searchFromUrl) {
+      setInputValue(searchFromUrl);
+      setActiveSearch(searchFromUrl);
+    }
+  }, [searchFromUrl]);
+
+  const handleSearchCommit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setIsSearching(true);
+    
+    // Simulate a brief "search" delay for better UX feedback
+    setTimeout(() => {
+      setActiveSearch(inputValue);
+      setIsSearching(false);
+      
+      // Update URL without full refresh to preserve state
+      if (inputValue.trim()) {
+        router.push(`/katalog?search=${encodeURIComponent(inputValue.trim())}`, { scroll: false });
+      } else {
+        router.push(`/katalog`, { scroll: false });
+      }
+    }, 400);
+  };
+
+  const handleReset = () => {
+    setInputValue("");
+    setActiveSearch("");
+    setActiveCategory("Semua");
+    router.push(`/katalog`, { scroll: false });
+  };
 
   const filteredPosts = useMemo(() => {
     return initialPosts.filter((post) => {
-      const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = post.title.toLowerCase().includes(activeSearch.toLowerCase());
       const matchesCategory = activeCategory === "Semua" || post.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [initialPosts, searchQuery, activeCategory]);
+  }, [initialPosts, activeSearch, activeCategory]);
 
   return (
     <div className="w-full">
       {/* Search & Filter Section */}
-      <section className="relative py-12 mb-12">
-        <div className="absolute inset-0 -z-10 opacity-10 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-secondary-fixed blur-[120px] rounded-full"></div>
+      <section className="relative py-16 md:py-24 mb-12">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-secondary-fixed blur-[140px] rounded-full animate-pulse-slow"></div>
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-primary-fixed blur-[120px] rounded-full opacity-60"></div>
         </div>
 
-        <div className="max-w-3xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6">
           {/* Header text */}
-          <div className="text-center mb-10">
-             <h1 className="font-headline font-extrabold text-4xl md:text-5xl text-primary mb-4">Katalog Karya</h1>
-             <p className="text-on-surface-variant text-lg">Telusuri kumpulan pemikiran, riset, dan opini terbaik.</p>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-16"
+          >
+             <span className="font-label text-xs font-black tracking-[0.3em] text-secondary uppercase block mb-4">Eksplorasi Intelektual</span>
+             <h1 className="font-headline font-black text-5xl md:text-7xl text-primary mb-6 tracking-tight">Katalog Karya</h1>
+             <p className="text-on-surface-variant/70 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+               Telusuri rekaman pemikiran, hasil riset mendalam, dan opini kritis untuk memperluas cakrawala intelektual Anda.
+             </p>
+          </motion.div>
+
+          {/* Search Bar UI */}
+          <div className="relative max-w-3xl mx-auto mb-12 group">
+            <div className="absolute -inset-1 bg-linear-to-r from-secondary/20 via-primary/10 to-secondary/20 rounded-[2.5rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-500"></div>
+            
+            <form 
+              onSubmit={handleSearchCommit}
+              className="relative bg-surface-container-low/90 backdrop-blur-2xl rounded-[2.5rem] p-2 flex items-center gap-2 border border-outline-variant/20 shadow-xl shadow-primary/5 group-focus-within:border-secondary/30 transition-all duration-500"
+            >
+              <div className="flex-1 flex items-center gap-4 pl-6">
+                <span className={`material-symbols-outlined transition-colors duration-500 ${isSearching ? 'text-secondary animate-spin scale-110' : 'text-on-surface-variant/40 group-focus-within:text-secondary'}`}>
+                  {isSearching ? 'sync' : 'search'}
+                </span>
+                <input
+                  className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-base md:text-lg text-primary placeholder:text-on-surface-variant/40"
+                  placeholder="Cari judul, topik, atau kata kunci..."
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                />
+                {inputValue && (
+                  <button 
+                    type="button"
+                    onClick={() => { setInputValue(""); }}
+                    className="p-1.5 hover:bg-surface-container-high rounded-full text-on-surface-variant/40 hover:text-secondary transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">close</span>
+                  </button>
+                )}
+              </div>
+              
+              <button 
+                type="submit"
+                disabled={isSearching}
+                className="bg-primary text-on-primary hover:bg-secondary px-8 md:px-10 py-4 rounded-[2rem] font-headline font-black text-sm uppercase tracking-widest transition-all duration-500 shadow-lg shadow-primary/20 hover:shadow-secondary/30 active:scale-95 flex items-center gap-3 disabled:opacity-50"
+              >
+                <span>Cari</span>
+                <span className="material-symbols-outlined text-[18px]">east</span>
+              </button>
+            </form>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative group mb-8">
-            <div className="absolute -inset-1 bg-linear-to-r from-secondary to-primary-container rounded-full blur opacity-10 group-focus-within:opacity-20 transition duration-500"></div>
-            <div className="relative bg-surface-container-low/80 glass-effect rounded-full px-6 py-4 flex items-center gap-4 border border-outline-variant/15">
-              <span className="material-symbols-outlined text-on-surface-variant">search</span>
-              <input
-                className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-base placeholder:text-on-surface-variant/60"
-                placeholder="Cari judul atau topik..."
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery("")}
-                  className="text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Category Chips */}
-          <div className="flex flex-wrap justify-center gap-3">
+          {/* Category Quick Filters */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap justify-center gap-3"
+          >
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`px-5 py-2 rounded-full text-xs font-label font-bold tracking-wider uppercase transition-all duration-300 ${
+                className={`group relative px-6 py-2.5 rounded-full text-[10px] md:text-xs font-label font-black tracking-widest uppercase transition-all duration-500 overflow-hidden ${
                   activeCategory === category
-                    ? "bg-secondary text-on-secondary shadow-md scale-105"
-                    : "bg-surface-container-lowest text-on-surface-variant border border-outline-variant/15 hover:bg-surface-container-low"
+                    ? "bg-secondary text-on-secondary shadow-lg shadow-secondary/20 scale-105"
+                    : "bg-surface-container-lowest text-on-surface-variant/60 border border-outline-variant/15 hover:border-secondary/40 hover:text-secondary"
                 }`}
               >
-                {category}
+                <span className="relative z-10">{category}</span>
+                {activeCategory !== category && (
+                  <span className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></span>
+                )}
               </button>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Grid Section */}
-      <section className="px-6 md:px-12 lg:px-24 mb-24">
-        {filteredPosts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredPosts.map((post) => (
-              <ArchiveCard key={post.id} post={post} />
-            ))}
+      <section className="max-w-7xl mx-auto px-6 md:px-12 lg:px-24 mb-32">
+        <div className="flex items-center justify-between mb-12 px-2">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+               <span className="material-symbols-outlined text-[20px]">grid_view</span>
+             </div>
+             <p className="font-label text-xs font-black text-on-surface-variant uppercase tracking-widest">
+               {filteredPosts.length} Karya Ditemukan
+             </p>
           </div>
-        ) : (
-          <div className="text-center py-32 border-2 border-dashed border-outline-variant/20 rounded-3xl">
-            <div className="inline-flex w-16 h-16 items-center justify-center rounded-2xl bg-surface-container mb-4 text-on-surface-variant/30">
-              <span className="material-symbols-outlined text-3xl">search_off</span>
-            </div>
-            <p className="text-lg font-bold text-on-surface-variant">Tidak ada hasil ditemukan</p>
-            <p className="text-sm text-on-surface-variant/60 mt-1">
-              Coba gunakan kata kunci lain atau pilih kategori yang berbeda.
-            </p>
+          
+          {(activeSearch || activeCategory !== "Semua") && (
             <button 
-              onClick={() => { setSearchQuery(""); setActiveCategory("Semua"); }}
-              className="mt-6 text-secondary font-bold text-sm hover:underline"
+              onClick={handleReset}
+              className="text-xs font-black text-secondary hover:text-primary transition-colors flex items-center gap-2 uppercase tracking-widest"
             >
-              Reset Semua Filter
+              <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+              Reset Filter
             </button>
-          </div>
-        )}
+          )}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {filteredPosts.length > 0 ? (
+            <motion.div 
+              key={`${activeSearch}-${activeCategory}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12"
+            >
+              {filteredPosts.map((post) => (
+                <ArchiveCard key={post.id} post={post} />
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-32 bg-surface-container-low/30 backdrop-blur-xl border-2 border-dashed border-outline-variant/20 rounded-[3rem]"
+            >
+              <div className="inline-flex w-24 h-24 items-center justify-center rounded-[2rem] bg-surface-container mb-8 text-on-surface-variant/20 relative group">
+                <div className="absolute inset-0 bg-secondary/10 rounded-[2rem] scale-150 blur-3xl group-hover:bg-secondary/20 transition-all duration-1000"></div>
+                <span className="material-symbols-outlined text-5xl relative z-10 transition-transform duration-500 group-hover:scale-110">search_off</span>
+              </div>
+              <h3 className="text-2xl md:text-3xl font-headline font-black text-primary mb-4 tracking-tight">Eksplorasi Tak Ditemukan</h3>
+              <p className="text-on-surface-variant/60 max-w-md mx-auto leading-relaxed mb-10">
+                Kami tidak dapat menemukan karya yang sesuai dengan "{activeSearch}". 
+                Coba gunakan kata kunci intelektual lainnya atau atur ulang kategori.
+              </p>
+              <button 
+                onClick={handleReset}
+                className="inline-flex items-center gap-3 px-10 py-4 bg-surface-container-highest text-primary font-headline font-black text-sm uppercase tracking-widest rounded-full hover:bg-secondary hover:text-on-secondary transition-all duration-500 shadow-lg hover:shadow-secondary/20"
+              >
+                Reset Semua Filter
+                <span className="material-symbols-outlined">refresh</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
     </div>
   );

@@ -91,7 +91,10 @@ model Post {
 
 type Block {
   id       String
-  type     String // 'text', 'image', 'video', 'pdf'
+  type     String // 'text', 'image', 'video', 'pdf', 'link'
   content  String
+  url      String?
+  title    String?
+  caption  String?
   isLocked Boolean? @default(false)
 }

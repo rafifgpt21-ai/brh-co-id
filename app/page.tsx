@@ -1,126 +1,146 @@
 import Link from 'next/link';
 import { getPosts } from '@/lib/actions/post';
+import HomeHero from '@/components/home/HomeHero';
+import ImpactMetrics from '@/components/home/ImpactMetrics';
+import ScrollReveal from '@/components/home/ScrollReveal';
 
 export default async function Home() {
   const allPosts = await getPosts({ status: 'Published' });
   const latestPosts = allPosts.slice(0, 4);
 
   return (
-    <>
+    <div className="overflow-x-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[870px] flex flex-col items-center justify-center px-8 text-center overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 -z-10 opacity-30 pointer-events-none">
-          <div className="absolute top-20 left-1/4 w-96 h-96 bg-secondary-fixed blur-[120px] rounded-full"></div>
-          <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-primary-fixed blur-[120px] rounded-full"></div>
-        </div>
+      <HomeHero />
 
-        {/* Impact Chips */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          <div className="bg-surface-container-lowest px-5 py-2 rounded-full text-xs font-label font-semibold tracking-widest uppercase text-secondary flex items-center gap-2 shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">menu_book</span>
-            10+ Buku
-          </div>
-          <div className="bg-surface-container-lowest px-5 py-2 rounded-full text-xs font-label font-semibold tracking-widest uppercase text-secondary flex items-center gap-2 shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">description</span>
-            50+ Jurnal Ilmiah
-          </div>
-          <div className="bg-surface-container-lowest px-5 py-2 rounded-full text-xs font-label font-semibold tracking-widest uppercase text-secondary flex items-center gap-2 shadow-sm">
-            <span className="material-symbols-outlined text-[18px]">verified</span>
-            Pendiri Jagat &apos;Arsy
-          </div>
-        </div>
-
-        {/* Main Typography */}
-        <h1 className="font-headline font-extrabold text-5xl md:text-7xl lg:text-8xl tracking-tight text-primary leading-[1.1] mb-8 max-w-5xl">
-          Menyemai Pemikiran,<br />
-          <span className="text-secondary">Menggerakkan</span> Perubahan
-        </h1>
-
-        {/* Search Bar Area */}
-        <div className="w-full max-w-2xl mt-8 relative group">
-          <div className="absolute -inset-1 bg-linear-to-r from-secondary to-primary-container rounded-full blur opacity-10 group-focus-within:opacity-20 transition duration-500"></div>
-          <div className="relative bg-surface-container-low/80 glass-effect rounded-full px-8 py-5 flex items-center gap-4 border border-outline-variant/15">
-            <span className="material-symbols-outlined text-on-surface-variant">search</span>
-            <input
-              className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-lg placeholder:text-on-surface-variant/60"
-              placeholder="Cari topik tasawuf, sosial, atau judul buku..."
-              type="text"
-            />
-            <button className="bg-secondary text-on-secondary px-6 py-2 rounded-full font-headline font-semibold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer">
-              Cari
-            </button>
-          </div>
-        </div>
-
-        {/* Primary CTA */}
-        <div className="mt-16">
-          <Link href="#arsip" className="group flex items-center gap-3 font-headline font-bold text-lg tracking-tight text-primary hover:text-secondary transition-colors duration-300">
-            Jelajahi Pemikiran
-            <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-          </Link>
-        </div>
-      </section>
+      {/* Impact Section */}
+      <ImpactMetrics />
 
       {/* Content Section */}
-      <section id="arsip" className="w-full px-6 md:px-12 lg:px-24 mx-auto py-24">
-        <div className="mb-16">
-          <span className="font-label text-xs font-bold tracking-[0.2em] text-secondary uppercase">Arsip Terkini</span>
-          <h2 className="font-headline font-bold text-4xl mt-4 text-primary">Karya &amp; Diskusi Terbaru</h2>
-        </div>
+      <section id="arsip" className="w-full px-6 md:px-12 lg:px-24 mx-auto py-32 bg-surface">
+        <ScrollReveal className="mb-20">
+          <span className="font-label text-xs font-bold tracking-[0.3em] text-secondary uppercase block mb-4">ARSIP INTELEKTUAL</span>
+          <h2 className="font-headline font-black text-4xl md:text-5xl lg:text-6xl text-primary leading-tight tracking-tighter">
+            Karya & <span className="text-secondary italic">Diskusi</span> Terbaru
+          </h2>
+          <div className="w-20 h-1.5 bg-secondary mt-8 rounded-full"></div>
+        </ScrollReveal>
 
         {latestPosts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {latestPosts.map((post) => (
-              <Link
-                key={post.id}
-                href={`/post/${post.slug}`}
-                className="group bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant/15 hover:shadow-lg transition-all duration-300"
-              >
-                {/* Thumbnail or accent bar */}
-                {post.thumbnail ? (
-                  <div className="aspect-video overflow-hidden">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      alt={post.title}
-                      src={post.thumbnail}
-                    />
-                  </div>
-                ) : (
-                  <div className="h-2 bg-gradient-to-r from-secondary to-primary-container"></div>
-                )}
-                <div className="p-8">
-                  <span className="text-secondary font-label text-xs font-bold tracking-widest uppercase mb-3 block">
-                    {post.category}
-                  </span>
-                  <h3 className="font-headline font-bold text-xl text-primary mb-3 leading-snug line-clamp-2 group-hover:text-secondary transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="text-on-surface-variant text-sm">
-                    {new Date(post.createdAt).toLocaleDateString('id-ID', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </p>
-                  <div className="mt-6 inline-flex items-center text-secondary font-bold text-sm gap-2 group-hover:gap-3 transition-all">
-                    Baca Selengkapnya
-                    <span className="material-symbols-outlined text-[18px]">east</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {latestPosts.map((post, index) => {
+              // Extract snippet from first text block
+              const firstTextBlock = post.blocks?.find((b: any) => b.type === 'text');
+              const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
+              const snippet = plainContent 
+                ? plainContent.substring(0, 160) + (plainContent.length > 160 ? '...' : '')
+                : '';
+
+              return (
+                <ScrollReveal key={post.id} delay={index * 0.1}>
+                  <Link
+                    href={`/post/${post.slug}`}
+                    className="group relative flex flex-col sm:flex-row bg-surface-container-lowest rounded-[32px] overflow-hidden border border-outline-variant/15 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-700 hover:-translate-y-2 h-full"
+                  >
+                    {/* Info Area (Left) */}
+                    <div className="flex-1 p-8 md:p-10 flex flex-col justify-between order-2 sm:order-1 relative z-10">
+                      <div>
+                        <div className="flex items-center gap-3 mb-6">
+                           <span className="w-2 h-2 rounded-full bg-secondary"></span>
+                           <span className="text-on-surface-variant font-label text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
+                             {post.category}
+                           </span>
+                        </div>
+                        <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-5 leading-[1.2] tracking-tight group-hover:text-secondary transition-colors duration-500">
+                          {post.title}
+                        </h3>
+                        {snippet && (
+                          <p className="text-on-surface-variant/70 text-base line-clamp-3 mb-8 font-body leading-relaxed group-hover:text-on-surface transition-colors duration-500">
+                            {snippet}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-auto pt-6 border-t border-outline-variant/10">
+                        <div className="flex items-center gap-2">
+                           <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">calendar_today</span>
+                           <p className="text-on-surface-variant/60 text-xs font-bold tracking-tight">
+                             {new Date(post.createdAt).toLocaleDateString('id-ID', {
+                               day: 'numeric',
+                               month: 'long',
+                               year: 'numeric',
+                             })}
+                           </p>
+                        </div>
+                        <div className="inline-flex items-center text-secondary font-black text-xs gap-2 group-hover:gap-4 transition-all duration-500 uppercase tracking-widest">
+                          BACA SELENGKAPNYA
+                          <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">east</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Thumbnail (Right) */}
+                    <div className="w-full sm:w-48 md:w-64 lg:w-56 xl:w-72 aspect-square sm:aspect-auto shrink-0 relative overflow-hidden order-1 sm:order-2">
+                      {post.thumbnail ? (
+                        <img
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out grayscale-20 group-hover:grayscale-0"
+                          alt={post.title}
+                          src={post.thumbnail}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-linear-to-br from-secondary/10 to-primary/15 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-secondary/30 text-6xl">menu_book</span>
+                        </div>
+                      )}
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent group-hover:opacity-0 transition-opacity duration-500"></div>
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              );
+            })}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <div className="inline-flex w-20 h-20 items-center justify-center rounded-3xl bg-surface-container mb-5 text-on-surface-variant/30">
-              <span className="material-symbols-outlined text-4xl">library_books</span>
+          <ScrollReveal>
+            <div className="text-center py-32 bg-surface-container-low rounded-[40px] border border-dashed border-outline-variant/30">
+              <div className="inline-flex w-24 h-24 items-center justify-center rounded-full bg-surface-container-highest mb-8 text-on-surface-variant/20">
+                <span className="material-symbols-outlined text-5xl">inventory_2</span>
+              </div>
+              <h3 className="text-2xl font-black text-primary mb-2 tracking-tight">Belum Ada Karya</h3>
+              <p className="text-on-surface-variant/60 max-w-sm mx-auto">Kami sedang mempersiapkan konten intelektual terbaik untuk Anda.</p>
             </div>
-            <p className="text-lg font-bold text-on-surface-variant">Belum ada karya yang dipublikasikan</p>
-            <p className="text-sm text-on-surface-variant/60 mt-1">Karya akan segera ditampilkan di sini.</p>
-          </div>
+          </ScrollReveal>
         )}
+
+        <ScrollReveal delay={0.4} className="mt-20 text-center">
+           <Link 
+             href="/katalog" 
+             className="inline-flex items-center gap-4 px-10 py-5 bg-primary text-on-primary rounded-full font-headline font-bold text-lg hover:bg-secondary transition-all duration-500 hover:shadow-xl hover:shadow-secondary/20 hover:-translate-y-1"
+           >
+             Lihat Semua Karya
+             <span className="material-symbols-outlined">grid_view</span>
+           </Link>
+        </ScrollReveal>
       </section>
-    </>
+
+      {/* Featured Quote / Philosophic Section */}
+      <section className="w-full py-32 bg-primary relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+        </div>
+        <div className="max-w-5xl mx-auto px-8 text-center relative z-10">
+          <ScrollReveal>
+            <span className="material-symbols-outlined text-secondary text-7xl mb-12 opacity-50 italic">format_quote</span>
+            <h2 className="font-headline font-black text-3xl md:text-5xl lg:text-6xl text-on-primary leading-tight tracking-tighter mb-12 italic">
+              &quot;Intelektualitas bukan sekadar menghafal fakta, melainkan kemampuan untuk menggerakkan perubahan melalui pemikiran yang kritis dan jernih.&quot;
+            </h2>
+            <div className="flex flex-col items-center">
+               <div className="h-1 w-20 bg-secondary mb-6"></div>
+               <p className="font-label text-on-primary/60 tracking-[0.4em] uppercase font-bold text-sm">Prinsip Dasar BRH</p>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+    </div>
   );
 }
