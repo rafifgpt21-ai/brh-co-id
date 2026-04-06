@@ -36,7 +36,7 @@ export default async function Home() {
               // Extract snippet from first text block
               const firstTextBlock = post.blocks?.find((b: any) => b.type === 'text');
               const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
-              const snippet = plainContent 
+              const snippet = plainContent
                 ? plainContent.substring(0, 160) + (plainContent.length > 160 ? '...' : '')
                 : '';
 
@@ -50,10 +50,10 @@ export default async function Home() {
                     <div className="flex-1 p-8 md:p-10 flex flex-col justify-between order-2 sm:order-1 relative z-10">
                       <div>
                         <div className="flex items-center gap-3 mb-6">
-                           <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                           <span className="text-on-surface-variant font-label text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
-                             {post.category}
-                           </span>
+                          <span className="w-2 h-2 rounded-full bg-secondary"></span>
+                          <span className="text-on-surface-variant font-label text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
+                            {post.category}
+                          </span>
                         </div>
                         <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-5 leading-[1.2] tracking-tight group-hover:text-secondary transition-colors duration-500">
                           {post.title}
@@ -64,20 +64,20 @@ export default async function Home() {
                           </p>
                         )}
                       </div>
-                      
+
                       <div className="flex items-center justify-between mt-auto pt-6 border-t border-outline-variant/10">
                         <div className="flex items-center gap-2">
-                           <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">calendar_today</span>
-                           <p className="text-on-surface-variant/60 text-xs font-bold tracking-tight">
-                             {new Date(post.createdAt).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                              })}
-                           </p>
+                          <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">calendar_today</span>
+                          <p className="text-on-surface-variant/60 text-xs font-bold tracking-tight">
+                            {new Date(post.createdAt).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
                         </div>
                         <div className="inline-flex items-center text-secondary font-black text-xs gap-2 group-hover:gap-4 transition-all duration-500 uppercase tracking-widest">
-                           BACA SELENGKAPNYA
+                          BACA SELENGKAPNYA
                           <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">east</span>
                         </div>
                       </div>
@@ -120,30 +120,30 @@ export default async function Home() {
         )}
 
         <ScrollReveal delay={0.4} className="mt-20 text-center">
-           <Link 
-             href="/explore" 
-             className="inline-flex items-center gap-4 px-10 py-5 bg-primary text-on-primary rounded-full font-headline font-bold text-lg hover:bg-secondary transition-all duration-500 hover:shadow-xl hover:shadow-secondary/20 hover:-translate-y-1"
-           >
-             Lihat Semua Karya
-             <span className="material-symbols-outlined">grid_view</span>
-           </Link>
+          <Link
+            href="/explore"
+            className="inline-flex items-center gap-4 px-10 py-5 bg-primary text-on-primary rounded-full font-headline font-bold text-lg hover:bg-secondary transition-all duration-500 hover:shadow-xl hover:shadow-secondary/20 hover:-translate-y-1"
+          >
+            Lihat Semua Karya
+            <span className="material-symbols-outlined">grid_view</span>
+          </Link>
         </ScrollReveal>
       </section>
 
       {/* Featured Quote / Philosophic Section */}
       <section className="w-full py-32 bg-primary relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
         </div>
         <div className="max-w-5xl mx-auto px-8 text-center relative z-10">
           <ScrollReveal>
             <span className="material-symbols-outlined text-secondary text-7xl mb-12 opacity-50 italic">format_quote</span>
-            <h2 className="font-headline font-black text-3xl md:text-5xl lg:text-6xl text-on-primary leading-tight tracking-tighter mb-12 italic">
-              &quot;Intelektualitas bukan sekadar menghafal fakta, melainkan kemampuan untuk menggerakkan perubahan melalui pemikiran yang kritis dan jernih.&quot;
+            <h2 className="font-headline font-black text-xl md:text-2xl lg:text-3xl text-on-primary leading-relaxed tracking-tight mb-12 italic">
+              &quot;Penghancur kehidupanmu itu (seringkali) bukan orang lain tapi dirimu sendiri, karena pikiranmu sendiri. Jangan biarkan pikiranmu menjadi monster penghancur dengan kebiasaan berpikir negatif. Sebaliknya, jadikan ia superhero dengan kebiasaan berpikir positif dalam melihat & menyikapi keadaan bahkan yang terlihat dan terasa negatif sekalipun. Pikiran baik itu energi penarik kenyataan baik, sebaliknya, pikiran buruk merupakan energi penarik kenyataan buruk di kehidupanmu.&quot;
             </h2>
             <div className="flex flex-col items-center">
-               <div className="h-1 w-20 bg-secondary mb-6"></div>
-               <p className="font-label text-on-primary/60 tracking-[0.4em] uppercase font-bold text-sm">Prinsip Dasar BRH</p>
+              <div className="h-1 w-20 bg-secondary mb-6"></div>
+              <p className="font-label text-on-primary/60 tracking-[0.4em] uppercase font-bold text-sm">-BRH-</p>
             </div>
           </ScrollReveal>
         </div>

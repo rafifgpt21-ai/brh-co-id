@@ -134,28 +134,45 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
           </div>
 
           {/* Category Quick Filters */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-wrap justify-center gap-3"
-          >
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryChange(category)}
-                className={`group relative px-6 py-2.5 rounded-full text-[10px] md:text-xs font-label font-black tracking-widest uppercase transition-all duration-500 overflow-hidden ${activeCategory === category
-                  ? "bg-secondary text-on-secondary shadow-lg shadow-secondary/20 scale-105"
-                  : "bg-surface-container-lowest text-on-surface-variant/60 border border-outline-variant/15 hover:border-secondary/40 hover:text-secondary"
-                  }`}
-              >
-                <span className="relative z-10">{category}</span>
-                {activeCategory !== category && (
-                  <span className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></span>
-                )}
-              </button>
-            ))}
-          </motion.div>
+          <div className="flex flex-wrap justify-center gap-3">
+            {categories.map((category) => {
+              const isActive = activeCategory === category;
+              return (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryChange(category)}
+                  className={`group relative px-6 py-2.5 rounded-full text-[10px] md:text-xs font-label font-black tracking-widest uppercase transition-all duration-300 overflow-hidden ${isActive
+                    ? "text-on-secondary shadow-lg shadow-secondary/20 scale-105"
+                    : "bg-surface-container-lowest text-on-surface-variant/60 border border-outline-variant/15 hover:border-secondary/40 hover:text-secondary"
+                    }`}
+                >
+                  {/* Active Background Pill (Animated) */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-pill"
+                      className="absolute inset-0 bg-secondary"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  
+                  {/* Loading Indicator for specific category */}
+                  {isActive && isPending && (
+                    <motion.span 
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary border-2 border-on-secondary rounded-full z-20"
+                    />
+                  )}
+
+                  <span className="relative z-10">{category}</span>
+                  
+                  {!isActive && (
+                    <span className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -182,19 +199,50 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
           )}
         </div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout" initial={false}>
           {filteredPosts.length > 0 ? (
             <div className="space-y-12">
               <motion.div
                 key={`${searchFromUrl}-${activeCategory}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.4 }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12"
+                variants={{
+                  hidden: { opacity: 0 },
+                  show: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.05,
+                      delayChildren: 0.1
+                    }
+                  },
+                  exit: {
+                    opacity: 0,
+                    transition: {
+                      staggerChildren: 0.03,
+                      staggerDirection: -1
+                    }
+                  }
+                }}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 transition-all duration-700 ${isPending ? 'opacity-40 grayscale-20 scale-[0.99] pointer-events-none' : 'opacity-100'}`}
               >
                 {visiblePosts.map((post) => (
-                  <ArchiveCard key={post.id} post={post} />
+                  <motion.div
+                    key={post.id}
+                    layout="position"
+                    variants={{
+                      hidden: { opacity: 0, y: 30, scale: 0.95 },
+                      show: { 
+                        opacity: 1, 
+                        y: 0, 
+                        scale: 1,
+                        transition: { type: "spring", bounce: 0.3 }
+                      },
+                      exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } }
+                    }}
+                  >
+                    <ArchiveCard post={post} />
+                  </motion.div>
                 ))}
               </motion.div>
 

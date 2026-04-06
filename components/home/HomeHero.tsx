@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useLenis } from 'lenis/react';
 import Link from 'next/link';
 import HeroSearch from '@/components/HeroSearch';
 import { ReactNode } from 'react';
@@ -27,6 +28,19 @@ export default function HomeHero() {
         ease: [0.16, 1, 0.3, 1] as any
       }
     },
+  };
+
+  const lenis = useLenis();
+
+  const handleScrollToArsip = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (lenis) {
+      lenis.scrollTo('#arsip', { 
+        offset: -80,
+        duration: 2,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+      });
+    }
   };
 
   return (
@@ -81,12 +95,15 @@ export default function HomeHero() {
 
       {/* Primary CTA */}
       <motion.div variants={item} className="mt-16">
-        <Link href="#arsip" className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-primary hover:text-secondary transition-all duration-500">
+        <button 
+          onClick={handleScrollToArsip}
+          className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-primary hover:text-secondary transition-all duration-500 cursor-pointer outline-none border-none bg-transparent"
+        >
           <span className="opacity-60 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">EKSPRESI INTELEKTUAL</span>
           <div className="w-12 h-12 rounded-full border border-primary/20 flex items-center justify-center group-hover:border-secondary transition-colors group-hover:bg-secondary/5">
              <span className="material-symbols-outlined group-hover:translate-y-1 transition-transform animate-bounce">south</span>
           </div>
-        </Link>
+        </button>
       </motion.div>
     </motion.section>
   );

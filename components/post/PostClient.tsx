@@ -55,7 +55,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
   };
 
   return (
-    <article className="min-h-screen bg-surface-container-lowest pb-20">
+    <article className="min-h-screen bg-background pb-20">
       {/* Reading Progress Bar */}
       <motion.div
         style={{ scaleX }}
@@ -75,11 +75,11 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                 priority
                 className="w-full h-full object-cover blur-md scale-110 opacity-80"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-surface-container-lowest via-surface-container-lowest/20 to-transparent" />
-              <div className="absolute inset-0 bg-linear-to-b from-surface-container-lowest/10 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-background via-background/20 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-b from-background/10 to-transparent" />
             </div>
           ) : (
-            <div className="h-full bg-surface-container-low flex flex-col items-center justify-center p-8 border-b border-outline-variant/10">
+            <div className="h-full bg-background flex flex-col items-center justify-center p-8 border-b border-outline-variant/10">
               <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-secondary-fixed blur-[120px] rounded-full"></div>
                 <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary-fixed blur-[120px] rounded-full"></div>
@@ -146,7 +146,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-0 md:px-6 py-4 md:py-10 relative">
-        <div className="bg-surface-container-lowest/50 backdrop-blur-3xl rounded-none md:rounded-[2.5rem] px-4 py-8 md:p-12 mb-20 shadow-none md:shadow-xl">
+        <div className="rounded-none px-4 py-8 md:px-0 md:py-12 mb-20 shadow-none">
           <div className="space-y-16">
             {post.blocks.map((block: any) => {
               if (block.type === "text") {

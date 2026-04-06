@@ -24,7 +24,7 @@ export default async function KaryaPage({
 
   return (
     <main className="min-h-screen pt-12">
-      <Suspense key={`${search}-${category}`} fallback={<KatalogSkeleton />}>
+      <Suspense fallback={<KatalogSkeleton />}>
         <KatalogClient initialPosts={posts} />
       </Suspense>
     </main>
