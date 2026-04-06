@@ -25,7 +25,7 @@ export const TiptapEditor = ({
     },
     editorProps: {
       attributes: {
-        class: 'tiptap-editor prose prose-slate prose-p:text-primary prose-headings:text-primary prose-strong:text-primary prose-blockquote:text-on-surface-variant max-w-none min-h-[150px] focus:outline-none p-4 font-body text-xl leading-relaxed text-primary',
+        class: 'tiptap-editor prose prose-slate prose-p:text-primary prose-headings:text-primary prose-strong:text-primary prose-blockquote:text-on-surface-variant max-w-none min-h-[150px] focus:outline-none p-4 font-body text-base sm:text-lg md:text-xl leading-relaxed text-primary',
       },
     },
   });

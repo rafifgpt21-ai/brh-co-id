@@ -23,6 +23,40 @@ type Block = {
 
 const CATEGORIES = ['Buku', 'Jurnal', 'Artikel', 'Opini'];
 
+const AutoResizingTextarea = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  className,
+  rows = 1 
+}: { 
+  value: string, 
+  onChange: (val: string) => void, 
+  placeholder: string, 
+  className: string,
+  rows?: number
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`${className} overflow-hidden resize-none min-h-[44px]`}
+      rows={rows}
+    />
+  );
+};
+
 export const PostEditor = ({ initialData }: { initialData?: any }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -34,6 +68,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
   );
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isMobileMetaOpen, setIsMobileMetaOpen] = useState(false);
+  const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [blockToDelete, setBlockToDelete] = useState<string | null>(null);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
@@ -398,110 +433,131 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Save Button */}
             <button
-              onClick={() => handleSave(initialData?.status || 'Published')}
+              onClick={() => {
+                setIsSaveMenuOpen(!isSaveMenuOpen);
+                setIsMobileMetaOpen(false);
+              }}
               disabled={isPending || isSavingInProgress}
-              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl transition-all shadow-sm active:scale-95 disabled:opacity-50 ${(isDirty || isSavingInProgress)
-                ? 'bg-secondary text-on-secondary shadow-secondary/20'
-                : 'bg-surface-container text-on-surface-variant border border-outline-variant/20'}`}
-              title="Simpan Perubahan"
+              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl transition-all shadow-sm active:scale-95 disabled:opacity-50 ${isSaveMenuOpen
+                ? 'bg-secondary text-on-secondary shadow-secondary/20 scale-95'
+                : (isDirty || isSavingInProgress) ? 'bg-secondary text-on-secondary shadow-secondary/20' : 'bg-surface-container text-on-surface-variant border border-outline-variant/20'}`}
+              title="Pilihan Simpan"
             >
               <span className="material-symbols-outlined text-[20px]">
-                {(isPending || isSavingInProgress) ? 'sync' : 'save'}
+                {isSaveMenuOpen ? 'close' : 'save'}
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wide hidden xs:inline">
-                {(isPending || isSavingInProgress) ? 'Saving...' : 'Simpan'}
+              <span className="text-[11px] font-bold uppercase tracking-wide">
+                {isSaveMenuOpen ? 'Batal' : 'Simpan'}
               </span>
             </button>
 
-            {/* Expand metadata toggle - Repurposed as "More" menu */}
+            {/* Edit metadata toggle */}
             <button
               type="button"
-              onClick={() => setIsMobileMetaOpen(!isMobileMetaOpen)}
-              className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all shrink-0 active:scale-95 ${isMobileMetaOpen
-                ? 'bg-primary text-on-primary shadow-lg'
+              onClick={() => {
+                setIsMobileMetaOpen(!isMobileMetaOpen);
+                setIsSaveMenuOpen(false);
+              }}
+              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl transition-all shrink-0 active:scale-95 ${isMobileMetaOpen
+                ? 'bg-primary text-on-primary shadow-lg scale-95'
                 : 'bg-surface-container border border-outline-variant/20 text-on-surface-variant'
                 }`}
-              title="Menu Lainnya"
+              title="Edit Metadata"
             >
-              <span className="material-symbols-outlined text-[22px] transition-transform duration-300" style={{ transform: isMobileMetaOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                {isMobileMetaOpen ? 'close' : 'more_vert'}
+              <span className="text-[11px] font-bold uppercase tracking-wide">
+                {isMobileMetaOpen ? 'Tutup' : 'Edit'}
+              </span>
+              <span className="material-symbols-outlined text-[20px]">
+                {isMobileMetaOpen ? 'close' : 'edit_note'}
               </span>
             </button>
           </div>
         </div>
 
-        {/* Expandable metadata drawer */}
+        {/* Save Options Drawer */}
+        {isSaveMenuOpen && (
+          <div className="bg-surface-container-lowest/98 backdrop-blur-xl border-b border-outline-variant/25 shadow-2xl px-4 py-5 animate-in slide-in-from-top duration-300">
+            <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-3 block">Simpan Postingan</label>
+            <div className="grid grid-cols-2 gap-3">
+              {initialData?.id ? (
+                <>
+                  <button
+                    onClick={() => { handleSave(initialData.status); setIsSaveMenuOpen(false); }}
+                    disabled={isSavingInProgress}
+                    className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">save</span>
+                    <span className="text-[10px] font-black uppercase mt-1">Update Post</span>
+                    <span className="text-[8px] opacity-70">Simpan perubahan aktif</span>
+                  </button>
+                  {initialData?.status === 'Published' ? (
+                    <button
+                      onClick={() => { handleSave('Draft'); setIsSaveMenuOpen(false); }}
+                      disabled={isSavingInProgress}
+                      className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant active:scale-95 transition-all text-center"
+                    >
+                      <span className="material-symbols-outlined text-[22px]">drafts</span>
+                      <span className="text-[10px] font-black uppercase mt-1">Ke Draft</span>
+                      <span className="text-[8px] opacity-70">Sembunyikan dari publik</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { handleSave('Published'); setIsSaveMenuOpen(false); }}
+                      disabled={isSavingInProgress}
+                      className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-primary text-on-primary shadow-lg active:scale-95 transition-all text-center"
+                    >
+                      <span className="material-symbols-outlined text-[22px]">publish</span>
+                      <span className="text-[10px] font-black uppercase mt-1">Terbitkan</span>
+                      <span className="text-[8px] opacity-70">Tampilkan di blog</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowDeleteConfirm(true); setIsSaveMenuOpen(false); }}
+                    disabled={isSavingInProgress}
+                    className="col-span-2 flex items-center justify-center gap-2 h-11 rounded-2xl bg-error/10 border border-error/20 text-error active:scale-95 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                    <span className="text-[10px] font-black uppercase">Hapus Postingan Permanen</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { handleSave('Draft'); setIsSaveMenuOpen(false); }}
+                    disabled={isSavingInProgress}
+                    className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant active:scale-95 transition-all text-center"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">save</span>
+                    <span className="text-[10px] font-black uppercase mt-1">Simpan Draft</span>
+                    <span className="text-[8px] opacity-70">Belum dipublikasikan</span>
+                  </button>
+                  <button
+                    onClick={() => { handleSave('Published'); setIsSaveMenuOpen(false); }}
+                    disabled={isSavingInProgress}
+                    className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">publish</span>
+                    <span className="text-[10px] font-black uppercase mt-1">Publish Sekarang</span>
+                    <span className="text-[8px] opacity-70">Terbitkan ke publik</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Expandable metadata drawer - REPURPOSED AS EDIT DRAWER */}
         {isMobileMetaOpen && (
           <div className="bg-surface-container-lowest/98 backdrop-blur-xl border-b border-outline-variant/25 shadow-2xl px-4 py-5 flex flex-col gap-5 animate-in slide-in-from-top duration-300">
 
-            {/* Quick Actions in Drawer */}
-            <div className="flex flex-col gap-3">
-              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-0.5 block">Tindakan</label>
-              <div className="grid grid-cols-2 gap-3">
-                {initialData?.id ? (
-                  <>
-                    {/* Status Toggle */}
-                    {initialData?.status === 'Published' ? (
-                      <button
-                        onClick={() => handleSave('Draft')}
-                        disabled={isSavingInProgress}
-                        className="flex items-center justify-center gap-2 px-4 h-12 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant font-bold text-xs"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">drafts</span>
-                        KE DRAFT
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSave('Published')}
-                        disabled={isSavingInProgress}
-                        className="flex items-center justify-center gap-2 px-4 h-12 rounded-2xl bg-secondary/10 border border-secondary/20 text-secondary font-bold text-xs"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">publish</span>
-                        TERBITKAN
-                      </button>
-                    )}
-                    {/* Delete button */}
-                    <button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      disabled={isSavingInProgress}
-                      className="flex items-center justify-center gap-2 px-4 h-12 rounded-2xl bg-error/10 border border-error/20 text-error font-bold text-xs"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">delete</span>
-                      HAPUS POS
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleSave('Draft')}
-                      disabled={isSavingInProgress}
-                      className="flex items-center justify-center gap-2 px-4 h-12 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant font-bold text-xs"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">save</span>
-                      SIMPAN DRAFT
-                    </button>
-                    <button
-                      onClick={() => handleSave('Published')}
-                      disabled={isSavingInProgress}
-                      className="flex items-center justify-center gap-2 px-4 h-12 rounded-2xl bg-secondary text-on-secondary font-bold text-xs"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">publish</span>
-                      PUBLISH
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="h-px bg-outline-variant/20 w-full" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Title input */}
               <div>
                 <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Judul Postingan</label>
-                <input
+                <AutoResizingTextarea
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={setTitle}
                   placeholder="Tulis judul…"
                   className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-2xl px-4 py-3 text-primary font-headline font-bold text-sm focus:outline-none focus:border-secondary/50 transition-all placeholder:text-on-surface-variant/30"
                 />
@@ -722,10 +778,9 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
               <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-1.5 block">
                 Judul
               </label>
-              <input
-                id="title"
+              <AutoResizingTextarea
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={setTitle}
                 placeholder="Tulis judul…"
                 className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-xl px-3.5 py-2.5 text-primary font-headline font-bold text-sm focus:outline-none focus:border-secondary/50 transition-all placeholder:text-on-surface-variant/30"
               />

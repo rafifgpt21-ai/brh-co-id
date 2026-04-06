@@ -64,21 +64,6 @@ export default function HomeHero() {
         ></motion.div>
       </div>
 
-      {/* Impact Chips */}
-      <motion.div variants={item} className="flex flex-wrap justify-center gap-4 mb-12">
-        <div className="bg-surface-container-lowest/80 backdrop-blur-md px-5 py-2 rounded-full text-xs font-label font-bold tracking-widest uppercase text-secondary flex items-center gap-2 shadow-sm border border-outline-variant/10">
-          <span className="material-symbols-outlined text-[18px]">menu_book</span>
-          10+ Buku
-        </div>
-        <div className="bg-surface-container-lowest/80 backdrop-blur-md px-5 py-2 rounded-full text-xs font-label font-bold tracking-widest uppercase text-secondary flex items-center gap-2 shadow-sm border border-outline-variant/10">
-          <span className="material-symbols-outlined text-[18px]">description</span>
-          50+ Jurnal Ilmiah
-        </div>
-        <div className="bg-surface-container-lowest/80 backdrop-blur-md px-5 py-2 rounded-full text-xs font-label font-bold tracking-widest uppercase text-secondary flex items-center gap-2 shadow-sm border border-outline-variant/10">
-          <span className="material-symbols-outlined text-[18px]">verified</span>
-          Pendiri Jagat &apos;Arsy
-        </div>
-      </motion.div>
 
       {/* Main Typography */}
       <motion.h1 

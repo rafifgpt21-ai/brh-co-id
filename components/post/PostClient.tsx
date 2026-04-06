@@ -145,8 +145,8 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 py-10 relative">
-        <div className="bg-surface-container-lowest/50 backdrop-blur-3xl rounded-[2.5rem] p-4 md:p-8 mb-20">
+      <div className="max-w-4xl mx-auto px-0 md:px-6 py-4 md:py-10 relative">
+        <div className="bg-surface-container-lowest/50 backdrop-blur-3xl rounded-none md:rounded-[2.5rem] px-4 py-8 md:p-12 mb-20 shadow-none md:shadow-xl">
           <div className="space-y-16">
             {post.blocks.map((block: any) => {
               if (block.type === "text") {
@@ -157,10 +157,10 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="prose prose-lg md:prose-xl max-w-none text-on-surface leading-[1.8] font-serif
+                    className="prose prose-base md:prose-lg max-w-none text-on-surface leading-[1.6] md:leading-[1.7] font-body tracking-tight md:tracking-normal
                       prose-headings:font-headline prose-headings:text-primary prose-headings:tracking-tight
-                      prose-h2:text-3xl prose-h2:mt-16 prose-h2:mb-8
-                      prose-p:mb-8 prose-p:text-on-surface/90
+                      prose-h2:text-xl md:text-2xl prose-h2:mt-12 prose-h2:mb-6
+                      prose-p:mb-6 prose-p:text-on-surface/90
                       prose-a:text-secondary prose-a:font-bold prose-a:no-underline hover:prose-a:underline
                       prose-strong:text-primary prose-strong:font-bold
                       prose-blockquote:border-l-4 prose-blockquote:border-secondary/30 prose-blockquote:bg-surface-container-low/30 prose-blockquote:py-4 prose-blockquote:px-8 prose-blockquote:rounded-r-2xl prose-blockquote:italic

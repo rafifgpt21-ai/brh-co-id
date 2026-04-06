@@ -5,9 +5,6 @@ import { getPosts } from '@/lib/actions/post';
 import HomeHero from '@/components/home/HomeHero';
 
 // Dynamically import components that are below the fold
-const ImpactMetrics = dynamic(() => import('@/components/home/ImpactMetrics'), {
-  ssr: true,
-});
 
 const ScrollReveal = dynamic(() => import('@/components/home/ScrollReveal'), {
   ssr: true,
@@ -22,8 +19,6 @@ export default async function Home() {
       {/* Hero Section */}
       <HomeHero />
 
-      {/* Impact Section */}
-      <ImpactMetrics />
 
       {/* Content Section */}
       <section id="arsip" className="w-full px-6 md:px-12 lg:px-24 mx-auto py-32 bg-surface">

@@ -18,6 +18,9 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "BRH Intellectual Web Platform",
   description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({

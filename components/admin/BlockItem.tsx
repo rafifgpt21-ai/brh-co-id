@@ -8,6 +8,42 @@ const TiptapEditor = dynamic(() => import('./TiptapEditor').then(mod => mod.Tipt
   loading: () => <div className="h-[200px] w-full animate-pulse bg-surface-container-low rounded-xl border border-outline-variant/20 mt-2" />
 });
 
+import { useRef, useEffect } from 'react';
+
+const AutoResizingTextarea = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  className,
+  rows = 1 
+}: { 
+  value: string, 
+  onChange: (val: string) => void, 
+  placeholder: string, 
+  className: string,
+  rows?: number
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`${className} overflow-hidden resize-none`}
+      rows={rows}
+    />
+  );
+};
+
 type Block = {
   id: string;
   type: 'text' | 'image' | 'video' | 'pdf' | 'link';
@@ -52,7 +88,7 @@ export const BlockItem = memo(({
   saveStatus
 }: BlockItemProps) => {
   return (
-    <div className="group relative bg-surface-container-lowest/90 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-outline-variant/15 hover:border-outline-variant/30 hover:shadow-md transition-all">
+    <div className="group relative bg-surface-container-lowest/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/15 hover:border-outline-variant/30 hover:shadow-md transition-all">
       {/* Block control row */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-bold text-secondary uppercase tracking-[0.2em] flex items-center gap-1.5">
@@ -67,7 +103,7 @@ export const BlockItem = memo(({
         </span>
 
         {/* Action pills */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-surface-container-lowest border border-outline-variant/20 shadow-sm rounded-full px-1 py-1 z-10 pointer-events-auto">
+        <div className="flex items-center gap-1 opacity-100 transition-opacity duration-200 bg-surface-container-lowest border border-outline-variant/20 shadow-sm rounded-full px-1 py-1 z-10 pointer-events-auto">
           <button
             type="button"
             onClick={() => onMove(index, 'up')}
@@ -129,11 +165,11 @@ export const BlockItem = memo(({
       {/* Image / PDF block */}
       {(block.type === 'image' || block.type === 'pdf') && (
         <div className="space-y-4">
-          <input
+          <AutoResizingTextarea
             placeholder="Judul Konten (Opsional)..."
             value={block.title || ''}
-            onChange={(e) => onUpdate(block.id, { title: e.target.value })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold focus:outline-none focus:border-secondary transition-colors"
+            onChange={(val) => onUpdate(block.id, { title: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
 
           {block.url || preview ? (
@@ -188,11 +224,10 @@ export const BlockItem = memo(({
             </div>
           )}
 
-          <textarea
+          <AutoResizingTextarea
             placeholder="Keterangan atau Sumber (Opsional)..."
             value={block.caption || ''}
-            onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
-            rows={2}
+            onChange={(val) => onUpdate(block.id, { caption: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
@@ -201,26 +236,25 @@ export const BlockItem = memo(({
       {/* Video block */}
       {block.type === 'video' && (
         <div className="space-y-4">
-          <input
+          <AutoResizingTextarea
             placeholder="Judul Video (Opsional)..."
             value={block.title || ''}
-            onChange={(e) => onUpdate(block.id, { title: e.target.value })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold focus:outline-none focus:border-secondary transition-colors"
+            onChange={(val) => onUpdate(block.id, { title: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
           <div className="relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">link</span>
-            <input
+            <AutoResizingTextarea
               placeholder="Masukkan URL YouTube..."
               value={block.url || ''}
-              onChange={(e) => onUpdate(block.id, { url: e.target.value })}
-              className="w-full bg-surface-container-lowest/50 border border-outline-variant/50 rounded-xl py-3.5 pl-12 pr-4 text-primary focus:outline-none focus:border-secondary transition-colors"
+              onChange={(val) => onUpdate(block.id, { url: val })}
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/50 rounded-xl py-3.5 pl-12 pr-4 text-primary text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
             />
           </div>
-          <textarea
+          <AutoResizingTextarea
             placeholder="Keterangan Video (Opsional)..."
             value={block.caption || ''}
-            onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
-            rows={2}
+            onChange={(val) => onUpdate(block.id, { caption: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
@@ -231,27 +265,26 @@ export const BlockItem = memo(({
         <div className="space-y-4">
           <div className="relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">title</span>
-            <input
+            <AutoResizingTextarea
               placeholder="Judul Tautan / Sumber (misal: Dokumentasi Resmi)..."
               value={block.title || ''}
-              onChange={(e) => onUpdate(block.id, { title: e.target.value })}
-              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold focus:outline-none focus:border-secondary transition-colors"
+              onChange={(val) => onUpdate(block.id, { title: val })}
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
             />
           </div>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">link</span>
-            <input
+            <AutoResizingTextarea
               placeholder="https://example.com/sumber-data"
               value={block.url || ''}
-              onChange={(e) => onUpdate(block.id, { url: e.target.value })}
-              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary focus:outline-none focus:border-secondary transition-colors"
+              onChange={(val) => onUpdate(block.id, { url: val })}
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
             />
           </div>
-          <textarea
+          <AutoResizingTextarea
             placeholder="Keterangan singkat tentang sumber ini (Opsional)..."
             value={block.caption || ''}
-            onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
-            rows={2}
+            onChange={(val) => onUpdate(block.id, { caption: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>

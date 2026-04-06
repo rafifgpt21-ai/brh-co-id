@@ -126,11 +126,9 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="bg-primary text-on-primary hover:bg-secondary px-5 md:px-10 py-4 rounded-4xl font-headline font-black text-sm uppercase tracking-widest transition-all duration-500 shadow-lg shadow-primary/20 hover:shadow-secondary/30 active:scale-95 flex items-center gap-3 disabled:opacity-50"
+                className="bg-primary text-on-primary hover:bg-secondary p-4 rounded-full font-headline font-black transition-all duration-500 shadow-lg shadow-primary/20 hover:shadow-secondary/30 active:scale-95 flex items-center justify-center shrink-0 disabled:opacity-50"
               >
-                <span className="hidden md:inline">Cari</span>
-                <span className="material-symbols-outlined text-[22px] md:hidden">search</span>
-                <span className="material-symbols-outlined text-[18px] hidden md:inline">east</span>
+                <span className="material-symbols-outlined text-[24px]">search</span>
               </button>
             </form>
           </div>
