@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "seed": "npx tsx scripts/seed-admin.ts",
@@ -34,10 +34,10 @@
     "react-dom": "19.2.4",
     "react-pdf": "^10.4.1",
     "uploadthing": "^7.7.4",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@prisma/client": "~6.19.0"
   },
   "devDependencies": {
-    "@prisma/client": "~6.19.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.11",
