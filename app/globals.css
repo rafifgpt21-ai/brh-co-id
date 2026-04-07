@@ -2,6 +2,7 @@
 @plugin "@tailwindcss/typography";
 
 @theme inline {
+  --breakpoint-xs: 380px;
   --color-on-primary-container: #7c839b;
   --color-background: #fcf8fa;
   --color-surface-container-high: #eae7e9;
@@ -154,4 +155,13 @@ html.lenis body {
 
 .pulse-green {
   animation: pulse-green 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

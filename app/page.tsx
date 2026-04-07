@@ -130,6 +130,42 @@ export default async function Home() {
         </ScrollReveal>
       </section>
 
+      {/* Biography Section */}
+      <section className="w-full py-24 bg-surface-container-lowest">
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <ScrollReveal className="relative flex justify-center lg:justify-end">
+              <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-[48px] overflow-hidden rotate-3 hover:rotate-0 transition-transform duration-700 shadow-2xl">
+                <Image
+                  src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
+                  alt="Dr. Budi Rahman Hakim (BRH)"
+                  fill
+                  className="object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                />
+              </div>
+              <div className="absolute -z-10 -bottom-6 -right-6 w-full h-full bg-secondary/10 rounded-[48px] rotate-6"></div>
+            </ScrollReveal>
+            
+            <ScrollReveal delay={0.2}>
+              <span className="font-label text-xs font-bold tracking-[0.3em] text-secondary uppercase block mb-6">MENGABDI UNTUK PERADABAN</span>
+              <h2 className="font-headline font-black text-4xl md:text-5xl text-primary mb-8 leading-tight tracking-tight">
+                Dr. Budi Rahman <span className="text-secondary italic">Hakim</span> (BRH)
+              </h2>
+              <p className="text-on-surface-variant text-lg font-body leading-relaxed mb-10 max-w-xl">
+                Seorang akademisi (Ph.D. dari Tilburg University, Belanda), penulis produktif, dan pembina spiritual yang mendedikasikan hidupnya untuk integrasi kearifan Tasawuf dengan kemajuan peradaban sosial modern. Pendiri Pesantren Peradaban Dunia JAGAT &apos;ARSY.
+              </p>
+              <Link
+                href="/biografi"
+                className="inline-flex items-center gap-3 font-headline font-bold text-primary hover:text-secondary group transition-colors"
+              >
+                PELAJARI BIOGRAFI SELENGKAPNYA
+                <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">east</span>
+              </Link>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Quote / Philosophic Section */}
       <section className="w-full py-32 bg-primary relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">

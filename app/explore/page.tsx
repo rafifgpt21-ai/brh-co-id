@@ -16,14 +16,14 @@ export default async function KaryaPage({
   searchParams: Promise<{ search?: string; category?: string }>;
 }) {
   const { search, category } = await searchParams;
-  const posts = await getPosts({ 
+  const posts = await getPosts({
     status: 'Published',
     search: search || undefined,
     category: category && category !== 'Semua' ? category : undefined
   });
 
   return (
-    <main className="min-h-screen pt-12">
+    <main className="min-h-screen pt-0 md:pt-12">
       <Suspense fallback={<KatalogSkeleton />}>
         <KatalogClient initialPosts={posts} />
       </Suspense>

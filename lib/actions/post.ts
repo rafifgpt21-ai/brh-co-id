@@ -196,29 +196,40 @@ export async function deletePost(id: string) {
 
   try {
     const post = await prisma.post.findUnique({ where: { id } });
-    if (post) {
-      const filesToDelete: string[] = [];
-      if (post.thumbnail) filesToDelete.push(post.thumbnail);
-      
-      // Clean up blocks
+    if (!post) {
+      return { success: false, error: "Post tidak ditemukan" };
+    }
+
+    const filesToDelete: string[] = [];
+    if (post.thumbnail) filesToDelete.push(post.thumbnail);
+    
+    // Clean up blocks
+    if (Array.isArray(post.blocks)) {
       (post.blocks as PostBlock[]).forEach((block) => {
         if (block.url) filesToDelete.push(block.url);
       });
+    }
 
-      if (filesToDelete.length > 0) {
+    if (filesToDelete.length > 0) {
+      try {
         await deleteFilesFromStorage(filesToDelete);
+      } catch (fileError) {
+        console.error("Error deleting files during post deletion:", fileError);
+        // We continue deleting the post record even if file deletion fails
       }
     }
 
     await prisma.post.delete({ where: { id } });
+    
     revalidatePath("/admin");
     revalidatePath("/");
     revalidateTag("posts", "max");
     revalidateTag(`post-${id}`, "max");
+    
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error deleting post:", error);
-    return { success: false, error: "Gagal menghapus postingan" };
+    return { success: false, error: `Gagal menghapus postingan: ${error?.message || "Kesalahan tidak dikenal"}` };
   }
 }
 

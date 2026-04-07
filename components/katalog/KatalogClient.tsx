@@ -72,7 +72,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
   return (
     <div className="w-full">
       {/* Search & Filter Section */}
-      <section className="relative py-16 md:py-24 mb-12">
+      <section className="relative pt-0 pb-4 md:py-24 mb-4 md:mb-12">
         {/* Decorative Background Elements */}
         <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-secondary-fixed blur-[140px] rounded-full animate-pulse-slow"></div>
@@ -82,31 +82,31 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
         <div className="max-w-4xl mx-auto px-6">
           {/* Header text */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col md:items-center text-left md:text-center mb-4 md:mb-16"
           >
-            <span className="font-label text-xs font-black tracking-[0.3em] text-secondary uppercase block mb-4">Eksplorasi Intelektual</span>
-            <h1 className="font-headline font-black text-5xl md:text-7xl text-primary mb-6 tracking-tight">Katalog Karya</h1>
-            <p className="text-on-surface-variant/70 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+            <span className="font-label text-[10px] md:text-xs font-black tracking-[0.3em] text-secondary uppercase hidden md:block mb-4">Eksplorasi Intelektual</span>
+            <h1 className="font-headline font-black text-2xl md:text-7xl text-primary mb-1 md:mb-6 tracking-tight">Katalog Karya</h1>
+            <p className="text-on-surface-variant/70 text-xs md:text-xl max-w-2xl mx-auto leading-relaxed hidden md:block">
               Telusuri rekaman pemikiran, hasil riset mendalam, dan opini kritis untuk memperluas cakrawala intelektual Anda.
             </p>
           </motion.div>
 
           {/* Search Bar UI */}
-          <div className="relative max-w-3xl mx-auto mb-12 group">
+          <div className="relative max-w-3xl mx-auto mb-4 md:mb-12 group md:px-0">
             <div className="absolute -inset-1 bg-linear-to-r from-secondary/20 via-primary/10 to-secondary/20 rounded-[2.5rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-500"></div>
 
             <form
               onSubmit={handleSearchCommit}
-              className="relative bg-surface-container-low/90 backdrop-blur-2xl rounded-[2.5rem] p-2 flex items-center gap-2 border border-outline-variant/20 shadow-xl shadow-primary/5 group-focus-within:border-secondary/30 transition-all duration-500"
+              className="relative bg-surface-container-low/90 backdrop-blur-2xl rounded-xl md:rounded-[2.5rem] p-1 md:p-2 flex items-center gap-2 border border-outline-variant/20 shadow-xl shadow-primary/5 group-focus-within:border-secondary/30 transition-all duration-500"
             >
               <div className="flex-1 flex items-center gap-4 pl-6">
                 <span className={`material-symbols-outlined transition-colors duration-500 ${isPending ? 'text-secondary animate-spin scale-110' : 'text-on-surface-variant/40 group-focus-within:text-secondary'}`}>
                   {isPending ? 'sync' : 'search'}
                 </span>
                 <input
-                  className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-base md:text-lg text-primary placeholder:text-on-surface-variant/40"
+                  className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-sm md:text-lg text-primary placeholder:text-on-surface-variant/40"
                   placeholder="Cari judul, topik, atau kata kunci..."
                   type="text"
                   value={inputValue}
@@ -126,23 +126,23 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="bg-primary text-on-primary hover:bg-secondary p-4 rounded-full font-headline font-black transition-all duration-500 shadow-lg shadow-primary/20 hover:shadow-secondary/30 active:scale-95 flex items-center justify-center shrink-0 disabled:opacity-50"
+                className="bg-primary text-on-primary hover:bg-secondary p-2.5 md:p-4 rounded-lg md:rounded-full font-headline font-black transition-all duration-500 shadow-lg shadow-primary/20 hover:shadow-secondary/30 active:scale-95 flex items-center justify-center shrink-0 disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[24px]">search</span>
+                <span className="material-symbols-outlined text-[18px] md:text-[24px]">search</span>
               </button>
             </form>
           </div>
 
-          {/* Category Quick Filters */}
-          <div className="flex flex-wrap justify-center gap-3">
+          {/* Category Quick Filters - Scrollable on mobile */}
+          <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-2 overflow-x-auto pb-4 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
             {categories.map((category) => {
               const isActive = activeCategory === category;
               return (
                 <button
                   key={category}
                   onClick={() => handleCategoryChange(category)}
-                  className={`group relative px-6 py-2.5 rounded-full text-[10px] md:text-xs font-label font-black tracking-widest uppercase transition-all duration-300 overflow-hidden ${isActive
-                    ? "text-on-secondary shadow-lg shadow-secondary/20 scale-105"
+                  className={`group relative px-4 md:px-6 py-1.5 md:py-2.5 rounded-full text-[10px] md:text-xs font-label font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap overflow-hidden shrink-0 ${isActive
+                    ? "text-on-secondary shadow-sm md:shadow-lg shadow-secondary/20 scale-105"
                     : "bg-surface-container-lowest text-on-surface-variant/60 border border-outline-variant/15 hover:border-secondary/40 hover:text-secondary"
                     }`}
                 >
@@ -177,7 +177,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
       </section>
 
       {/* Grid Section */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 lg:px-24 mb-32">
+      <section className="max-w-7xl mx-auto px-4 md:px-12 lg:px-24 mb-32">
         <div className="flex items-center justify-between mb-12 px-2">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
@@ -224,7 +224,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                 initial="hidden"
                 animate="show"
                 exit="exit"
-                className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 transition-all duration-700 ${isPending ? 'opacity-40 grayscale-20 scale-[0.99] pointer-events-none' : 'opacity-100'}`}
+                className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8 lg:gap-12 transition-all duration-700 ${isPending ? 'opacity-40 grayscale-20 scale-[0.99] pointer-events-none' : 'opacity-100'}`}
               >
                 {visiblePosts.map((post) => (
                   <motion.div

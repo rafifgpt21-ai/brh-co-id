@@ -89,8 +89,19 @@ export default function HomeHero() {
       </motion.h1>
 
       {/* Search Bar Area */}
-      <motion.div variants={item} className="w-full max-w-2xl px-4">
+      <motion.div variants={item} className="w-full max-w-2xl px-4 mt-8 md:mt-12">
         <HeroSearch />
+        
+        {/* Mobile-only Explore Shortcut */}
+        <div className="md:hidden mt-6 flex justify-center">
+          <Link 
+            href="/explore" 
+            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary/10 text-secondary rounded-full font-headline font-bold text-sm border border-secondary/20 active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">explore</span>
+            Jelajahi Semua Karya
+          </Link>
+        </div>
       </motion.div>
 
       {/* Primary CTA */}
