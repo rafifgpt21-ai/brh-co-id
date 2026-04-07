@@ -2,9 +2,9 @@
 
 import { ReactLenis, useLenis } from "lenis/react";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 
-function LenisRoot({ children }: { children: React.ReactNode }) {
+function LenisScrollHandler() {
   const pathname = usePathname();
   const lenis = useLenis();
 
@@ -20,15 +20,16 @@ function LenisRoot({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, lenis]);
 
-  return <>{children}</>;
+  return null;
 }
 
 export function LenisProvider({ children }: { children: React.ReactNode }) {
   return (
     <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
-      <LenisRoot>
-        {children}
-      </LenisRoot>
+      <Suspense fallback={null}>
+        <LenisScrollHandler />
+      </Suspense>
+      {children}
     </ReactLenis>
   );
 }
