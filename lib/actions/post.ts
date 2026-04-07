@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag, cacheTag, cacheLife } from "next/cache";
 import { deleteFilesFromStorage } from "@/lib/uploadthing-server";
 import { z } from "zod";
 
@@ -128,8 +128,8 @@ export async function savePost(data: PostFormData) {
       revalidatePath("/admin");
       revalidatePath(`/post/${post.slug}`);
       revalidatePath("/");
-      revalidateTag("posts", "max");
-      revalidateTag(`post-${post.id}`, "max");
+      updateTag("posts");
+      updateTag(`post-${post.id}`);
       return { success: true, post };
     } else {
       // CREATE new post
@@ -178,7 +178,7 @@ export async function savePost(data: PostFormData) {
       });
       revalidatePath("/admin");
       revalidatePath("/");
-      revalidateTag("posts", "max");
+      updateTag("posts");
       return { success: true, post };
     }
   } catch (error: unknown) {
@@ -223,8 +223,8 @@ export async function deletePost(id: string) {
     
     revalidatePath("/admin");
     revalidatePath("/");
-    revalidateTag("posts", "max");
-    revalidateTag(`post-${id}`, "max");
+    updateTag("posts");
+    updateTag(`post-${id}`);
     
     return { success: true };
   } catch (error: any) {
@@ -233,41 +233,6 @@ export async function deletePost(id: string) {
   }
 }
 
-const getPostsCached = unstable_cache(
-  async (options?: {
-    search?: string;
-    status?: string;
-    category?: string;
-  }, isAdmin?: boolean) => {
-    try {
-      const where: Record<string, unknown> = {};
-
-      if (!isAdmin) {
-        where.status = "Published";
-      } else if (options?.status) {
-        where.status = options.status;
-      }
-
-      if (options?.search) {
-        where.title = { contains: options.search, mode: "insensitive" };
-      }
-      if (options?.category) {
-        where.category = options.category;
-      }
-
-      return await prisma.post.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-      });
-    } catch (error: unknown) {
-      console.error("Error fetching posts:", error);
-      return [];
-    }
-  },
-  ["get-posts"],
-  { tags: ["posts"], revalidate: 3600 }
-);
-
 export async function getPosts(options?: {
   search?: string;
   status?: string;
@@ -275,53 +240,88 @@ export async function getPosts(options?: {
 }) {
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  return getPostsCached(options, isAdmin);
+
+  return getPostsInternal(options, isAdmin);
+}
+
+// Internal function to use cache
+async function getPostsInternal(options?: {
+  search?: string;
+  status?: string;
+  category?: string;
+}, isAdmin?: boolean) {
+  'use cache';
+  cacheTag("posts");
+  cacheLife("minutes");
+
+  try {
+    const where: Record<string, unknown> = {};
+
+    if (!isAdmin) {
+      where.status = "Published";
+    } else if (options?.status) {
+      where.status = options.status;
+    }
+
+    if (options?.search) {
+      where.title = { contains: options.search, mode: "insensitive" };
+    }
+    if (options?.category) {
+      where.category = options.category;
+    }
+
+    return await prisma.post.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching posts:", error);
+    return [];
+  }
 }
 
 // GET single post by id
-const getPostByIdCached = unstable_cache(
-  async (id: string, isAdmin: boolean) => {
-    try {
-      const post = await prisma.post.findUnique({ where: { id } });
-      if (post && post.status !== "Published" && !isAdmin) {
-        return null;
-      }
-      return post;
-    } catch {
-      return null;
-    }
-  },
-  ["post-by-id"],
-  { tags: ["posts"] }
-);
-
 export async function getPostById(id: string) {
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  return getPostByIdCached(id, isAdmin);
+  return getPostByIdInternal(id, isAdmin);
+}
+
+async function getPostByIdInternal(id: string, isAdmin: boolean) {
+  'use cache';
+  cacheTag("posts", `post-${id}`);
+  
+  try {
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (post && post.status !== "Published" && !isAdmin) {
+      return null;
+    }
+    return post;
+  } catch {
+    return null;
+  }
 }
 
 // GET single post by slug (for public view)
-const getPostBySlugCached = unstable_cache(
-  async (slug: string, isAdmin: boolean) => {
-    try {
-      const post = await prisma.post.findUnique({ where: { slug } });
-      if (post && post.status !== "Published" && !isAdmin) {
-        return null;
-      }
-      return post;
-    } catch {
-      return null;
-    }
-  },
-  ["post-by-slug"],
-  { tags: ["posts"] }
-);
-
 export async function getPostBySlug(slug: string) {
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  return getPostBySlugCached(slug, isAdmin);
+  return getPostBySlugInternal(slug, isAdmin);
+}
+
+async function getPostBySlugInternal(slug: string, isAdmin: boolean) {
+  'use cache';
+  cacheTag("posts", `post-slug-${slug}`);
+
+  try {
+    const post = await prisma.post.findUnique({ where: { slug } });
+    if (post && post.status !== "Published" && !isAdmin) {
+      return null;
+    }
+    return post;
+  } catch {
+    return null;
+  }
 }
 
 // Check if a file URL (PDF/Image) is authorized to be viewed

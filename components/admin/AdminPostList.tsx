@@ -68,7 +68,7 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
 
     startTransition(async () => {
       const result = await deletePost(id);
-      if (result.success) {
+      if (result.success || result.error === 'Post tidak ditemukan') {
         setPosts(posts.filter((p) => p.id !== id));
       } else {
         alert(result.error || 'Gagal menghapus');

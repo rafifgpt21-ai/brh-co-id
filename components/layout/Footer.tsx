@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { CurrentYear } from '@/components/common/CurrentYear';
+import { Suspense } from 'react';
 
 export const Footer = () => {
   return (
@@ -21,7 +23,7 @@ export const Footer = () => {
       </div>
       <div className="w-full px-6 md:px-12 lg:px-24 mt-16 pt-8 border-t border-[#fcf8fa]/10 text-center">
         <p className="font-label text-[10px] uppercase tracking-[0.2em] text-[#fcf8fa]/30">
-          &copy; {new Date().getFullYear()} BRH Intellectual Platform. Curated for the Academic Mind.
+          &copy; <Suspense fallback={<span>2026</span>}><CurrentYear /></Suspense> BRH Intellectual Platform. Curated for the Academic Mind.
         </p>
       </div>
     </footer>

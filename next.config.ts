@@ -5,6 +5,7 @@ const hostWithPort = appUrl.replace(/^https?:\/\//, ""); // Ambil domain/IP + po
 const hostOnly = hostWithPort.split(":")[0]; // Ambil domain/IP-nya saja tanpa port
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   /* config options here */
   images: {
     remotePatterns: [

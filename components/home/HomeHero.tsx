@@ -20,8 +20,8 @@ export default function HomeHero() {
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { 
-      opacity: 1, 
+    show: {
+      opacity: 1,
       y: 0,
       transition: {
         duration: 0.8,
@@ -35,7 +35,7 @@ export default function HomeHero() {
   const handleScrollToArsip = (e: React.MouseEvent) => {
     e.preventDefault();
     if (lenis) {
-      lenis.scrollTo('#arsip', { 
+      lenis.scrollTo('#arsip', {
         offset: -80,
         duration: 2,
         easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
@@ -44,7 +44,7 @@ export default function HomeHero() {
   };
 
   return (
-    <motion.section 
+    <motion.section
       variants={container}
       initial="hidden"
       animate="show"
@@ -52,7 +52,7 @@ export default function HomeHero() {
     >
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10 opacity-40 pointer-events-none">
-        <motion.div 
+        <motion.div
           animate={{
             scale: [1, 1.1, 1],
             rotate: [0, 5, 0],
@@ -64,7 +64,7 @@ export default function HomeHero() {
           }}
           className="absolute top-10 left-1/4 w-[500px] h-[500px] bg-secondary-fixed/20 blur-[130px] rounded-full"
         ></motion.div>
-        <motion.div 
+        <motion.div
           animate={{
             scale: [1, 1.2, 1],
             rotate: [0, -5, 0],
@@ -80,7 +80,7 @@ export default function HomeHero() {
 
 
       {/* Main Typography */}
-      <motion.h1 
+      <motion.h1
         variants={item}
         className="font-headline font-black text-5xl md:text-7xl lg:text-8xl tracking-tighter text-primary leading-[1.05] mb-8 max-w-6xl"
       >
@@ -91,11 +91,11 @@ export default function HomeHero() {
       {/* Search Bar Area */}
       <motion.div variants={item} className="w-full max-w-2xl px-4 mt-8 md:mt-12">
         <HeroSearch />
-        
+
         {/* Mobile-only Explore Shortcut */}
         <div className="md:hidden mt-6 flex justify-center">
-          <Link 
-            href="/explore" 
+          <Link
+            href="/explore"
             className="inline-flex items-center gap-2 px-6 py-3 bg-secondary/10 text-secondary rounded-full font-headline font-bold text-sm border border-secondary/20 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">explore</span>
@@ -106,13 +106,13 @@ export default function HomeHero() {
 
       {/* Primary CTA */}
       <motion.div variants={item} className="mt-16">
-        <button 
+        <button
           onClick={handleScrollToArsip}
           className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-primary hover:text-secondary transition-all duration-500 cursor-pointer outline-none border-none bg-transparent"
         >
           <span className="opacity-60 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">EKSPRESI INTELEKTUAL</span>
           <div className="w-12 h-12 rounded-full border border-primary/20 flex items-center justify-center group-hover:border-secondary transition-colors group-hover:bg-secondary/5">
-             <span className="material-symbols-outlined group-hover:translate-y-1 transition-transform animate-bounce">south</span>
+            <span className="material-symbols-outlined group-hover:translate-y-1 transition-transform animate-bounce">south</span>
           </div>
         </button>
       </motion.div>

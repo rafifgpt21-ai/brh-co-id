@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { LenisProvider } from "@/components/providers/LenisProvider";
+import { Suspense } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -42,9 +43,13 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <LenisProvider>
-          <Header />
+          <Suspense fallback={<div className="h-20 w-full bg-[#fcf8fa]/80" />}>
+            <Header />
+          </Suspense>
           <main className="flex-1 pt-20">
-            {children}
+            <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0051d5]"></div></div>}>
+              {children}
+            </Suspense>
           </main>
           <Footer />
         </LenisProvider>
