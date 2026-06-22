@@ -1,4 +1,5 @@
 "use server";
+// Force refresh user actions schema definition
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -31,9 +32,10 @@ export async function getUsers() {
       username: true,
       email: true,
       role: true,
+      phone: true,
       createdAt: true,
-    },
-  });
+    } as any,
+  }) as any;
 }
 
 export async function createUser(formData: FormData) {
@@ -44,6 +46,7 @@ export async function createUser(formData: FormData) {
   const name = formData.get("name") as string;
   const username = formData.get("username") as string;
   const email = formData.get("email") as string;
+  const phone = formData.get("phone") as string;
   const password = formData.get("password") as string;
   const role = formData.get("role") as Role;
 
@@ -68,12 +71,13 @@ export async function createUser(formData: FormData) {
         name,
         username,
         email: email || undefined,
+        phone: phone || undefined,
         password: hashedPassword,
         role,
-      },
+      } as any,
     });
 
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/settings");
     return { success: true };
   } catch (error) {
     console.error("Create User Error:", error);
@@ -89,6 +93,7 @@ export async function updateUser(id: string, formData: FormData) {
   const name = formData.get("name") as string;
   const username = formData.get("username") as string;
   const email = formData.get("email") as string;
+  const phone = formData.get("phone") as string;
   const password = formData.get("password") as string;
   const role = formData.get("role") as Role;
 
@@ -96,6 +101,7 @@ export async function updateUser(id: string, formData: FormData) {
     name,
     username,
     email: email || undefined,
+    phone: phone || undefined,
     role,
   };
 
@@ -106,10 +112,10 @@ export async function updateUser(id: string, formData: FormData) {
   try {
     await prisma.user.update({
       where: { id },
-      data,
+      data: data as any,
     });
 
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/settings");
     return { success: true };
   } catch (error) {
     console.error("Update User Error:", error);
@@ -133,10 +139,34 @@ export async function deleteUser(id: string) {
       where: { id },
     });
 
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/settings");
     return { success: true };
   } catch (error) {
     console.error("Delete User Error:", error);
     return { error: "Failed to delete user" };
   }
+}
+
+export async function getContactsForDropdown(): Promise<{ id: string, name: string | null, phone: string | null }[]> {
+  const session = await auth();
+  if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
+    throw new Error("Unauthorized");
+  }
+
+  const result = await prisma.user.findMany({
+    where: {
+      phone: { not: null, whitespace: { not: "" } },
+      role: { in: ["ADMIN", "SUPER_ADMIN"] },
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  } as any);
+
+  return result as any;
 }

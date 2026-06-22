@@ -1,19 +1,18 @@
 'use client';
 
-import { useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BlockItem } from './BlockItem';
 import { savePost } from '@/lib/actions/post';
 import { uploadFiles } from '@/lib/uploadthing';
-import { deleteFilesFromStorage } from '@/lib/uploadthing-server';
 import { deletePost } from '@/lib/actions/post';
+import { getContactsForDropdown } from '@/lib/actions/user-actions';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCallback } from 'react';
 
 type Block = {
   id: string;
-  type: 'text' | 'image' | 'video' | 'pdf' | 'link';
+  type: 'text' | 'image' | 'video' | 'pdf' | 'link' | 'contact';
   content: string;
   url?: string;
   title?: string;
@@ -60,12 +59,18 @@ const AutoResizingTextarea = ({
 export const PostEditor = ({ initialData }: { initialData?: any }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  
+  // Base states
   const [title, setTitle] = useState(initialData?.title || '');
   const [category, setCategory] = useState(initialData?.category || 'Buku');
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail || '');
   const [blocks, setBlocks] = useState<Block[]>(() =>
     initialData?.blocks ? JSON.parse(JSON.stringify(initialData.blocks)) : []
   );
+
+  // Layout states
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [inspectorTab, setInspectorTab] = useState<'meta' | 'seo'>('meta');
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isMobileMetaOpen, setIsMobileMetaOpen] = useState(false);
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
@@ -73,16 +78,35 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
   const [blockToDelete, setBlockToDelete] = useState<string | null>(null);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const blockFileInputRef = useRef<HTMLInputElement>(null);
   const [activeBlockTarget, setActiveBlockTarget] = useState<string | null>(null);
 
-  // New states for deferred uploads
+  // Staged Upload States
   const [stagedFiles, setStagedFiles] = useState<Record<string, File>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<'Idle' | 'Uploading' | 'Saving' | 'Success' | 'Error'>('Idle');
   const [isSavingInProgress, setIsSavingInProgress] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Autosave & Recovery States
+  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
+  const [autosavedData, setAutosavedData] = useState<any>(null);
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  const [contacts, setContacts] = useState<{ id: string, name: string | null, phone: string | null }[]>([]);
+
+  useEffect(() => {
+    async function loadContacts() {
+      try {
+        const list = await getContactsForDropdown();
+        setContacts(list as any);
+      } catch (err) {
+        console.error("Failed to load contacts for dropdown:", err);
+      }
+    }
+    loadContacts();
+  }, []);
 
   const isDirty =
     title !== (initialData?.title || '') ||
@@ -91,6 +115,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     Object.keys(stagedFiles).length > 0 ||
     JSON.stringify(blocks.map(b => ({ ...b, id: b.id }))) !== JSON.stringify((initialData?.blocks || []).map((b: any) => ({ ...b, id: b.id })));
 
+  // 1. Unsaved changes warning
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
@@ -102,6 +127,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
+  // 2. Intercept internal anchor clicks
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
       if (!isDirty) return;
@@ -110,7 +136,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
       if (anchor instanceof HTMLAnchorElement) {
         const href = anchor.getAttribute('href');
-        // If it's an internal link
         if (href && (href.startsWith('/') || href.startsWith(window.location.origin))) {
           e.preventDefault();
           e.stopPropagation();
@@ -124,6 +149,71 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     return () => document.removeEventListener('click', handleAnchorClick, true);
   }, [isDirty]);
 
+  // 3. Local Storage Autosave Engine
+  useEffect(() => {
+    const key = `brh_autosave_post_${initialData?.id || 'new'}`;
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const hasEdits = parsed.title !== (initialData?.title || '') ||
+                        parsed.category !== (initialData?.category || 'Buku') ||
+                        JSON.stringify(parsed.blocks) !== JSON.stringify(initialData?.blocks || []);
+        if (hasEdits) {
+          setAutosavedData(parsed);
+          setShowRecoveryBanner(true);
+        }
+      } catch (e) {
+        console.error("Autosave load error:", e);
+      }
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    if (!isDirty) {
+      setAutosaveStatus('idle');
+      return;
+    }
+
+    setAutosaveStatus('saving');
+    const timer = setTimeout(() => {
+      const key = `brh_autosave_post_${initialData?.id || 'new'}`;
+      const dataToSave = {
+        title,
+        category,
+        blocks: blocks.map(b => ({
+          id: b.id,
+          type: b.type,
+          content: b.content,
+          url: b.url,
+          title: b.title,
+          caption: b.caption
+        })),
+        timestamp: Date.now()
+      };
+      localStorage.setItem(key, JSON.stringify(dataToSave));
+      setAutosaveStatus('saved');
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [title, category, blocks, isDirty, initialData?.id]);
+
+  // 4. Keyboard Shortcuts handler (Ctrl+S for save, Ctrl+P for preview toggle)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave(initialData?.id ? (initialData.status || 'Published') : 'Draft');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        setActiveTab(prev => prev === 'edit' ? 'preview' : 'edit');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [title, category, blocks, initialData]);
+
   const handleBack = () => {
     if (isDirty) {
       setPendingPath('/admin');
@@ -132,7 +222,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       router.push('/admin');
     }
   };
-
 
   const handleThumbnailClick = () => {
     fileInputRef.current?.click();
@@ -170,11 +259,10 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     const file = e.target.files?.[0];
     if (file && activeBlockTarget) {
       onBlockFileChange(activeBlockTarget, file);
-      e.target.value = ''; // Reset for same file selection
+      e.target.value = '';
     }
   }, [activeBlockTarget, onBlockFileChange]);
 
-  // Consolidated Revocation Effect
   useEffect(() => {
     return () => {
       Object.values(previews).forEach(url => {
@@ -196,7 +284,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
   const moveBlock = useCallback((index: number, direction: 'up' | 'down') => {
     if (direction === 'up' && index === 0) return;
-    const currentBlocks = [...blocks]; // Need latest blocks, but to keep stable we can use functional update if possible
     setBlocks((prev) => {
       if (direction === 'up' && index === 0) return prev;
       if (direction === 'down' && index === prev.length - 1) return prev;
@@ -223,7 +310,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
         : (!block.url && !block.title && !block.caption && !stagedFiles[id]);
 
       if (isEmpty) {
-        // Cleanup side effects
         if (stagedFiles[id]) {
           setStagedFiles(s => {
             const next = { ...s };
@@ -245,7 +331,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       setBlockToDelete(id);
       return prev;
     });
-  }, [stagedFiles, previews]); // Dependencies might cause re-renders of all blocks if not careful
+  }, [stagedFiles, previews]);
 
   const confirmRemoveBlock = useCallback((id: string) => {
     setBlocks((prev) => prev.filter((b) => b.id !== id));
@@ -277,12 +363,10 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     setIsSavingInProgress(true);
     setSaveStatus('Uploading');
 
-    // We don't necessarily need startTransition if we manage our own isSavingInProgress
     try {
       let finalThumbnail = thumbnail;
       let finalBlocks = [...blocks];
 
-      // 1. Upload staged files
       const filesToUpload = Object.entries(stagedFiles);
       if (filesToUpload.length > 0) {
         const endpointsMapping = filesToUpload.map(([key, file]) => {
@@ -291,12 +375,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
           return block?.type === 'pdf' ? 'pdfUploader' : 'imageUploader' as const;
         });
 
-        // Upload in batch
-        // Note: uploadFiles expects an array of files and an endpoint.
-        // Since we might have different endpoints, we grouped them logic-wise.
-        // But for simplicity and because UploadThing handles files, we can just loop or batch by endpoint.
-
-        // Group by endpoint
         const byEndpoint: Record<string, { keys: string[], files: File[] }> = {
           imageUploader: { keys: [], files: [] },
           pdfUploader: { keys: [], files: [] }
@@ -314,7 +392,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
               files: data.files,
             });
 
-            // Apply the new URLs back
             res.forEach((uploadedFile, i) => {
               const key = data.keys[i];
               const newUrl = uploadedFile.ufsUrl || uploadedFile.url;
@@ -349,6 +426,10 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
       if (result.success) {
         setSaveStatus('Success');
+        
+        // Remove local autosave draft
+        localStorage.removeItem(`brh_autosave_post_${initialData?.id || 'new'}`);
+        
         setTimeout(() => {
           router.push('/admin');
           router.refresh();
@@ -361,7 +442,6 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     } catch (error: any) {
       console.error("Upload/Save error:", error);
       setSaveStatus('Error');
-      // No more blocking alert() here, the overlay shows 'Gagal Menyimpan' with a toggle button.
     } finally {
       setIsSavingInProgress(false);
     }
@@ -373,6 +453,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     startTransition(async () => {
       const result = await deletePost(initialData.id);
       if (result.success) {
+        localStorage.removeItem(`brh_autosave_post_${initialData.id}`);
         router.push('/admin');
         router.refresh();
       } else {
@@ -382,8 +463,142 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     });
   };
 
+  const handleRestoreDraft = () => {
+    if (autosavedData) {
+      setTitle(autosavedData.title);
+      setCategory(autosavedData.category);
+      setBlocks(autosavedData.blocks);
+    }
+    setShowRecoveryBanner(false);
+  };
+
+  // Helper Stats generator
+  const getStats = () => {
+    const textContent = blocks
+      .filter(b => b.type === 'text')
+      .map(b => b.content)
+      .join(' ')
+      .replace(/<[^>]*>/g, '');
+    
+    const words = textContent.trim() ? textContent.trim().split(/\s+/).length : 0;
+    const chars = textContent.length;
+    const readTime = Math.max(1, Math.ceil(words / 225));
+    return { words, chars, readTime };
+  };
+
+  const { words, chars, readTime } = getStats();
+
+  const getSEODescription = () => {
+    const firstTextBlock = blocks.find(b => b.type === 'text');
+    if (!firstTextBlock?.content) return "Tulis tulisan menarik Anda untuk dibagikan ke publik...";
+    const rawText = firstTextBlock.content.replace(/<[^>]*>/g, '').trim();
+    return rawText.slice(0, 155) + (rawText.length > 155 ? '...' : '');
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const getEmbedUrl = (url?: string | null) => {
+    if (!url) return "";
+    let videoId = "";
+    if (url.includes("youtube.com/watch?v=")) {
+      videoId = url.split("v=")[1].split("&")[0];
+    } else if (url.includes("youtu.be/")) {
+      videoId = url.split("youtu.be/")[1].split("?")[0];
+    } else if (url.includes("youtube.com/embed/")) {
+      return url;
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+  };
+
+  // Notion-style inline block inserter component
+  const InlineInserter = ({ atIndex }: { atIndex: number }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleOutsideClick = (e: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      if (isOpen) {
+        document.addEventListener('mousedown', handleOutsideClick);
+      }
+      return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, [isOpen]);
+
+    const handleInsert = (type: Block['type']) => {
+      const newBlock: Block = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type,
+        content: '',
+        url: '',
+        isLocked: false,
+      };
+      setBlocks(prev => {
+        const next = [...prev];
+        next.splice(atIndex, 0, newBlock);
+        return next;
+      });
+      setIsOpen(false);
+    };
+
+    return (
+      <div className="relative group/inserter py-3 flex items-center justify-center my-[-16px] z-20">
+        <div className="absolute inset-x-0 h-px bg-linear-to-r from-transparent via-outline-variant/35 to-transparent opacity-0 group-hover/inserter:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`relative z-10 w-7 h-7 rounded-full bg-surface-container border border-outline-variant/30 flex items-center justify-center shadow-xs text-secondary hover:bg-secondary hover:text-on-secondary hover:scale-110 active:scale-95 transition-all opacity-0 group-hover/inserter:opacity-100 ${isOpen ? 'opacity-100 bg-secondary text-on-secondary scale-110 rotate-45' : ''}`}
+          title="Sisipkan Balok di Sini"
+        >
+          <span className="material-symbols-outlined text-[16px]">add</span>
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              ref={menuRef}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-9 z-50 bg-surface-container-lowest/95 backdrop-blur-md border border-outline-variant/30 shadow-xl rounded-2xl p-2.5 flex items-center gap-1.5 min-w-[280px]"
+            >
+              {[
+                { type: 'text' as const, icon: 'notes', label: 'Teks' },
+                { type: 'image' as const, icon: 'image', label: 'Gambar' },
+                { type: 'video' as const, icon: 'smart_display', label: 'Video' },
+                { type: 'pdf' as const, icon: 'picture_as_pdf', label: 'PDF' },
+                { type: 'link' as const, icon: 'link', label: 'Link' },
+                { type: 'contact' as const, icon: 'chat', label: 'Kontak' },
+              ].map((item) => (
+                <button
+                  key={item.type}
+                  type="button"
+                  onClick={() => handleInsert(item.type)}
+                  className="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-primary hover:bg-secondary/15 hover:text-secondary transition-all active:scale-90"
+                  title={`Sisipkan Balok ${item.label}`}
+                >
+                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                  <span className="text-[8px] font-bold mt-1 uppercase">{item.label}</span>
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20">
       <input
         type="file"
         ref={fileInputRef}
@@ -404,11 +619,9 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       </div>
 
       {/* ════════════════════════════════════════
-          Mobile / Intermediate — Fixed top bar (below main nav)
-          Visible on: xs → md → lg-1  (hidden on lg+)
+          Mobile / Intermediate — Fixed top bar
           ════════════════════════════════════════ */}
       <div className="lg:hidden fixed top-[80px] inset-x-0 z-30">
-        {/* Primary row */}
         <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-outline-variant/15 shadow-sm">
           {/* Back */}
           <button
@@ -421,20 +634,40 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
           {/* Title + label */}
           <div className="flex-1 min-w-0 px-1">
-            <p className="text-[8px] font-label font-bold tracking-[0.2em] text-secondary uppercase leading-none mb-1 opacity-70">
-              {initialData?.id ? 'Edit Mode' : 'Draft Mode'}
-            </p>
-            <p className="text-sm font-headline font-bold text-primary truncate leading-tight">
+            <div className="flex items-center gap-1.5">
+              <p className="text-[8px] font-label font-bold tracking-[0.2em] text-secondary uppercase leading-none opacity-70">
+                {initialData?.id ? 'Edit Mode' : 'Draft Mode'}
+              </p>
+              {autosaveStatus === 'saving' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" title="Menyimpan..." />
+              )}
+              {autosaveStatus === 'saved' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" title="Tersimpan secara lokal" />
+              )}
+            </div>
+            <p className="text-sm font-headline font-bold text-primary truncate leading-tight mt-0.5">
               {title || 'Postingan Baru'}
             </p>
           </div>
 
           {/* Action buttons */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Split Screen Mode toggle for Mobile */}
+            <button
+              type="button"
+              onClick={() => setActiveTab(prev => prev === 'edit' ? 'preview' : 'edit')}
+              className={`w-10 h-10 flex items-center justify-center rounded-2xl transition-all shrink-0 active:scale-95 border ${activeTab === 'preview' ? 'bg-secondary text-on-secondary shadow-xs border-secondary' : 'bg-surface-container border-outline-variant/20 text-on-surface-variant'}`}
+              title={activeTab === 'preview' ? 'Kembali Edit' : 'Pratinjau'}
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {activeTab === 'preview' ? 'edit' : 'visibility'}
+              </span>
+            </button>
+
             {/* Save Button */}
             <button
               onClick={() => {
-                setIsSaveMenuOpen(!isSaveMenuOpen);
+                setIsSaveMenuOpen(true);
                 setIsMobileMetaOpen(false);
               }}
               disabled={isPending || isSavingInProgress}
@@ -443,48 +676,58 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                 : (isDirty || isSavingInProgress) ? 'bg-secondary text-on-secondary shadow-secondary/20' : 'bg-surface-container text-on-surface-variant border border-outline-variant/20'}`}
               title="Pilihan Simpan"
             >
-              <span className="material-symbols-outlined text-[20px]">
-                {isSaveMenuOpen ? 'close' : 'save'}
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-wide">
-                {isSaveMenuOpen ? 'Batal' : 'Simpan'}
-              </span>
+              <span className="material-symbols-outlined text-[20px]">save</span>
+              <span className="text-[11px] font-bold uppercase tracking-wide hidden xs:inline">Simpan</span>
             </button>
 
             {/* Edit metadata toggle */}
             <button
               type="button"
               onClick={() => {
-                setIsMobileMetaOpen(!isMobileMetaOpen);
+                setIsMobileMetaOpen(true);
                 setIsSaveMenuOpen(false);
               }}
-              className={`flex items-center justify-center gap-2 h-10 px-4 rounded-2xl transition-all shrink-0 active:scale-95 ${isMobileMetaOpen
-                ? 'bg-primary text-on-primary shadow-lg scale-95'
-                : 'bg-surface-container border border-outline-variant/20 text-on-surface-variant'
-                }`}
+              className="flex items-center justify-center w-10 h-10 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant transition-all shrink-0 active:scale-95"
               title="Edit Metadata"
             >
-              <span className="text-[11px] font-bold uppercase tracking-wide">
-                {isMobileMetaOpen ? 'Tutup' : 'Edit'}
-              </span>
-              <span className="material-symbols-outlined text-[20px]">
-                {isMobileMetaOpen ? 'close' : 'edit_note'}
-              </span>
+              <span className="material-symbols-outlined text-[20px]">edit_note</span>
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Save Options Drawer */}
+      {/* Mobile Backdrop Overlay */}
+      <AnimatePresence>
+        {(isSaveMenuOpen || isMobileMetaOpen) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            exit={{ opacity: 0 }}
+            onClick={() => { setIsSaveMenuOpen(false); setIsMobileMetaOpen(false); }}
+            className="lg:hidden fixed inset-0 bg-black z-40 backdrop-blur-xs"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Save Options Bottom Sheet Drawer (Mobile) */}
+      <AnimatePresence>
         {isSaveMenuOpen && (
-          <div className="bg-surface-container-lowest/98 backdrop-blur-xl border-b border-outline-variant/25 shadow-2xl px-4 py-5 animate-in slide-in-from-top duration-300">
-            <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-3 block">Simpan Postingan</label>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-surface-container-lowest border-t border-outline-variant/25 shadow-2xl px-6 py-6 pb-12 rounded-t-[2.5rem] flex flex-col gap-4"
+          >
+            <div className="w-12 h-1.5 bg-outline-variant/40 rounded-full mx-auto mb-2 cursor-pointer" onClick={() => setIsSaveMenuOpen(false)} />
+            <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-1 block text-center">Simpan Postingan</label>
             <div className="grid grid-cols-2 gap-3">
               {initialData?.id ? (
                 <>
                   <button
                     onClick={() => { handleSave(initialData.status); setIsSaveMenuOpen(false); }}
                     disabled={isSavingInProgress}
-                    className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
+                    className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
                   >
                     <span className="material-symbols-outlined text-[22px]">save</span>
                     <span className="text-[10px] font-black uppercase mt-1">Update Post</span>
@@ -494,7 +737,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                     <button
                       onClick={() => { handleSave('Draft'); setIsSaveMenuOpen(false); }}
                       disabled={isSavingInProgress}
-                      className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant active:scale-95 transition-all text-center"
+                      className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant active:scale-95 transition-all text-center"
                     >
                       <span className="material-symbols-outlined text-[22px]">drafts</span>
                       <span className="text-[10px] font-black uppercase mt-1">Ke Draft</span>
@@ -504,7 +747,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                     <button
                       onClick={() => { handleSave('Published'); setIsSaveMenuOpen(false); }}
                       disabled={isSavingInProgress}
-                      className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-primary text-on-primary shadow-lg active:scale-95 transition-all text-center"
+                      className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-primary text-on-primary shadow-lg active:scale-95 transition-all text-center"
                     >
                       <span className="material-symbols-outlined text-[22px]">publish</span>
                       <span className="text-[10px] font-black uppercase mt-1">Terbitkan</span>
@@ -514,7 +757,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                   <button
                     onClick={() => { setShowDeleteConfirm(true); setIsSaveMenuOpen(false); }}
                     disabled={isSavingInProgress}
-                    className="col-span-2 flex items-center justify-center gap-2 h-11 rounded-2xl bg-error/10 border border-error/20 text-error active:scale-95 transition-all"
+                    className="col-span-2 flex items-center justify-center gap-2 h-12 rounded-2xl bg-error/10 border border-error/20 text-error active:scale-95 transition-all"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                     <span className="text-[10px] font-black uppercase">Hapus Postingan Permanen</span>
@@ -525,7 +768,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                   <button
                     onClick={() => { handleSave('Draft'); setIsSaveMenuOpen(false); }}
                     disabled={isSavingInProgress}
-                    className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant active:scale-95 transition-all text-center"
+                    className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant active:scale-95 transition-all text-center"
                   >
                     <span className="material-symbols-outlined text-[22px]">save</span>
                     <span className="text-[10px] font-black uppercase mt-1">Simpan Draft</span>
@@ -534,7 +777,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                   <button
                     onClick={() => { handleSave('Published'); setIsSaveMenuOpen(false); }}
                     disabled={isSavingInProgress}
-                    className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
+                    className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
                   >
                     <span className="material-symbols-outlined text-[22px]">publish</span>
                     <span className="text-[10px] font-black uppercase mt-1">Publish Sekarang</span>
@@ -543,15 +786,24 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Expandable metadata drawer - REPURPOSED AS EDIT DRAWER */}
+      {/* Expandable metadata drawer (Mobile Bottom Sheet) */}
+      <AnimatePresence>
         {isMobileMetaOpen && (
-          <div className="bg-surface-container-lowest/98 backdrop-blur-xl border-b border-outline-variant/25 shadow-2xl px-4 py-5 flex flex-col gap-5 animate-in slide-in-from-top duration-300">
-
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-surface-container-lowest border-t border-outline-variant/25 shadow-2xl px-6 py-6 pb-12 rounded-t-[2.5rem] flex flex-col gap-4 overflow-y-auto max-h-[85vh]"
+          >
+            <div className="w-12 h-1.5 bg-outline-variant/40 rounded-full mx-auto mb-2 cursor-pointer" onClick={() => setIsMobileMetaOpen(false)} />
+            <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-1 block text-center">Metadata Postingan</label>
+            
+            <div className="flex flex-col gap-4">
               {/* Title input */}
               <div>
                 <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Judul Postingan</label>
@@ -562,6 +814,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                   className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-2xl px-4 py-3 text-primary font-headline font-bold text-sm focus:outline-none focus:border-secondary/50 transition-all placeholder:text-on-surface-variant/30"
                 />
               </div>
+
               {/* Category */}
               <div>
                 <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Kategori</label>
@@ -578,109 +831,313 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                   <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 text-[18px]">expand_more</span>
                 </div>
               </div>
-            </div>
 
-            {/* Thumbnail compact */}
-            <div>
-              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Thumbnail</label>
-              <div className="flex items-center gap-4">
-                <div className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0 transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 scale-105' : 'border-outline-variant/20 bg-surface-container/50'
-                  }`}>
-                  {previews.thumbnail || thumbnail
-                    ? <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-cover" />
-                    : <span className="material-symbols-outlined text-secondary/30 text-2xl">add_photo_alternate</span>
-                  }
-                </div>
-                <div className="flex-1 flex flex-col gap-2.5">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleThumbnailClick}
-                      disabled={saveStatus !== 'Idle'}
-                      className="flex-1 h-11 px-4 rounded-xl bg-secondary text-on-secondary text-[10px] font-extrabold transition-all hover:bg-primary shadow-md flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        {saveStatus === 'Uploading' ? 'sync' : 'add_a_photo'}
-                      </span>
-                      {saveStatus === 'Uploading' ? 'LOADING' : (previews.thumbnail || thumbnail ? 'GANTI' : 'UNGGAH')}
-                    </button>
-                    {(previews.thumbnail || thumbnail) && saveStatus === 'Idle' && (
+              {/* Thumbnail */}
+              <div>
+                <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Thumbnail</label>
+                <div className="flex items-center gap-4">
+                  <div className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0 transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 scale-105' : 'border-outline-variant/20 bg-surface-container/50'}`}>
+                    {previews.thumbnail || thumbnail
+                      ? <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                      : <span className="material-symbols-outlined text-secondary/30 text-2xl">add_photo_alternate</span>
+                    }
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm('Hapus thumbnail?')) {
-                            if (stagedFiles.thumbnail) {
-                              const newStaged = { ...stagedFiles };
-                              delete newStaged.thumbnail;
-                              setStagedFiles(newStaged);
-                            }
-                            if (previews.thumbnail) {
-                              URL.revokeObjectURL(previews.thumbnail);
-                              const newPreviews = { ...previews };
-                              delete newPreviews.thumbnail;
-                              setPreviews(newPreviews);
-                            }
-                            setThumbnail('');
-                          }
-                        }}
-                        className="w-11 h-11 rounded-xl bg-error/10 hover:bg-error/20 text-error transition-all flex items-center justify-center active:scale-95 border border-error/20"
+                        onClick={handleThumbnailClick}
+                        disabled={saveStatus !== 'Idle'}
+                        className="flex-1 h-11 px-4 rounded-xl bg-secondary text-on-secondary text-[10px] font-extrabold transition-all hover:bg-primary shadow-xs flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
                       >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
+                        {previews.thumbnail || thumbnail ? 'GANTI' : 'UNGGAH'}
                       </button>
-                    )}
+                      {(previews.thumbnail || thumbnail) && saveStatus === 'Idle' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm('Hapus thumbnail?')) {
+                              if (stagedFiles.thumbnail) {
+                                const newStaged = { ...stagedFiles };
+                                delete newStaged.thumbnail;
+                                setStagedFiles(newStaged);
+                              }
+                              if (previews.thumbnail) {
+                                URL.revokeObjectURL(previews.thumbnail);
+                                const newPreviews = { ...previews };
+                                delete newPreviews.thumbnail;
+                                setPreviews(newPreviews);
+                              }
+                              setThumbnail('');
+                            }
+                          }}
+                          className="w-11 h-11 rounded-xl bg-error/10 hover:bg-error/20 text-error transition-all flex items-center justify-center active:scale-95 border border-error/20"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[8px] font-medium text-on-surface-variant/50 leading-tight uppercase tracking-wider">Rasio 1:1 disarankan.</p>
                   </div>
-                  <p className="text-[8px] font-medium text-on-surface-variant/50 leading-tight uppercase tracking-wider">Rasio 1:1 disarankan untuk tampilan optimal.</p>
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Main editor workspace ── */}
+      <main className="min-h-screen px-4 sm:px-8 xl:px-14 pb-32 lg:pr-80 xl:pr-88 pt-[60px] lg:pt-8">
+        
+        {/* Local Storage Recovery Notification Banner */}
+        <AnimatePresence>
+          {showRecoveryBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-secondary/10 border border-secondary/20 rounded-3xl p-5 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
+              <div className="flex items-start gap-3.5">
+                <span className="material-symbols-outlined text-secondary text-2xl shrink-0 mt-0.5">restore</span>
+                <div>
+                  <h4 className="font-headline font-bold text-primary text-sm">Draf Cadangan Ditemukan!</h4>
+                  <p className="text-xs text-on-surface-variant/80 mt-1 leading-relaxed">
+                    Kami mendeteksi perubahan lokal yang belum tersimpan dari sesi sebelumnya ({new Date(autosavedData?.timestamp).toLocaleTimeString('id-ID')}).
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRestoreDraft}
+                  className="px-4 py-2 rounded-xl bg-secondary text-on-secondary text-xs font-bold hover:bg-primary transition-all active:scale-95"
+                >
+                  Pulihkan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem(`brh_autosave_post_${initialData?.id || 'new'}`);
+                    setShowRecoveryBanner(false);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-xs font-bold transition-all active:scale-95"
+                >
+                  Abaikan
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tab Navigation (Desktop Tab Bar) */}
+        <div className="hidden lg:flex items-center gap-1 bg-surface-container-low/80 border border-outline-variant/20 rounded-2xl p-1 w-fit mb-8 select-none">
+          <button
+            type="button"
+            onClick={() => setActiveTab('edit')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 active:scale-95 cursor-pointer ${activeTab === 'edit' ? 'bg-secondary text-on-secondary shadow-xs' : 'hover:bg-surface-container-high text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[16px]">edit</span>
+            Tulis Konten (Edit)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('preview')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 active:scale-95 cursor-pointer ${activeTab === 'preview' ? 'bg-secondary text-on-secondary shadow-xs' : 'hover:bg-surface-container-high text-on-surface-variant'}`}
+          >
+            <span className="material-symbols-outlined text-[16px]">visibility</span>
+            Pratinjau Live (Preview)
+          </button>
+        </div>
+
+        {/* ── Content View Selector ── */}
+        {activeTab === 'preview' ? (
+          /* LIVE PREVIEW VIEW */
+          <div className="max-w-3xl mx-auto bg-surface-container-lowest/80 backdrop-blur-md rounded-3xl border border-outline-variant/15 p-6 md:p-12 shadow-xs my-4 prose prose-slate">
+            <div className="text-center mb-10 pb-8 border-b border-outline-variant/15 select-none">
+              <span className="inline-block rounded-full bg-secondary text-on-secondary px-5 py-1.5 text-[9px] font-label font-bold tracking-[0.2em] uppercase mb-4">
+                {category}
+              </span>
+              <h1 className="text-3xl md:text-5xl font-headline font-extrabold text-primary leading-tight mb-4 tracking-tight">
+                {title || 'Judul Postingan Baru'}
+              </h1>
+              <div className="flex justify-center items-center gap-4 text-on-surface-variant/70 text-xs font-bold uppercase tracking-wider">
+                <span>{formatDate(initialData?.createdAt || new Date())}</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/40" />
+                <span>{readTime} Menit Baca</span>
+              </div>
+            </div>
+
+            {thumbnail && (
+              <div className="rounded-2xl overflow-hidden border border-outline-variant/15 bg-surface-container-low mb-12 shadow-xs select-none">
+                <img src={previews.thumbnail || thumbnail} alt={title} className="w-full h-auto object-cover max-h-[400px]" />
+              </div>
+            )}
+
+            <div className="space-y-12">
+              {blocks.length === 0 ? (
+                <p className="text-center text-on-surface-variant/40 italic py-12 text-sm select-none">Belum ada konten untuk dipratinjau.</p>
+              ) : (
+                blocks.map((block) => {
+                  if (block.type === 'text') {
+                    return (
+                      <div
+                        key={block.id}
+                        className="prose max-w-none text-on-surface leading-[1.6] md:leading-[1.7] font-body
+                          prose-headings:font-headline prose-headings:text-primary
+                          prose-h2:text-xl md:text-2xl prose-h2:mt-8 prose-h2:mb-4
+                          prose-p:mb-4 prose-p:text-on-surface/90
+                          prose-a:text-secondary prose-a:font-bold
+                          prose-strong:text-primary prose-strong:font-bold
+                          prose-blockquote:border-l-4 prose-blockquote:border-secondary/35 prose-blockquote:bg-surface-container-low/20 prose-blockquote:py-3 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:italic"
+                        dangerouslySetInnerHTML={{ __html: block.content || "" }}
+                      />
+                    );
+                  }
+                  if (block.type === 'image') {
+                    return (
+                      <div key={block.id} className="flex flex-col gap-3">
+                        {block.title && <h3 className="text-xl font-headline font-bold text-primary tracking-tight text-center">{block.title}</h3>}
+                        <div className="rounded-2xl overflow-hidden border border-outline-variant/15 bg-surface-container-low">
+                          <img src={previews[block.id] || block.url} alt={block.title} className="w-full h-auto max-h-[450px] object-contain mx-auto" />
+                        </div>
+                        {block.caption && <p className="text-xs text-on-surface-variant font-medium text-center italic mt-1">{block.caption}</p>}
+                      </div>
+                    );
+                  }
+                  if (block.type === 'pdf') {
+                    return (
+                      <div key={block.id} className="my-8">
+                        <div className="flex items-center gap-4 p-5 rounded-2xl bg-surface-container-high border border-outline-variant/15 select-none">
+                          <div className="w-12 h-12 rounded-xl bg-secondary/15 flex items-center justify-center text-secondary">
+                            <span className="material-symbols-outlined text-2xl">description</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-headline font-bold text-base text-primary truncate">
+                              {block.title || "Lihat Dokumen PDF"}
+                            </h4>
+                            <p className="text-[10px] text-on-surface-variant font-semibold uppercase tracking-wider">Dokumen Terproteksi • Klik untuk Membaca</p>
+                          </div>
+                        </div>
+                        {block.caption && <p className="text-xs text-on-surface-variant italic mt-3 pl-3 border-l-2 border-secondary/25">{block.caption}</p>}
+                      </div>
+                    );
+                  }
+                  if (block.type === 'video') {
+                    const embed = getEmbedUrl(block.url);
+                    return (
+                      <div key={block.id} className="my-10">
+                        <div className="flex flex-col gap-4">
+                          {block.title && <h3 className="text-lg font-headline font-bold text-primary text-center">{block.title}</h3>}
+                          {embed ? (
+                            <div className="aspect-video rounded-2xl overflow-hidden border border-outline-variant/15 bg-black">
+                              <iframe src={embed} className="w-full h-full" allowFullScreen />
+                            </div>
+                          ) : (
+                            <div className="bg-surface-container-low border border-outline-variant/20 p-8 rounded-2xl text-center text-on-surface-variant text-xs select-none">URL Video tidak valid</div>
+                          )}
+                          {block.caption && <p className="text-xs text-on-surface-variant italic text-center">{block.caption}</p>}
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (block.type === 'link') {
+                    return (
+                      <div key={block.id} className="my-8">
+                        <div className="flex items-center gap-4 p-5 rounded-2xl bg-surface-container-low border border-outline-variant/15">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                            <span className="material-symbols-outlined text-2xl">link</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-headline font-bold text-base text-primary truncate">{block.title || "Tautan Terkait"}</h4>
+                            <p className="text-[10px] text-on-surface-variant truncate">{block.url}</p>
+                          </div>
+                        </div>
+                        {block.caption && <p className="text-xs text-on-surface-variant italic mt-3 pl-3 border-l-2 border-primary/20">{block.caption}</p>}
+                      </div>
+                    );
+                  }
+                  if (block.type === 'contact') {
+                    return (
+                      <div key={block.id} className="my-8 flex justify-center">
+                        <div className="flex items-center gap-3 px-6 py-3.5 rounded-full bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] font-headline font-bold text-sm select-none shadow-xs">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-whatsapp" viewBox="0 0 16 16">
+                            <path d="M13.601 2.326A7.85 7.85 0 0 0 8 0a7.86 7.86 0 0 0-6.68 11.753l-.525 1.917a.4.4 0 0 0 .51.51l1.916-.525A7.86 7.86 0 0 0 16 8a7.86 7.86 0 0 0-2.399-5.674zM10.56 10.695c-.138.38-.722.744-1.077.827-.3.069-.692.13-1.098-.1-.365-.206-.74-.413-1.129-.756-.995-.877-1.63-1.879-1.859-2.222c-.228-.343-.451-.798-.451-1.29 0-.491.258-.731.35-.83.093-.1.207-.15.31-.15.1.004.2.004.288.008.09.003.208-.035.327.245.122.287.418 1.018.455 1.09.036.073.06.158.01.258-.05.1-.077.164-.155.25-.077.09-.162.2-.23.275-.077.075-.158.158-.068.312.09.15.398.654.85 1.054.582.516 1.07.677 1.222.753.15.075.24.064.33-.034.09-.1.38-.443.483-.595.103-.15.207-.126.347-.075.14.05.888.419 1.04.495.152.075.253.11.291.176.038.065.038.379-.1.76z"/>
+                          </svg>
+                          <span>{block.title || "Hubungi via WhatsApp"} ({block.content || "Belum diatur"})</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })
+              )}
+            </div>
+          </div>
+        ) : (
+          /* WRITE / EDIT VIEW */
+          <div className="space-y-6">
+            {/* Title editing rail inline for fast entry */}
+            <div className="bg-surface-container-lowest/60 border border-outline-variant/10 rounded-3xl p-5 sm:p-6 mb-3 select-none">
+              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Judul Postingan Utama</label>
+              <AutoResizingTextarea
+                value={title}
+                onChange={setTitle}
+                placeholder="Tulis judul yang menarik..."
+                className="w-full bg-transparent border-0 rounded-none px-0 py-1 text-primary font-headline font-extrabold text-2xl sm:text-3xl focus:outline-none focus:ring-0 placeholder:text-on-surface-variant/25 resize-none"
+              />
+            </div>
+
+            {blocks.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 text-center rounded-3xl border-2 border-dashed border-outline-variant/30 bg-surface-container-lowest/40">
+                <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4 shadow-xs">
+                  <span className="material-symbols-outlined text-3xl text-on-surface-variant/50">article</span>
+                </div>
+                <p className="font-headline font-bold text-primary/60 mb-1">Belum ada konten</p>
+                <p className="text-xs text-on-surface-variant/50 mb-4">Tambahkan balok di bawah untuk memulai menulis.</p>
+                <button
+                  type="button"
+                  onClick={() => addBlock('text')}
+                  className="px-6 py-2 rounded-full bg-secondary text-on-secondary text-xs font-bold active:scale-95 transition-all shadow-xs"
+                >
+                  Mulai Balok Teks
+                </button>
+              </div>
+            )}
+
+            {/* Inserter at index 0 */}
+            {blocks.length > 0 && <InlineInserter atIndex={0} />}
+
+            {blocks.map((block, i) => (
+              <div key={block.id}>
+                <BlockItem
+                  block={block}
+                  index={i}
+                  isFirst={i === 0}
+                  isLast={i === blocks.length - 1}
+                  isDeleting={blockToDelete === block.id}
+                  preview={previews[block.id]}
+                  stagedFile={stagedFiles[block.id]}
+                  onUpdate={updateBlock}
+                  onRemove={removeBlock}
+                  onConfirmRemove={confirmRemoveBlock}
+                  onCancelDelete={() => setBlockToDelete(null)}
+                  onMove={moveBlock}
+                  onFileSelect={onBlockFileSelect}
+                  saveStatus={saveStatus}
+                  contacts={contacts}
+                />
+                {/* Inserter after block i */}
+                <InlineInserter atIndex={i + 1} />
+              </div>
+            ))}
           </div>
         )}
-      </div>
-
-      {/* ── Main editor area (right padding to avoid sidebar overlap on lg+) ── */}
-      <main className="min-h-screen sm:px-8 xl:px-14 pb-32 lg:pr-80 xl:pr-88
-        pt-[80px] lg:pt-6">
-
-        {/* ── Blocks ── */}
-        <div className="space-y-6">
-          {blocks.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 text-center rounded-3xl border-2 border-dashed border-outline-variant/30 bg-surface-container-lowest/40">
-              <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4 shadow-inner">
-                <span className="material-symbols-outlined text-3xl text-on-surface-variant/50">
-                  article
-                </span>
-              </div>
-              <p className="font-headline font-bold text-primary/60 mb-1">Belum ada konten</p>
-              <p className="text-xs text-on-surface-variant/50">
-                Tambahkan balok melalui toolbar di bawah
-              </p>
-            </div>
-          )}
-
-          {blocks.map((block, i) => (
-            <BlockItem
-              key={block.id}
-              block={block}
-              index={i}
-              isFirst={i === 0}
-              isLast={i === blocks.length - 1}
-              isDeleting={blockToDelete === block.id}
-              preview={previews[block.id]}
-              stagedFile={stagedFiles[block.id]}
-              onUpdate={updateBlock}
-              onRemove={removeBlock}
-              onConfirmRemove={confirmRemoveBlock}
-              onCancelDelete={() => setBlockToDelete(null)}
-              onMove={moveBlock}
-              onFileSelect={onBlockFileSelect}
-              saveStatus={saveStatus}
-            />
-          ))}
-        </div>
       </main>
 
       {/* ── Add-block toolbar — fixed at bottom center (desktop) ── */}
-      <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-30 items-center gap-2 bg-surface-container-lowest/95 backdrop-blur-xl border border-outline-variant/20 shadow-2xl rounded-full px-5 py-3">
+      <div className="hidden md:flex fixed bottom-6 left-1/2 -translate-x-1/2 z-30 items-center gap-2 bg-surface-container-lowest/95 backdrop-blur-xl border border-outline-variant/20 shadow-2xl rounded-full px-5 py-3 select-none">
         <span className="text-[10px] font-label font-bold text-on-surface-variant/60 uppercase tracking-widest mr-2">
           + Tambah
         </span>
@@ -690,12 +1147,13 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
           { type: 'video' as const, icon: 'smart_display', label: 'Video' },
           { type: 'pdf' as const, icon: 'picture_as_pdf', label: 'PDF' },
           { type: 'link' as const, icon: 'link', label: 'Link' },
+          { type: 'contact' as const, icon: 'chat', label: 'Kontak' },
         ].map((item, idx, arr) => (
           <div key={item.type} className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => addBlock(item.type)}
-              className="flex items-center gap-1.5 text-sm font-bold text-primary hover:text-secondary px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors"
+              className="flex items-center gap-1.5 text-sm font-bold text-primary hover:text-secondary px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer active:scale-95"
             >
               <span className="material-symbols-outlined text-[17px]">{item.icon}</span>
               {item.label}
@@ -706,17 +1164,18 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       </div>
 
       {/* ── Mobile FAB ── */}
-      <div className="md:hidden fixed bottom-8 right-6 z-30 flex flex-col items-end gap-3">
+      <div className="md:hidden fixed bottom-8 right-6 z-30 flex flex-col items-end gap-3 select-none">
         {isAddMenuOpen && (
           <>
             <div className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[2px]" onClick={() => setIsAddMenuOpen(false)} />
-            <div className="absolute bottom-20 right-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl border border-outline-variant/30 shadow-2xl rounded-3xl p-3 flex flex-col gap-1 min-w-[200px]">
+            <div className="absolute bottom-20 right-0 z-50 bg-surface-container-lowest/95 backdrop-blur-xl border border-outline-variant/30 shadow-2xl rounded-3xl p-3 flex flex-col gap-1 min-w-[200px] animate-in fade-in slide-in-from-bottom duration-200">
               {[
                 { type: 'text' as const, icon: 'notes', label: 'Teks Baru' },
                 { type: 'image' as const, icon: 'image', label: 'Gambar' },
                 { type: 'video' as const, icon: 'smart_display', label: 'Video YouTube' },
                 { type: 'pdf' as const, icon: 'picture_as_pdf', label: 'Dokumen PDF' },
                 { type: 'link' as const, icon: 'link', label: 'Tautan Sumber' },
+                { type: 'contact' as const, icon: 'chat', label: 'Kontak WhatsApp' },
               ].map((item) => (
                 <button
                   key={item.type}
@@ -746,217 +1205,282 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       </div>
 
       {/* ════════════════════════════════════════
-          Floating Island Sidebar — fixed, follows scroll
+          Inspector Side Panel (Desktop Sidebar)
           ════════════════════════════════════════ */}
-      <div className="hidden lg:block fixed top-[88px] right-4 xl:right-6 z-20 w-72 xl:w-80">
-        <div className="bg-surface-container-lowest/95 backdrop-blur-xl border border-outline-variant/15 shadow-2xl rounded-3xl overflow-hidden">
-          <div className="p-5 flex flex-col gap-4">
-
-            {/* Header: back button + title */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleBack}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant/20 text-secondary hover:bg-surface-container-high transition-colors shrink-0"
-                title="Kembali ke Dashboard"
-              >
-                <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-              </button>
-              <div className="min-w-0">
-                <p className="font-label text-[9px] font-bold tracking-[0.2em] text-secondary uppercase">
-                  {initialData?.id ? 'Edit Postingan' : 'Postingan Baru'}
-                </p>
-                <h2 className="text-sm font-headline font-bold text-primary truncate">
-                  {title || 'Tanpa Judul'}
-                </h2>
-              </div>
+      <div className="hidden lg:block fixed top-[88px] right-4 xl:right-6 z-20 w-72 xl:w-80 select-none">
+        <div className="bg-surface-container-lowest/95 backdrop-blur-xl border border-outline-variant/15 shadow-2xl rounded-3xl overflow-hidden flex flex-col">
+          
+          {/* Header */}
+          <div className="p-5 flex items-center gap-3 border-b border-outline-variant/15">
+            <button
+              onClick={handleBack}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant/20 text-secondary hover:bg-surface-container-high transition-colors shrink-0"
+              title="Kembali ke Dashboard"
+            >
+              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+            </button>
+            <div className="min-w-0">
+              <p className="font-label text-[9px] font-bold tracking-[0.2em] text-secondary uppercase">
+                {initialData?.id ? 'Edit Postingan' : 'Postingan Baru'}
+              </p>
+              <h2 className="text-sm font-headline font-bold text-primary truncate mt-0.5">
+                {title || 'Tanpa Judul'}
+              </h2>
             </div>
+          </div>
 
-            <div className="border-t border-outline-variant/15" />
+          {/* Inspector Tab Selector */}
+          <div className="grid grid-cols-2 border-b border-outline-variant/10 text-center text-xs font-bold bg-surface-container-low/30">
+            <button
+              type="button"
+              onClick={() => setInspectorTab('meta')}
+              className={`py-3.5 transition-colors cursor-pointer border-b-2 ${inspectorTab === 'meta' ? 'border-secondary text-primary' : 'border-transparent text-on-surface-variant/50 hover:text-primary'}`}
+            >
+              Status & Meta
+            </button>
+            <button
+              type="button"
+              onClick={() => setInspectorTab('seo')}
+              className={`py-3.5 transition-colors cursor-pointer border-b-2 ${inspectorTab === 'seo' ? 'border-secondary text-primary' : 'border-transparent text-on-surface-variant/50 hover:text-primary'}`}
+            >
+              SEO & Analitik
+            </button>
+          </div>
 
-            {/* Title */}
-            <div>
-              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-1.5 block">
-                Judul
-              </label>
-              <AutoResizingTextarea
-                value={title}
-                onChange={setTitle}
-                placeholder="Tulis judul…"
-                className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-xl px-3.5 py-2.5 text-primary font-headline font-bold text-sm focus:outline-none focus:border-secondary/50 transition-all placeholder:text-on-surface-variant/30"
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-1.5 block">
-                Kategori
-              </label>
-              <div className="relative">
-                <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-xl px-3.5 py-2.5 text-primary text-sm font-medium focus:outline-none focus:border-secondary/50 transition-all appearance-none cursor-pointer"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 text-[18px]">
-                  expand_more
-                </span>
-              </div>
-            </div>
-
-            {/* Thumbnail */}
-            <div>
-              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">
-                Thumbnail
-              </label>
-              <div className="flex gap-3 items-start">
-                <div
-                  className={`shrink-0 w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${previews.thumbnail || thumbnail
-                    ? 'border-secondary/30 bg-surface-container-low'
-                    : 'border-outline-variant/20 bg-surface-container/50'
-                    }`}
-                >
-                  {previews.thumbnail || thumbnail ? (
-                    <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="material-symbols-outlined text-secondary/30 text-xl">add_photo_alternate</span>
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col gap-2.5 pl-2 pr-8">
-                  <button
-                    type="button"
-                    onClick={handleThumbnailClick}
-                    disabled={saveStatus !== 'Idle'}
-                    className="w-fit min-w-[180px] h-12 px-8 rounded-2xl bg-secondary text-on-secondary text-[10px] font-extrabold transition-all hover:bg-primary shadow-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">
-                      {saveStatus === 'Uploading' ? 'sync' : 'add_a_photo'}
+          {/* Tab contents */}
+          <div className="p-5 flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+            {inspectorTab === 'meta' ? (
+              /* META & STATUS TAB */
+              <>
+                {/* Autosave Status Indicator */}
+                {autosaveStatus !== 'idle' && (
+                  <div className="flex items-center gap-2 p-3 rounded-2xl bg-secondary/5 border border-secondary/15">
+                    <span className="material-symbols-outlined text-secondary text-[16px] animate-pulse">cloud_upload</span>
+                    <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                      {autosaveStatus === 'saving' ? 'Auto-saving...' : 'Draft disimpan lokal'}
                     </span>
-                    {saveStatus === 'Uploading' ? 'UPLOADING...' : (previews.thumbnail || thumbnail ? 'GANTI GAMBAR' : 'PILIH GAMBAR')}
-                  </button>
-                  {(previews.thumbnail || thumbnail) && saveStatus === 'Idle' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm('Hapus thumbnail?')) {
-                          if (stagedFiles.thumbnail) {
-                            const newStaged = { ...stagedFiles };
-                            delete newStaged.thumbnail;
-                            setStagedFiles(newStaged);
-                          }
-                          if (previews.thumbnail) {
-                            URL.revokeObjectURL(previews.thumbnail);
-                            const newPreviews = { ...previews };
-                            delete newPreviews.thumbnail;
-                            setPreviews(newPreviews);
-                          }
-                          setThumbnail('');
-                        }
-                      }}
-                      className="w-fit min-w-[180px] h-11 px-8 rounded-2xl bg-error/10 hover:bg-error/20 text-error text-[10px] font-extrabold transition-all flex items-center justify-center gap-2 active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
-                      HAPUS
-                    </button>
-                  )}
-                  <p className="text-[9px] text-on-surface-variant/40 leading-tight pt-1">Rasio 1:1 disarankan.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Stats + status */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[15px] text-secondary/60">layers</span>
-                <span className="text-[11px] font-bold text-primary/70">{blocks.length} Balok</span>
-              </div>
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-bold uppercase tracking-wider ${initialData?.status === 'Published'
-                ? 'bg-secondary/5 border-secondary/20 text-secondary'
-                : 'bg-on-surface-variant/5 border-outline-variant/20 text-on-surface-variant/60'
-                }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${initialData?.status === 'Published' ? 'bg-secondary' : 'bg-on-surface-variant/40'}`} />
-                {initialData?.status || 'Draft'}
-              </div>
-            </div>
-
-            <div className="border-t border-outline-variant/15" />
-
-            {/* Action buttons */}
-            <div className="flex flex-col gap-2.5">
-              {initialData?.id ? (
-                // EDIT MODE
-                <>
-                  <button
-                    onClick={() => handleSave(initialData?.status || 'Published')}
-                    disabled={isPending || isSavingInProgress}
-                    className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-secondary text-on-secondary hover:bg-primary transition-all shadow-md disabled:opacity-50 cursor-pointer ${(isDirty || isSavingInProgress) ? 'pulse-green' : ''}`}
-                  >
-                    <span className="material-symbols-outlined text-[20px]">{(isPending || isSavingInProgress) ? 'sync' : 'save'}</span>
-                    <span className="text-[11px] font-bold uppercase tracking-widest">
-                      {(isPending || isSavingInProgress) ? 'Menyimpan…' : 'Simpan Perubahan'}
-                    </span>
-                  </button>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      disabled={isPending}
-                      className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-error/5 hover:bg-error/10 text-error transition-all border border-error/10 disabled:opacity-50 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                      <span className="text-[9px] font-bold uppercase tracking-wider">Hapus</span>
-                    </button>
-
-                    {initialData?.status === 'Published' ? (
-                      <button
-                        onClick={() => handleSave('Draft')}
-                        disabled={isPending || isSavingInProgress}
-                        className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/15 disabled:opacity-50 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{(isPending || isSavingInProgress) ? 'sync' : 'drafts'}</span>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider text-center">{(isPending || isSavingInProgress) ? '...' : 'Jadikan Draft'}</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSave('Published')}
-                        disabled={isSavingInProgress}
-                        className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/15 disabled:opacity-50 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">publish</span>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">Terbitkan</span>
-                      </button>
-                    )}
                   </div>
-                </>
-              ) : (
-                // CREATE MODE (Draft / Publish)
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    onClick={() => handleSave('Draft')}
-                    disabled={isSavingInProgress}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/20 disabled:opacity-50 cursor-pointer ${isDirty ? 'pulse-green' : ''}`}
-                  >
-                    <span className="material-symbols-outlined text-[22px] text-on-surface-variant">save</span>
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
-                      {isSavingInProgress ? '…' : 'Draft'}
+                )}
+
+                {/* Category */}
+                <div>
+                  <label htmlFor="category" className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-1.5 block">
+                    Kategori
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="category"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-xl px-3.5 py-2.5 text-primary text-sm font-medium focus:outline-none focus:border-secondary/50 transition-all appearance-none cursor-pointer"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 text-[18px]">
+                      expand_more
                     </span>
-                  </button>
-                  <button
-                    onClick={() => handleSave('Published')}
-                    disabled={isSavingInProgress}
-                    className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl bg-secondary text-on-secondary hover:bg-primary transition-all shadow-md disabled:opacity-50 cursor-pointer ${isDirty ? 'pulse-green' : ''}`}
-                  >
-                    <span className="material-symbols-outlined text-[22px]">publish</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
-                      {isSavingInProgress ? '…' : 'Publish'}
-                    </span>
-                  </button>
+                  </div>
                 </div>
-              )}
+
+                {/* Thumbnail */}
+                <div>
+                  <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">
+                    Cover Image
+                  </label>
+                  <div className="flex gap-3 items-start">
+                    <div className={`shrink-0 w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 bg-surface-container-low' : 'border-outline-variant/20 bg-surface-container/50'}`}>
+                      {previews.thumbnail || thumbnail ? (
+                        <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-secondary/30 text-xl">add_photo_alternate</span>
+                      )}
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2 pl-2">
+                      <button
+                        type="button"
+                        onClick={handleThumbnailClick}
+                        disabled={saveStatus !== 'Idle'}
+                        className="w-full h-9 px-3 rounded-xl bg-secondary text-on-secondary text-[9px] font-black uppercase tracking-wider transition-all hover:bg-primary flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-70 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
+                        UNGGAH
+                      </button>
+                      {(previews.thumbnail || thumbnail) && saveStatus === 'Idle' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm('Hapus thumbnail?')) {
+                              if (stagedFiles.thumbnail) {
+                                const newStaged = { ...stagedFiles };
+                                delete newStaged.thumbnail;
+                                setStagedFiles(newStaged);
+                              }
+                              if (previews.thumbnail) {
+                                URL.revokeObjectURL(previews.thumbnail);
+                                const newPreviews = { ...previews };
+                                delete newPreviews.thumbnail;
+                                setPreviews(newPreviews);
+                              }
+                              setThumbnail('');
+                            }
+                          }}
+                          className="w-full h-9 px-3 rounded-xl bg-error/10 hover:bg-error/20 text-error text-[9px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer border border-error/15"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
+                          HAPUS
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Panel */}
+                <div className="border-t border-outline-variant/15 pt-4 flex flex-col gap-2 bg-surface-container-low/20 p-4 rounded-2xl border border-outline-variant/10">
+                  <span className="text-[8px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase">Informasi Dokumen</span>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-primary/80">
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-secondary">layers</span>
+                      {blocks.length} Balok
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-secondary">analytics</span>
+                      {words} Kata
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-secondary">schedule</span>
+                      {readTime} Min Baca
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] text-secondary">text_fields</span>
+                      {chars} Huruf
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* SEO & ANALYTICS TAB */
+              <div className="flex flex-col gap-4">
+                {/* Mock Search Result Card */}
+                <div className="bg-white p-4 rounded-2xl border border-outline-variant/15 shadow-xs">
+                  <span className="text-[8px] font-label font-bold tracking-[0.2em] text-secondary/60 uppercase block mb-3">Google SEO Preview</span>
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-normal truncate">
+                    <span>https://brh.co.id</span>
+                    <span className="text-[8px]">&gt;</span>
+                    <span>post</span>
+                    <span className="text-[8px]">&gt;</span>
+                    <span className="truncate">{title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}</span>
+                  </div>
+                  <h3 className="text-sm font-medium text-[#1a0dab] hover:underline cursor-pointer leading-tight mt-1 truncate">
+                    {title || 'Judul Postingan Baru'} | BRH Platform
+                  </h3>
+                  <p className="text-[10px] text-slate-600 leading-normal mt-1 text-wrap line-clamp-3">
+                    {getSEODescription()}
+                  </p>
+                </div>
+
+                {/* Content Quality Checklist */}
+                <div className="flex flex-col gap-2 bg-surface-container-low/20 p-4 rounded-2xl border border-outline-variant/10">
+                  <span className="text-[8px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase">Analisis Konten</span>
+                  <div className="flex flex-col gap-2.5 mt-1 text-[11px] font-bold">
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[16px] ${title.length >= 10 ? 'text-green-500' : 'text-on-surface-variant/40'}`}>
+                        {title.length >= 10 ? 'check_circle' : 'circle'}
+                      </span>
+                      <span className="text-primary/70">Judul ideal (&gt;10 huruf)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[16px] ${thumbnail ? 'text-green-500' : 'text-on-surface-variant/40'}`}>
+                        {thumbnail ? 'check_circle' : 'circle'}
+                      </span>
+                      <span className="text-primary/70">Thumbnail terunggah</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[16px] ${blocks.some(b => b.type === 'text') ? 'text-green-500' : 'text-on-surface-variant/40'}`}>
+                        {blocks.some(b => b.type === 'text') ? 'check_circle' : 'circle'}
+                      </span>
+                      <span className="text-primary/70">Terdapat konten teks</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[16px] ${blocks.some(b => b.type === 'pdf' || b.type === 'link') ? 'text-green-500' : 'text-on-surface-variant/40'}`}>
+                        {blocks.some(b => b.type === 'pdf' || b.type === 'link') ? 'check_circle' : 'circle'}
+                      </span>
+                      <span className="text-primary/70">Berkas/Sumber terlampir</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sidebar Sticky Action Footer */}
+            <div className="border-t border-outline-variant/15 pt-4 mt-auto">
+              <div className="flex flex-col gap-2.5">
+                {initialData?.id ? (
+                  <>
+                    <button
+                      onClick={() => handleSave(initialData?.status || 'Published')}
+                      disabled={isPending || isSavingInProgress}
+                      className={`w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-2xl bg-secondary text-on-secondary hover:bg-primary transition-all shadow-xs disabled:opacity-50 cursor-pointer ${(isDirty || isSavingInProgress) ? 'pulse-green' : ''}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">{(isPending || isSavingInProgress) ? 'sync' : 'save'}</span>
+                      <span className="text-[11px] font-bold uppercase tracking-widest">
+                        {(isPending || isSavingInProgress) ? 'Menyimpan…' : 'Simpan Perubahan'}
+                      </span>
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isPending}
+                        className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-error/5 hover:bg-error/10 text-error transition-all border border-error/10 disabled:opacity-50 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Hapus</span>
+                      </button>
+
+                      {initialData?.status === 'Published' ? (
+                        <button
+                          onClick={() => handleSave('Draft')}
+                          disabled={isPending || isSavingInProgress}
+                          className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/15 disabled:opacity-50 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{(isPending || isSavingInProgress) ? 'sync' : 'drafts'}</span>
+                          <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Draft</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSave('Published')}
+                          disabled={isSavingInProgress}
+                          className="flex items-center justify-center gap-2 py-3 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/15 disabled:opacity-50 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px] text-on-surface-variant">publish</span>
+                          <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider">Terbitkan</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      onClick={() => handleSave('Draft')}
+                      disabled={isSavingInProgress}
+                      className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all border border-outline-variant/20 disabled:opacity-50 cursor-pointer ${isDirty ? 'pulse-green' : ''}`}
+                    >
+                      <span className="material-symbols-outlined text-[22px] text-on-surface-variant">save</span>
+                      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Draft</span>
+                    </button>
+                    <button
+                      onClick={() => handleSave('Published')}
+                      disabled={isSavingInProgress}
+                      className={`flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl bg-secondary text-on-secondary hover:bg-primary transition-all shadow-xs disabled:opacity-50 cursor-pointer ${isDirty ? 'pulse-green' : ''}`}
+                    >
+                      <span className="material-symbols-outlined text-[22px]">publish</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Publish</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>
@@ -967,11 +1491,10 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => !isSavingInProgress && setShowDeleteConfirm(false)}
           />
-          <div className="relative w-full max-w-sm bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant/20 p-6 overflow-hidden">
-            {/* Background pattern */}
+          <div className="relative w-full max-w-sm bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant/20 p-6 overflow-hidden z-10">
             <div className="absolute top-0 right-0 w-24 h-24 bg-error/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
 
             <div className="flex flex-col items-center text-center">
@@ -1015,10 +1538,10 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       {showUnsavedConfirm && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => !isPending && setShowUnsavedConfirm(false)}
           />
-          <div className="relative w-full max-w-sm bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant/20 p-6 overflow-hidden">
+          <div className="relative w-full max-w-sm bg-surface-container-lowest rounded-3xl shadow-2xl border border-outline-variant/20 p-6 overflow-hidden z-10">
             <div className="absolute top-0 right-0 w-24 h-24 bg-secondary/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
 
             <div className="flex flex-col items-center text-center">
@@ -1069,6 +1592,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
           </div>
         </div>
       )}
+      
       {/* Loading Overlay */}
       <AnimatePresence>
         {saveStatus !== 'Idle' && (
@@ -1076,7 +1600,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-surface-container-lowest/80 backdrop-blur-md"
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-surface-container-lowest/80 backdrop-blur-md"
           >
             <div className="bg-surface-container-lowest border border-outline-variant/20 shadow-2xl rounded-3xl p-8 max-w-sm w-full mx-4 flex flex-col items-center text-center">
               <div className="relative mb-6">

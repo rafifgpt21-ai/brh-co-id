@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createUser, updateUser } from '@/lib/actions/user-actions';
 import { Role } from "@/app/generated/prisma/client";
-
 interface UserFormProps {
   user?: {
     id: string;
     name: string | null;
     username: string | null;
     email: string | null;
+    phone: string | null;
     role: Role;
   };
   onClose: () => void;
@@ -54,10 +54,10 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-md bg-white rounded-4xl p-8 shadow-2xl border border-outline-variant/20"
+        className="relative w-full max-w-md bg-background rounded-4xl p-8 shadow-2xl border border-outline-variant/20"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-[#0F172A]">
+          <h3 className="text-xl font-bold text-tertiary">
             {user ? 'Edit User' : 'Tambah User Baru'}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -80,7 +80,7 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
               type="text"
               name="name"
               defaultValue={user?.name || ''}
-              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#0051d5] transition-all"
+              className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary transition-all"
               placeholder="Masukkan nama lengkap"
             />
           </div>
@@ -94,7 +94,7 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
               name="username"
               required
               defaultValue={user?.username || ''}
-              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#0051d5] transition-all"
+              className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary transition-all"
               placeholder="Masukkan username"
             />
           </div>
@@ -107,8 +107,21 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
               type="email"
               name="email"
               defaultValue={user?.email || ''}
-              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#0051d5] transition-all"
+              className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary transition-all"
               placeholder="Masukkan email"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+              Nomor WhatsApp / HP
+            </label>
+            <input
+              type="text"
+              name="phone"
+              defaultValue={user?.phone || ''}
+              className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary transition-all"
+              placeholder="Contoh: 6281234567890"
             />
           </div>
 
@@ -120,7 +133,7 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
               type="password"
               name="password"
               required={!user}
-              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#0051d5] transition-all"
+              className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary transition-all"
               placeholder="Masukkan password"
             />
           </div>
@@ -133,7 +146,7 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
               name="role"
               required
               defaultValue={user?.role || 'ADMIN'}
-              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-[#0051d5] transition-all appearance-none"
+              className="w-full bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary transition-all appearance-none"
             >
               <option value="ADMIN">Admin</option>
               <option value="SUPER_ADMIN">Admin (Super)</option>
@@ -153,7 +166,7 @@ export function UserForm({ user, onClose, onSuccess }: UserFormProps) {
             <Button
               type="submit"
               disabled={isPending}
-              className="flex-1 rounded-full py-3 h-12 text-sm font-bold bg-[#0051d5] text-white hover:bg-[#0051d5]/90 shadow-lg shadow-[#0051d5]/20"
+              className="flex-1 rounded-full py-3 h-12 text-sm font-bold bg-primary text-on-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
             >
               {isPending ? 'Menyimpan...' : 'Simpan'}
             </Button>

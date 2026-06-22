@@ -16,14 +16,14 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  
+
   const searchFromUrl = searchParams.get("search") || "";
   const categoryFromUrl = searchParams.get("category") || "Semua";
 
   // Real-time input value
   const [inputValue, setInputValue] = useState(searchFromUrl);
   const [activeCategory, setActiveCategory] = useState(categoryFromUrl);
-  
+
   // Local pagination to avoid rendering too many items
   const [displayLimit, setDisplayLimit] = useState(12);
 
@@ -34,7 +34,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
 
   const handleSearchCommit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    
+
     startTransition(() => {
       const params = new URLSearchParams(searchParams.toString());
       if (inputValue.trim()) {
@@ -72,7 +72,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
   return (
     <div className="w-full">
       {/* Search & Filter Section */}
-      <section className="relative pt-0 pb-4 md:py-24 mb-4 md:mb-12">
+      <section className="relative pt-4 pb-4 md:py-24 mb-4 md:mb-12">
         {/* Decorative Background Elements */}
         <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-secondary-fixed blur-[140px] rounded-full animate-pulse-slow"></div>
@@ -154,10 +154,10 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  
+
                   {/* Loading Indicator for specific category */}
                   {isActive && isPending && (
-                    <motion.span 
+                    <motion.span
                       initial={{ opacity: 0, scale: 0.5 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary border-2 border-on-secondary rounded-full z-20"
@@ -165,7 +165,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                   )}
 
                   <span className="relative z-10">{category}</span>
-                  
+
                   {!isActive && (
                     <span className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></span>
                   )}
@@ -232,9 +232,9 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                     layout="position"
                     variants={{
                       hidden: { opacity: 0, y: 30, scale: 0.95 },
-                      show: { 
-                        opacity: 1, 
-                        y: 0, 
+                      show: {
+                        opacity: 1,
+                        y: 0,
                         scale: 1,
                         transition: { type: "spring", bounce: 0.3 }
                       },

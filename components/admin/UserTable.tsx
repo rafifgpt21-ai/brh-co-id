@@ -12,6 +12,7 @@ type User = {
   name: string | null;
   username: string | null;
   email: string | null;
+  phone: string | null;
   role: Role;
   createdAt: Date;
 };
@@ -70,13 +71,13 @@ export function UserTable({ initialUsers }: { initialUsers: User[] }) {
             placeholder="Cari user..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-gray-100 rounded-2xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-[#0051d5] transition-all text-gray-700 shadow-sm"
+            className="w-full bg-background border border-outline/10 rounded-2xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-primary transition-all text-on-surface shadow-sm"
           />
         </div>
 
         <Button 
           onClick={() => setShowAddForm(true)}
-          className="w-full md:w-auto rounded-full bg-[#0051d5] text-white hover:bg-[#0051d5]/90 px-8 py-3 h-12 text-sm font-bold shadow-lg shadow-[#0051d5]/20 flex items-center justify-center gap-2"
+          className="w-full md:w-auto rounded-full bg-primary text-on-primary hover:bg-primary/90 px-8 py-3 h-12 text-sm font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-[20px]">person_add</span>
           <span>Tambah User</span>
@@ -88,11 +89,12 @@ export function UserTable({ initialUsers }: { initialUsers: User[] }) {
         
         {/* Desktop Header */}
         <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-5 bg-gray-50/50 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-          <div className="col-span-4">User / Pengelola</div>
+          <div className="col-span-3">User / Pengelola</div>
           <div className="col-span-3">Email</div>
+          <div className="col-span-2">WhatsApp / HP</div>
           <div className="col-span-2">Dibuat Pada</div>
           <div className="col-span-1 text-center">Role</div>
-          <div className="col-span-2 text-right">Aksi</div>
+          <div className="col-span-1 text-right">Aksi</div>
         </div>
 
         {/* Rows */}
@@ -100,8 +102,8 @@ export function UserTable({ initialUsers }: { initialUsers: User[] }) {
           {filteredUsers.map((user) => (
             <div key={user.id} className="group grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-center px-6 lg:px-8 py-6 hover:bg-gray-50/30 transition-colors">
               
-              <div className="col-span-1 lg:col-span-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center shrink-0 text-[#0051d5]">
+              <div className="col-span-1 lg:col-span-3 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center shrink-0 text-primary">
                   <span className="material-symbols-outlined text-[24px]">account_circle</span>
                 </div>
                 <div>
@@ -116,11 +118,18 @@ export function UserTable({ initialUsers }: { initialUsers: User[] }) {
 
               <div className="col-span-1 lg:col-span-3 text-sm font-medium text-gray-500">
                 {user.email || '-'}
-                <div className="lg:hidden mt-1 flex items-center gap-2 text-[10px] text-gray-400">
-                  <span>{formatDate(user.createdAt)}</span>
-                  <span className="w-1 h-1 rounded-full bg-gray-200"></span>
-                  <span className="uppercase font-bold text-[#0051d5]">Admin</span>
+                <div className="lg:hidden mt-1 flex flex-col gap-1 text-[10px] text-gray-400">
+                  {user.phone && <span>WA: {user.phone}</span>}
+                  <div className="flex items-center gap-2">
+                    <span>{formatDate(user.createdAt)}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-200"></span>
+                    <span className="uppercase font-bold text-primary">Admin</span>
+                  </div>
                 </div>
+              </div>
+
+              <div className="hidden lg:block col-span-2 text-sm font-medium text-gray-500">
+                {user.phone || '-'}
               </div>
 
               <div className="hidden lg:block col-span-2 text-sm text-gray-500">
@@ -129,16 +138,16 @@ export function UserTable({ initialUsers }: { initialUsers: User[] }) {
 
               <div className="hidden lg:flex col-span-1 items-center justify-center">
                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                  user.role === 'SUPER_ADMIN' ? 'bg-blue-50 text-[#0051d5]' : 'bg-gray-100 text-gray-500'
+                  user.role === 'SUPER_ADMIN' ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'
                 }`}>
                   Admin
                 </span>
               </div>
 
-              <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-2">
+              <div className="col-span-1 lg:col-span-1 flex items-center justify-end gap-2">
                 <button
                   onClick={() => setEditUser(user)}
-                  className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400 hover:text-[#0051d5] transition-colors"
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors"
                   title="Edit User"
                 >
                   <span className="material-symbols-outlined text-[20px]">edit</span>

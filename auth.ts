@@ -79,9 +79,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const isSuperAdmin = role === 'SUPER_ADMIN';
       
       const isProtectedPath = nextUrl.pathname.startsWith('/admin') && nextUrl.pathname !== '/admin/login';
-      const isUserManagementPath = nextUrl.pathname.startsWith('/admin/users');
+      const isSettingsPath = nextUrl.pathname.startsWith('/admin/settings');
 
-      if (isUserManagementPath) {
+      if (isSettingsPath) {
         if (isLoggedIn && isSuperAdmin) return true;
         return Response.redirect(new URL('/admin', nextUrl));
       }

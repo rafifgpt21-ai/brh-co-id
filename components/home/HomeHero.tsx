@@ -85,7 +85,7 @@ export default function HomeHero() {
         className="font-headline font-black text-5xl md:text-7xl lg:text-8xl tracking-tighter text-primary leading-[1.05] mb-8 max-w-6xl"
       >
         Menyemai Pemikiran,<br />
-        <span className="text-secondary italic">Menggerakkan</span> Perubahan
+        <span className="text-tertiary italic">Menggerakkan</span> Perubahan
       </motion.h1>
 
       {/* Search Bar Area */}
@@ -96,7 +96,7 @@ export default function HomeHero() {
         <div className="md:hidden mt-6 flex justify-center">
           <Link
             href="/explore"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary/10 text-secondary rounded-full font-headline font-bold text-sm border border-secondary/20 active:scale-95 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-tertiary/10 text-tertiary rounded-full font-headline font-bold text-sm border border-tertiary/20 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">explore</span>
             Jelajahi Semua Karya
@@ -108,10 +108,10 @@ export default function HomeHero() {
       <motion.div variants={item} className="mt-16">
         <button
           onClick={handleScrollToArsip}
-          className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-primary hover:text-secondary transition-all duration-500 cursor-pointer outline-none border-none bg-transparent"
+          className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-tertiary hover:text-primary transition-all duration-500 cursor-pointer outline-none border-none bg-transparent"
         >
-          <span className="opacity-60 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">EKSPRESI INTELEKTUAL</span>
-          <div className="w-12 h-12 rounded-full border border-primary/20 flex items-center justify-center group-hover:border-secondary transition-colors group-hover:bg-secondary/5">
+          <span className="opacity-70 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">EKSPRESI INTELEKTUAL</span>
+          <div className="w-12 h-12 rounded-full border border-tertiary/30 flex items-center justify-center group-hover:border-primary transition-colors group-hover:bg-primary/5">
             <span className="material-symbols-outlined group-hover:translate-y-1 transition-transform animate-bounce">south</span>
           </div>
         </button>

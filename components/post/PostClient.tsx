@@ -314,6 +314,45 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                   </motion.div>
                 );
               }
+              if (block.type === "contact") {
+                let cleanPhone = block.content.replace(/\D/g, "");
+                if (cleanPhone.startsWith("0")) {
+                  cleanPhone = "62" + cleanPhone.slice(1);
+                }
+                const presetText = block.caption ? `?text=${encodeURIComponent(block.caption)}` : "";
+                const waUrl = `https://wa.me/${cleanPhone}${presetText}`;
+
+                return (
+                  <motion.div
+                    key={block.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="my-10 flex justify-center"
+                  >
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      id={`contact-wa-${block.id}`}
+                      className="group flex items-center gap-4 px-8 py-4 rounded-full bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#20ba5a] hover:to-[#0f7569] text-white font-headline font-bold text-base md:text-lg shadow-lg shadow-[#25D366]/25 hover:shadow-xl hover:shadow-[#25D366]/35 active:scale-95 transition-all duration-300"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="currentColor"
+                        className="bi bi-whatsapp w-6 h-6 group-hover:rotate-12 transition-transform duration-300"
+                        viewBox="0 0 16 16"
+                      >
+                        <path d="M13.601 2.326A7.85 7.85 0 0 0 8 0a7.86 7.86 0 0 0-6.68 11.753l-.525 1.917a.4.4 0 0 0 .51.51l1.916-.525A7.86 7.86 0 0 0 16 8a7.86 7.86 0 0 0-2.399-5.674zM10.56 10.695c-.138.38-.722.744-1.077.827-.3.069-.692.13-1.098-.1-.365-.206-.74-.413-1.129-.756-.995-.877-1.63-1.879-1.859-2.222c-.228-.343-.451-.798-.451-1.29 0-.491.258-.731.35-.83.093-.1.207-.15.31-.15.1.004.2.004.288.008.09.003.208-.035.327.245.122.287.418 1.018.455 1.09.036.073.06.158.01.258-.05.1-.077.164-.155.25-.077.09-.162.2-.23.275-.077.075-.158.158-.068.312.09.15.398.654.85 1.054.582.516 1.07.677 1.222.753.15.075.24.064.33-.034.09-.1.38-.443.483-.595.103-.15.207-.126.347-.075.14.05.888.419 1.04.495.152.075.253.11.291.176.038.065.038.379-.1.76z" />
+                      </svg>
+                      <span>{block.title || "Hubungi via WhatsApp"}</span>
+                    </a>
+                  </motion.div>
+                );
+              }
               return null;
             })}
           </div>

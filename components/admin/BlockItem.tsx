@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 
 const TiptapEditor = dynamic(() => import('./TiptapEditor').then(mod => mod.TiptapEditor), {
   ssr: false,
@@ -46,7 +47,7 @@ const AutoResizingTextarea = ({
 
 type Block = {
   id: string;
-  type: 'text' | 'image' | 'video' | 'pdf' | 'link';
+  type: 'text' | 'image' | 'video' | 'pdf' | 'link' | 'contact';
   content: string;
   url?: string;
   title?: string;
@@ -69,6 +70,7 @@ interface BlockItemProps {
   onMove: (index: number, direction: 'up' | 'down') => void;
   onFileSelect: (id: string) => void;
   saveStatus: string;
+  contacts?: { id: string, name: string | null, phone: string | null }[];
 }
 
 export const BlockItem = memo(({
@@ -85,12 +87,47 @@ export const BlockItem = memo(({
   onCancelDelete,
   onMove,
   onFileSelect,
-  saveStatus
+  saveStatus,
+  contacts = []
 }: BlockItemProps) => {
+
+  const getEmbedUrl = (url?: string | null) => {
+    if (!url) return "";
+    let videoId = "";
+    if (url.includes("youtube.com/watch?v=")) {
+      videoId = url.split("v=")[1].split("&")[0];
+    } else if (url.includes("youtu.be/")) {
+      videoId = url.split("youtu.be/")[1].split("?")[0];
+    } else if (url.includes("youtube.com/embed/")) {
+      return url;
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+  };
+
+  // Color accents for left border based on block type
+  const getBorderAccent = () => {
+    switch (block.type) {
+      case 'text': return 'border-l-4 border-slate-400 focus-within:border-l-secondary';
+      case 'image': return 'border-l-4 border-emerald-500';
+      case 'video': return 'border-l-4 border-rose-500';
+      case 'pdf': return 'border-l-4 border-primary';
+      case 'link': return 'border-l-4 border-amber-500';
+      case 'contact': return 'border-l-4 border-green-500';
+      default: return 'border-l-4 border-outline-variant';
+    }
+  };
+
   return (
-    <div className="group relative bg-surface-container-lowest/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/15 hover:border-outline-variant/30 hover:shadow-md transition-all">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className={`group relative bg-surface-container-lowest/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-xs border border-outline-variant/15 hover:border-outline-variant/30 hover:shadow-md transition-all ${getBorderAccent()}`}
+    >
       {/* Block control row */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 select-none">
         <span className="text-xs font-bold text-secondary uppercase tracking-[0.2em] flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">
             {block.type === 'text' && 'notes'}
@@ -98,17 +135,18 @@ export const BlockItem = memo(({
             {block.type === 'video' && 'smart_display'}
             {block.type === 'pdf' && 'picture_as_pdf'}
             {block.type === 'link' && 'link'}
+            {block.type === 'contact' && 'chat'}
           </span>
-          Balok {block.type === 'link' ? 'Tautan / Sumber' : block.type}
+          Balok {block.type === 'link' ? 'Tautan / Sumber' : block.type === 'contact' ? 'WhatsApp' : block.type}
         </span>
 
-        {/* Action pills */}
-        <div className="flex items-center gap-1 opacity-100 transition-opacity duration-200 bg-surface-container-lowest border border-outline-variant/20 shadow-sm rounded-full px-1 py-1 z-10 pointer-events-auto">
+        {/* Action pills (Touch-friendly size) */}
+        <div className="flex items-center gap-1.5 bg-surface-container-low/60 border border-outline-variant/20 shadow-xs rounded-full px-1.5 py-1 z-10">
           <button
             type="button"
             onClick={() => onMove(index, 'up')}
             disabled={isFirst}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-secondary hover:bg-surface-container-low transition-colors disabled:opacity-30"
+            className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-secondary hover:bg-surface-container-low transition-colors disabled:opacity-30 active:scale-90"
             title="Naik"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
@@ -117,7 +155,7 @@ export const BlockItem = memo(({
             type="button"
             onClick={() => onMove(index, 'down')}
             disabled={isLast}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-secondary hover:bg-surface-container-low transition-colors disabled:opacity-30"
+            className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-on-surface-variant hover:text-secondary hover:bg-surface-container-low transition-colors disabled:opacity-30 active:scale-90"
             title="Turun"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
@@ -129,14 +167,14 @@ export const BlockItem = memo(({
               <button
                 type="button"
                 onClick={() => onConfirmRemove(block.id)}
-                className="h-7 px-3 rounded-full bg-error text-on-error text-[9px] font-black uppercase tracking-wider hover:bg-error-container hover:text-on-error-container transition-colors shadow-sm"
+                className="h-8 sm:h-7 px-3 rounded-full bg-error text-on-error text-[9px] font-black uppercase tracking-wider hover:bg-error/95 transition-colors shadow-xs active:scale-95"
               >
                 Hapus
               </button>
               <button
                 type="button"
                 onClick={onCancelDelete}
-                className="h-7 px-3 rounded-full bg-surface-container-high text-on-surface-variant text-[9px] font-black uppercase tracking-wider hover:bg-surface-container-highest transition-colors"
+                className="h-8 sm:h-7 px-3 rounded-full bg-surface-container-high text-on-surface-variant text-[9px] font-black uppercase tracking-wider hover:bg-surface-container-highest transition-colors active:scale-95"
               >
                 Batal
               </button>
@@ -145,7 +183,7 @@ export const BlockItem = memo(({
             <button
               type="button"
               onClick={() => onRemove(block.id)}
-              className="w-7 h-7 flex items-center justify-center rounded-full text-error hover:bg-error/10 transition-colors"
+              className="w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-error hover:bg-error/10 transition-colors active:scale-90"
               title="Hapus"
             >
               <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -169,11 +207,11 @@ export const BlockItem = memo(({
             placeholder="Judul Konten (Opsional)..."
             value={block.title || ''}
             onChange={(val) => onUpdate(block.id, { title: val })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
 
           {block.url || preview ? (
-            <div className="relative group/media rounded-2xl overflow-hidden border border-outline-variant/20 shadow-sm bg-surface-container-low">
+            <div className="relative group/media rounded-2xl overflow-hidden border border-outline-variant/20 shadow-xs bg-surface-container-low">
               {block.type === 'image' ? (
                 <div className="relative aspect-video flex items-center justify-center bg-surface-container-low/50">
                   <img src={preview || block.url} alt={block.title || 'Upload'} className="max-w-full max-h-full object-contain" />
@@ -189,15 +227,16 @@ export const BlockItem = memo(({
                 </div>
               )}
 
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-linear-to-t from-black/80 to-transparent flex items-center justify-between translate-y-2 opacity-0 group-hover/media:translate-y-0 group-hover/media:opacity-100 transition-all">
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 to-transparent flex items-center justify-between opacity-100 sm:opacity-0 sm:translate-y-2 sm:group-hover/media:translate-y-0 sm:group-hover/media:opacity-100 transition-all">
                 <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   {stagedFile ? 'Staged' : 'Ready'}
                 </span>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => onFileSelect(block.id)}
-                    className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 text-[10px] font-bold transition-colors"
+                    className="px-3.5 py-2 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 text-[10px] font-bold transition-colors active:scale-95"
                   >
                     Ganti File
                   </button>
@@ -205,8 +244,8 @@ export const BlockItem = memo(({
               </div>
             </div>
           ) : (
-            <div className="border-2 border-dashed border-outline-variant/40 bg-primary-container/10 hover:bg-primary-container/20 transition-colors rounded-2xl p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-14 h-14 bg-surface-container-lowest shadow-sm rounded-full flex items-center justify-center mb-3">
+            <div className="border-2 border-dashed border-outline-variant/40 bg-primary-container/5 hover:bg-primary-container/10 transition-colors rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center text-center">
+              <div className="w-14 h-14 bg-surface-container-lowest shadow-xs rounded-full flex items-center justify-center mb-3">
                 <span className="material-symbols-outlined text-3xl text-secondary">
                   {block.type === 'pdf' ? 'description' : 'add_photo_alternate'}
                 </span>
@@ -214,10 +253,11 @@ export const BlockItem = memo(({
               <p className="text-primary font-headline font-bold mb-1">
                 Unggah {block.type === 'image' ? 'Gambar' : 'Dokumen PDF'}
               </p>
-              <p className="text-on-surface-variant text-xs mb-4">Maks: {block.type === 'image' ? '4MB' : '16MB'}</p>
+              <p className="text-on-surface-variant/70 text-xs mb-4">Maks: {block.type === 'image' ? '4MB' : '16MB'}</p>
               <button
+                type="button"
                 onClick={() => onFileSelect(block.id)}
-                className="px-6 py-2.5 rounded-full bg-secondary text-on-secondary font-headline font-bold text-xs hover:scale-105 transition-transform shadow-md"
+                className="px-6 py-2.5 rounded-full bg-secondary text-on-secondary font-headline font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-sm"
               >
                 Pilih File
               </button>
@@ -228,7 +268,7 @@ export const BlockItem = memo(({
             placeholder="Keterangan atau Sumber (Opsional)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
       )}
@@ -240,22 +280,35 @@ export const BlockItem = memo(({
             placeholder="Judul Video (Opsional)..."
             value={block.title || ''}
             onChange={(val) => onUpdate(block.id, { title: val })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">link</span>
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50">link</span>
             <AutoResizingTextarea
               placeholder="Masukkan URL YouTube..."
               value={block.url || ''}
               onChange={(val) => onUpdate(block.id, { url: val })}
-              className="w-full bg-surface-container-lowest/50 border border-outline-variant/50 rounded-xl py-3.5 pl-12 pr-4 text-primary text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/40 rounded-xl py-3.5 pl-12 pr-4 text-primary text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
             />
           </div>
+          
+          {/* Real-time YouTube Embed Preview */}
+          {block.url && getEmbedUrl(block.url) && (
+            <div className="aspect-video w-full rounded-2xl overflow-hidden border border-outline-variant/15 bg-black mt-2 shadow-inner">
+              <iframe
+                src={getEmbedUrl(block.url)}
+                className="w-full h-full"
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              />
+            </div>
+          )}
+          
           <AutoResizingTextarea
             placeholder="Keterangan Video (Opsional)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
       )}
@@ -285,11 +338,83 @@ export const BlockItem = memo(({
             placeholder="Keterangan singkat tentang sumber ini (Opsional)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
-            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
       )}
-    </div>
+
+      {/* Contact block */}
+      {block.type === 'contact' && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+              Pilih Kontak WhatsApp
+            </label>
+            <div className="relative">
+              <select
+                value={
+                  contacts.some(c => c.phone === block.content)
+                    ? block.content
+                    : block.content === ''
+                      ? ''
+                      : 'custom'
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'custom') {
+                    onUpdate(block.id, { content: '' });
+                  } else {
+                    onUpdate(block.id, { content: val });
+                  }
+                }}
+                className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary text-sm focus:outline-none focus:border-secondary transition-colors appearance-none cursor-pointer"
+              >
+                <option value="">-- Pilih Kontak --</option>
+                {contacts.map((c) => (
+                  <option key={c.id} value={c.phone || ''}>
+                    {c.name || 'Admin'} ({c.phone})
+                  </option>
+                ))}
+                <option value="custom">Kustom (Masukkan Manual)</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant/40 text-[18px]">
+                expand_more
+              </span>
+            </div>
+          </div>
+
+          {/* If custom or no contact is selected (or manual is clicked) */}
+          {(block.content === '' || !contacts.some(c => c.phone === block.content)) && (
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">phone</span>
+              <AutoResizingTextarea
+                placeholder="Masukkan nomor HP/WhatsApp manual (misal: 6281234567890)..."
+                value={block.content || ''}
+                onChange={(val) => onUpdate(block.id, { content: val.replace(/\D/g, '') })}
+                className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+              />
+            </div>
+          )}
+
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">title</span>
+            <AutoResizingTextarea
+              placeholder="Label Tombol (misal: Hubungi via WhatsApp)..."
+              value={block.title || ''}
+              onChange={(val) => onUpdate(block.id, { title: val })}
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+            />
+          </div>
+
+          <AutoResizingTextarea
+            placeholder="Pesan Preset WhatsApp (Opsional, teks ini akan terisi otomatis saat diklik)..."
+            value={block.caption || ''}
+            onChange={(val) => onUpdate(block.id, { caption: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+          />
+        </div>
+      )}
+    </motion.div>
   );
 }, (prev, next) => {
   // Memoization comparison
@@ -304,6 +429,8 @@ export const BlockItem = memo(({
     prev.stagedFile === next.stagedFile &&
     prev.isFirst === next.isFirst &&
     prev.isLast === next.isLast &&
-    prev.saveStatus === next.saveStatus
+    prev.saveStatus === next.saveStatus &&
+    JSON.stringify(prev.contacts) === JSON.stringify(next.contacts)
   );
 });
+
