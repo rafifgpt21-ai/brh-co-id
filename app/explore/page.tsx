@@ -1,32 +1,9 @@
-import { getPosts } from "@/lib/actions/post";
-import KatalogClient from "@/components/katalog/KatalogClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Explore Karya | BRH Intellectual",
-  description: "Telusuri kumpulan pemikiran, riset, dan opini terbaik di BRH Intellectual.",
-};
-
-import { Suspense } from "react";
-
-import KatalogSkeleton from "@/components/katalog/KatalogSkeleton";
-
-export default async function KaryaPage({
+export default function ExploreRedirect({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; category?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { search, category } = await searchParams;
-  const posts = await getPosts({
-    status: 'Published',
-    search: search || undefined,
-    category: category && category !== 'Semua' ? category : undefined
-  });
-
-  return (
-    <main className="min-h-screen pt-0 md:pt-12">
-      <Suspense fallback={<KatalogSkeleton />}>
-        <KatalogClient initialPosts={posts} />
-      </Suspense>
-    </main>
-  );
+  redirect("/en/explore");
 }

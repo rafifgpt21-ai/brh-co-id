@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath, updateTag, cacheTag, cacheLife } from "next/cache";
 import { deleteFilesFromStorage } from "@/lib/uploadthing-server";
+import { indexPublishedPost, removePostFromKnowledgeIndex } from "@/lib/chatbot/indexing";
 import { z } from "zod";
 
 // Helper: generate slug from title
@@ -19,6 +20,7 @@ function generateSlug(title: string): string {
 export type PostFormData = {
   id?: string;
   title: string;
+  titleEn?: string;
   category: string;
   thumbnail?: string;
   status: "Published" | "Draft";
@@ -29,9 +31,12 @@ type PostBlock = {
   id: string;
   type: string;
   content: string;
+  contentEn?: string | null;
   url?: string | null;
   title?: string | null;
+  titleEn?: string | null;
   caption?: string | null;
+  captionEn?: string | null;
   isLocked?: boolean;
 };
 
@@ -39,20 +44,32 @@ const blockSchema = z.object({
   id: z.string(),
   type: z.string(),
   content: z.string(),
+  contentEn: z.string().optional().nullable(),
   url: z.string().optional().nullable(),
   title: z.string().optional().nullable(),
+  titleEn: z.string().optional().nullable(),
   caption: z.string().optional().nullable(),
+  captionEn: z.string().optional().nullable(),
   isLocked: z.boolean().optional(),
 });
 
 const postFormSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1, "Judul tidak boleh kosong"),
+  titleEn: z.string().optional(),
   category: z.string().min(1, "Kategori tidak boleh kosong"),
   thumbnail: z.string().optional(),
   status: z.enum(["Published", "Draft"]),
   blocks: z.array(blockSchema),
 });
+
+async function refreshPostKnowledgeIndex(postId: string) {
+  try {
+    await indexPublishedPost(postId);
+  } catch (error) {
+    console.error("Error refreshing chatbot knowledge index:", error);
+  }
+}
 
 // CREATE or UPDATE a post
 export async function savePost(data: PostFormData) {
@@ -70,6 +87,7 @@ export async function savePost(data: PostFormData) {
 
   try {
     const slug = generateSlug(validData.title);
+    const slugEn = validData.titleEn?.trim() ? generateSlug(validData.titleEn) : null;
 
     if (validData.id) {
       // UPDATE existing post
@@ -104,7 +122,9 @@ export async function savePost(data: PostFormData) {
         where: { id: validData.id },
         data: {
           title: validData.title,
+          titleEn: validData.titleEn?.trim() || null,
           slug,
+          slugEn,
           category: validData.category,
           thumbnail: validData.thumbnail || null,
           status: validData.status,
@@ -112,9 +132,12 @@ export async function savePost(data: PostFormData) {
             id: b.id,
             type: b.type,
             content: b.content,
+            contentEn: b.contentEn || null,
             url: b.url || null,
             title: b.title || null,
+            titleEn: b.titleEn || null,
             caption: b.caption || null,
+            captionEn: b.captionEn || null,
             isLocked: b.isLocked ?? false,
           })),
         },
@@ -127,9 +150,14 @@ export async function savePost(data: PostFormData) {
 
       revalidatePath("/admin");
       revalidatePath(`/post/${post.slug}`);
+      revalidatePath(`/id/post/${post.slug}`);
+      revalidatePath(`/en/post/${post.slugEn || post.slug}`);
       revalidatePath("/");
+      revalidatePath("/id");
+      revalidatePath("/en");
       updateTag("posts");
       updateTag(`post-${post.id}`);
+      await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     } else {
       // CREATE new post
@@ -161,7 +189,9 @@ export async function savePost(data: PostFormData) {
       const post = await prisma.post.create({
         data: {
           title: validData.title,
+          titleEn: validData.titleEn?.trim() || null,
           slug: uniqueSlug,
+          slugEn,
           category: validData.category,
           thumbnail: validData.thumbnail || null,
           status: validData.status,
@@ -169,16 +199,22 @@ export async function savePost(data: PostFormData) {
             id: b.id,
             type: b.type,
             content: b.content,
+            contentEn: b.contentEn || null,
             url: b.url || null,
             title: b.title || null,
+            titleEn: b.titleEn || null,
             caption: b.caption || null,
+            captionEn: b.captionEn || null,
             isLocked: b.isLocked ?? false,
           })),
         },
       });
       revalidatePath("/admin");
       revalidatePath("/");
+      revalidatePath("/id");
+      revalidatePath("/en");
       updateTag("posts");
+      await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     }
   } catch (error: unknown) {
@@ -220,6 +256,7 @@ export async function deletePost(id: string) {
     }
 
     await prisma.post.delete({ where: { id } });
+    await removePostFromKnowledgeIndex(id);
     
     revalidatePath("/admin");
     revalidatePath("/");
@@ -237,6 +274,7 @@ export async function getPosts(options?: {
   search?: string;
   status?: string;
   category?: string;
+  locale?: string;
 }) {
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
@@ -249,6 +287,7 @@ async function getPostsInternal(options?: {
   search?: string;
   status?: string;
   category?: string;
+  locale?: string;
 }, isAdmin?: boolean) {
   'use cache';
   cacheTag("posts");
@@ -264,7 +303,10 @@ async function getPostsInternal(options?: {
     }
 
     if (options?.search) {
-      where.title = { contains: options.search, mode: "insensitive" };
+      where.OR = [
+        { title: { contains: options.search, mode: "insensitive" } },
+        { titleEn: { contains: options.search, mode: "insensitive" } },
+      ];
     }
     if (options?.category) {
       where.category = options.category;
@@ -314,7 +356,14 @@ async function getPostBySlugInternal(slug: string, isAdmin: boolean) {
   cacheTag("posts", `post-slug-${slug}`);
 
   try {
-    const post = await prisma.post.findUnique({ where: { slug } });
+    const post = await prisma.post.findFirst({
+      where: {
+        OR: [
+          { slug },
+          { slugEn: slug },
+        ],
+      },
+    });
     if (post && post.status !== "Published" && !isAdmin) {
       return null;
     }

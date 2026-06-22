@@ -3,8 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import type { Locale } from "@/lib/i18n/config";
 
-export default function HeroSearch() {
+export default function HeroSearch({
+  lang,
+  labels,
+}: {
+  lang: Locale;
+  labels: { placeholder: string; trending: string };
+}) {
   const [query, setQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -14,9 +21,9 @@ export default function HeroSearch() {
     setIsSubmitting(true);
 
     if (query.trim()) {
-      router.push(`/explore?search=${encodeURIComponent(query.trim())}`);
+      router.push(`/${lang}/explore?search=${encodeURIComponent(query.trim())}`);
     } else {
-      router.push("/explore");
+      router.push(`/${lang}/explore`);
     }
   };
 
@@ -38,7 +45,7 @@ export default function HeroSearch() {
             </span>
             <input
               className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-[13px] md:text-lg text-primary placeholder:text-on-surface-variant/40"
-              placeholder="Cari topik pemikiran..."
+              placeholder={labels.placeholder}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -58,7 +65,7 @@ export default function HeroSearch() {
 
       {/* Suggestion hints */}
       <div className="mt-3 md:mt-4 flex flex-wrap justify-center gap-3 md:gap-4 text-[9px] md:text-[10px] uppercase tracking-[0.2em] font-black text-on-surface-variant/40">
-        <span>Trending:</span>
+        <span>{labels.trending}</span>
         <button onClick={() => setQuery("Tasawuf")} className="hover:text-secondary transition-colors">Tasawuf</button>
         <button onClick={() => setQuery("Pendidikan")} className="hover:text-secondary transition-colors">Pendidikan</button>
       </div>

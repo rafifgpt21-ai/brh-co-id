@@ -5,15 +5,19 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getNavLinks } from './NavLinks';
+import type { Locale } from '@/lib/i18n/config';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 interface MobileMenuProps {
   isAdmin?: boolean;
+  lang: Locale;
+  dict: Dictionary;
 }
 
-export const MobileMenu = ({ isAdmin }: MobileMenuProps) => {
+export const MobileMenu = ({ isAdmin, lang, dict }: MobileMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const links = getNavLinks(isAdmin);
+  const links = getNavLinks(isAdmin, lang, dict.nav);
 
   const [mounted, setMounted] = useState(false);
 
@@ -91,14 +95,14 @@ export const MobileMenu = ({ isAdmin }: MobileMenuProps) => {
           >
             <div>
               <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">
-                Platform
+              Platform
               </p>
               <p className="text-sm font-headline font-semibold text-tertiary">
                 BRH Intellectual
               </p>
             </div>
             <div className="text-xs text-slate-500 font-medium leading-relaxed">
-              Menyemai Pemikiran,<br />Menggerakkan Perubahan
+              {dict.metadata.description}
             </div>
           </div>
         </div>

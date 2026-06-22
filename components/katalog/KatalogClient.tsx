@@ -5,14 +5,18 @@ import { Post } from "@/app/generated/prisma/client";
 import ArchiveCard from "./ArchiveCard";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 interface KatalogClientProps {
   initialPosts: Post[];
+  lang: Locale;
+  dict: Dictionary;
 }
 
 const categories = ["Semua", "Buku", "Jurnal", "Artikel", "Opini"];
 
-export default function KatalogClient({ initialPosts }: KatalogClientProps) {
+export default function KatalogClient({ initialPosts, lang, dict }: KatalogClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -42,7 +46,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
       } else {
         params.delete("search");
       }
-      router.push(`/explore?${params.toString()}`, { scroll: false });
+        router.push(`/${lang}/explore?${params.toString()}`, { scroll: false });
     });
   };
 
@@ -55,7 +59,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
       } else {
         params.delete("category");
       }
-      router.push(`/explore?${params.toString()}`, { scroll: false });
+      router.push(`/${lang}/explore?${params.toString()}`, { scroll: false });
     });
   };
 
@@ -63,7 +67,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
     setInputValue("");
     setActiveCategory("Semua");
     setDisplayLimit(12);
-    router.push(`/explore`, { scroll: false });
+    router.push(`/${lang}/explore`, { scroll: false });
   };
 
   const filteredPosts = initialPosts; // Already filtered by server
@@ -86,10 +90,10 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
             animate={{ opacity: 1, x: 0 }}
             className="flex flex-col md:items-center text-left md:text-center mb-4 md:mb-16"
           >
-            <span className="font-label text-[10px] md:text-xs font-black tracking-[0.3em] text-secondary uppercase hidden md:block mb-4">Eksplorasi Intelektual</span>
-            <h1 className="font-headline font-black text-2xl md:text-7xl text-primary mb-1 md:mb-6 tracking-tight">Katalog Karya</h1>
+            <span className="font-label text-[10px] md:text-xs font-black tracking-[0.3em] text-secondary uppercase hidden md:block mb-4">{dict.explore.eyebrow}</span>
+            <h1 className="font-headline font-black text-2xl md:text-7xl text-primary mb-1 md:mb-6 tracking-tight">{dict.explore.title}</h1>
             <p className="text-on-surface-variant/70 text-xs md:text-xl max-w-2xl mx-auto leading-relaxed hidden md:block">
-              Telusuri rekaman pemikiran, hasil riset mendalam, dan opini kritis untuk memperluas cakrawala intelektual Anda.
+              {dict.explore.intro}
             </p>
           </motion.div>
 
@@ -107,7 +111,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                 </span>
                 <input
                   className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-sm md:text-lg text-primary placeholder:text-on-surface-variant/40"
-                  placeholder="Cari judul, topik, atau kata kunci..."
+                  placeholder={dict.explore.searchPlaceholder}
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -164,7 +168,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                     />
                   )}
 
-                  <span className="relative z-10">{category}</span>
+                  <span className="relative z-10">{category === "Semua" ? dict.explore.all : dict.explore.categories[category as keyof typeof dict.explore.categories]}</span>
 
                   {!isActive && (
                     <span className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></span>
@@ -184,7 +188,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
               <span className="material-symbols-outlined text-[20px]">grid_view</span>
             </div>
             <p className="font-label text-xs font-black text-on-surface-variant uppercase tracking-widest">
-              {filteredPosts.length} Karya Ditemukan
+              {filteredPosts.length} {dict.explore.found}
             </p>
           </div>
 
@@ -194,7 +198,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
               className="text-xs font-black text-secondary hover:text-primary transition-colors flex items-center gap-2 uppercase tracking-widest"
             >
               <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-              Reset Filter
+              {dict.explore.resetFilter}
             </button>
           )}
         </div>
@@ -241,7 +245,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                       exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } }
                     }}
                   >
-                    <ArchiveCard post={post} />
+                    <ArchiveCard post={post} lang={lang} labels={dict.explore} />
                   </motion.div>
                 ))}
               </motion.div>
@@ -253,7 +257,7 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                     className="group relative px-12 py-5 bg-surface-container-high text-primary font-headline font-black text-sm uppercase tracking-[0.2em] rounded-2xl overflow-hidden transition-all duration-500 hover:bg-secondary hover:text-on-secondary shadow-lg hover:shadow-secondary/20 active:scale-95"
                   >
                     <span className="relative z-10 flex items-center gap-3">
-                      Muat Lebih Banyak
+                      {dict.explore.loadMore}
                       <span className="material-symbols-outlined transition-transform duration-500 group-hover:translate-y-1">expand_more</span>
                     </span>
                   </button>
@@ -270,16 +274,15 @@ export default function KatalogClient({ initialPosts }: KatalogClientProps) {
                 <div className="absolute inset-0 bg-secondary/10 rounded-4xl scale-150 blur-3xl group-hover:bg-secondary/20 transition-all duration-1000"></div>
                 <span className="material-symbols-outlined text-5xl relative z-10 transition-transform duration-500 group-hover:scale-110">search_off</span>
               </div>
-              <h3 className="text-2xl md:text-3xl font-headline font-black text-primary mb-4 tracking-tight">Eksplorasi Tak Ditemukan</h3>
+              <h3 className="text-2xl md:text-3xl font-headline font-black text-primary mb-4 tracking-tight">{dict.explore.emptyTitle}</h3>
               <p className="text-on-surface-variant/60 max-w-md mx-auto leading-relaxed mb-10">
-                Kami tidak dapat menemukan karya yang sesuai dengan "{searchFromUrl}".
-                Coba gunakan kata kunci intelektual lainnya atau atur ulang kategori.
+                {dict.explore.emptyDescription}{searchFromUrl ? ` "${searchFromUrl}".` : ""}
               </p>
               <button
                 onClick={handleReset}
                 className="inline-flex items-center gap-3 px-10 py-4 bg-surface-container-highest text-primary font-headline font-black text-sm uppercase tracking-widest rounded-full hover:bg-secondary hover:text-on-secondary transition-all duration-500 shadow-lg hover:shadow-secondary/20"
               >
-                Reset Semua Filter
+                {dict.explore.resetAll}
                 <span className="material-symbols-outlined">refresh</span>
               </button>
             </motion.div>

@@ -14,9 +14,12 @@ type Block = {
   id: string;
   type: 'text' | 'image' | 'video' | 'pdf' | 'link' | 'contact';
   content: string;
+  contentEn?: string;
   url?: string;
   title?: string;
+  titleEn?: string;
   caption?: string;
+  captionEn?: string;
   isLocked?: boolean;
 };
 
@@ -62,6 +65,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
   
   // Base states
   const [title, setTitle] = useState(initialData?.title || '');
+  const [titleEn, setTitleEn] = useState(initialData?.titleEn || '');
   const [category, setCategory] = useState(initialData?.category || 'Buku');
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail || '');
   const [blocks, setBlocks] = useState<Block[]>(() =>
@@ -110,6 +114,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
   const isDirty =
     title !== (initialData?.title || '') ||
+    titleEn !== (initialData?.titleEn || '') ||
     category !== (initialData?.category || 'Buku') ||
     thumbnail !== (initialData?.thumbnail || '') ||
     Object.keys(stagedFiles).length > 0 ||
@@ -180,14 +185,18 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       const key = `brh_autosave_post_${initialData?.id || 'new'}`;
       const dataToSave = {
         title,
+        titleEn,
         category,
         blocks: blocks.map(b => ({
           id: b.id,
           type: b.type,
           content: b.content,
+          contentEn: b.contentEn,
           url: b.url,
           title: b.title,
-          caption: b.caption
+          titleEn: b.titleEn,
+          caption: b.caption,
+          captionEn: b.captionEn
         })),
         timestamp: Date.now()
       };
@@ -196,7 +205,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [title, category, blocks, isDirty, initialData?.id]);
+  }, [title, titleEn, category, blocks, isDirty, initialData?.id]);
 
   // 4. Keyboard Shortcuts handler (Ctrl+S for save, Ctrl+P for preview toggle)
   useEffect(() => {
@@ -212,7 +221,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [title, category, blocks, initialData]);
+  }, [title, titleEn, category, blocks, initialData]);
 
   const handleBack = () => {
     if (isDirty) {
@@ -410,6 +419,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       const result = await savePost({
         id: initialData?.id,
         title,
+        titleEn,
         category,
         thumbnail: finalThumbnail,
         status,
@@ -417,9 +427,12 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
           id: b.id,
           type: b.type,
           content: b.content,
+          contentEn: b.contentEn || '',
           url: b.url,
           title: b.title || '',
+          titleEn: b.titleEn || '',
           caption: b.caption || '',
+          captionEn: b.captionEn || '',
           isLocked: b.isLocked ?? false,
         })),
       });
@@ -466,6 +479,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
   const handleRestoreDraft = () => {
     if (autosavedData) {
       setTitle(autosavedData.title);
+      setTitleEn(autosavedData.titleEn || '');
       setCategory(autosavedData.category);
       setBlocks(autosavedData.blocks);
     }
@@ -814,6 +828,15 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                   className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-2xl px-4 py-3 text-primary font-headline font-bold text-sm focus:outline-none focus:border-secondary/50 transition-all placeholder:text-on-surface-variant/30"
                 />
               </div>
+              <div>
+                <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Judul English</label>
+                <AutoResizingTextarea
+                  value={titleEn}
+                  onChange={setTitleEn}
+                  placeholder="Write the English title..."
+                  className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-2xl px-4 py-3 text-primary font-headline font-bold text-sm focus:outline-none focus:border-secondary/50 transition-all placeholder:text-on-surface-variant/30"
+                />
+              </div>
 
               {/* Category */}
               <div>
@@ -1086,6 +1109,13 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                 onChange={setTitle}
                 placeholder="Tulis judul yang menarik..."
                 className="w-full bg-transparent border-0 rounded-none px-0 py-1 text-primary font-headline font-extrabold text-2xl sm:text-3xl focus:outline-none focus:ring-0 placeholder:text-on-surface-variant/25 resize-none"
+              />
+              <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mt-5 mb-2 block">Judul English</label>
+              <AutoResizingTextarea
+                value={titleEn}
+                onChange={setTitleEn}
+                placeholder="Write the English title..."
+                className="w-full bg-transparent border-0 rounded-none px-0 py-1 text-primary/80 font-headline font-bold text-xl sm:text-2xl focus:outline-none focus:ring-0 placeholder:text-on-surface-variant/25 resize-none"
               />
             </div>
 

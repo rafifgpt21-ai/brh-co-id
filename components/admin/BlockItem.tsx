@@ -49,9 +49,12 @@ type Block = {
   id: string;
   type: 'text' | 'image' | 'video' | 'pdf' | 'link' | 'contact';
   content: string;
+  contentEn?: string;
   url?: string;
   title?: string;
+  titleEn?: string;
   caption?: string;
+  captionEn?: string;
   isLocked?: boolean;
 };
 
@@ -194,19 +197,41 @@ export const BlockItem = memo(({
 
       {/* Text block */}
       {block.type === 'text' && (
-        <TiptapEditor
-          content={block.content}
-          onChange={(html) => onUpdate(block.id, { content: html })}
-        />
+        <div className="space-y-5">
+          <div>
+            <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-secondary/70">
+              Konten Indonesia
+            </label>
+            <TiptapEditor
+              content={block.content}
+              onChange={(html) => onUpdate(block.id, { content: html })}
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-[9px] font-bold uppercase tracking-widest text-secondary/70">
+              English Content
+            </label>
+            <TiptapEditor
+              content={block.contentEn || ''}
+              onChange={(html) => onUpdate(block.id, { contentEn: html })}
+            />
+          </div>
+        </div>
       )}
 
       {/* Image / PDF block */}
       {(block.type === 'image' || block.type === 'pdf') && (
         <div className="space-y-4">
           <AutoResizingTextarea
-            placeholder="Judul Konten (Opsional)..."
+            placeholder="Judul Konten Indonesia (Opsional)..."
             value={block.title || ''}
             onChange={(val) => onUpdate(block.id, { title: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+          />
+          <AutoResizingTextarea
+            placeholder="English Content Title (Optional)..."
+            value={block.titleEn || ''}
+            onChange={(val) => onUpdate(block.id, { titleEn: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
 
@@ -265,9 +290,15 @@ export const BlockItem = memo(({
           )}
 
           <AutoResizingTextarea
-            placeholder="Keterangan atau Sumber (Opsional)..."
+            placeholder="Keterangan atau Sumber Indonesia (Opsional)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+          />
+          <AutoResizingTextarea
+            placeholder="English Caption or Source (Optional)..."
+            value={block.captionEn || ''}
+            onChange={(val) => onUpdate(block.id, { captionEn: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
@@ -277,9 +308,15 @@ export const BlockItem = memo(({
       {block.type === 'video' && (
         <div className="space-y-4">
           <AutoResizingTextarea
-            placeholder="Judul Video (Opsional)..."
+            placeholder="Judul Video Indonesia (Opsional)..."
             value={block.title || ''}
             onChange={(val) => onUpdate(block.id, { title: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+          />
+          <AutoResizingTextarea
+            placeholder="English Video Title (Optional)..."
+            value={block.titleEn || ''}
+            onChange={(val) => onUpdate(block.id, { titleEn: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
           <div className="relative">
@@ -305,9 +342,15 @@ export const BlockItem = memo(({
           )}
           
           <AutoResizingTextarea
-            placeholder="Keterangan Video (Opsional)..."
+            placeholder="Keterangan Video Indonesia (Opsional)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+          />
+          <AutoResizingTextarea
+            placeholder="English Video Caption (Optional)..."
+            value={block.captionEn || ''}
+            onChange={(val) => onUpdate(block.id, { captionEn: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
@@ -326,6 +369,15 @@ export const BlockItem = memo(({
             />
           </div>
           <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">title</span>
+            <AutoResizingTextarea
+              placeholder="English Link / Source Title..."
+              value={block.titleEn || ''}
+              onChange={(val) => onUpdate(block.id, { titleEn: val })}
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+            />
+          </div>
+          <div className="relative">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">link</span>
             <AutoResizingTextarea
               placeholder="https://example.com/sumber-data"
@@ -338,6 +390,12 @@ export const BlockItem = memo(({
             placeholder="Keterangan singkat tentang sumber ini (Opsional)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+          />
+          <AutoResizingTextarea
+            placeholder="English source note (Optional)..."
+            value={block.captionEn || ''}
+            onChange={(val) => onUpdate(block.id, { captionEn: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
@@ -405,11 +463,26 @@ export const BlockItem = memo(({
               className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
             />
           </div>
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">title</span>
+            <AutoResizingTextarea
+              placeholder="English Button Label (for example: Contact via WhatsApp)..."
+              value={block.titleEn || ''}
+              onChange={(val) => onUpdate(block.id, { titleEn: val })}
+              className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-3 pl-12 pr-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
+            />
+          </div>
 
           <AutoResizingTextarea
             placeholder="Pesan Preset WhatsApp (Opsional, teks ini akan terisi otomatis saat diklik)..."
             value={block.caption || ''}
             onChange={(val) => onUpdate(block.id, { caption: val })}
+            className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
+          />
+          <AutoResizingTextarea
+            placeholder="English WhatsApp preset message (Optional)..."
+            value={block.captionEn || ''}
+            onChange={(val) => onUpdate(block.id, { captionEn: val })}
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-on-surface-variant text-sm focus:outline-none focus:border-secondary transition-colors resize-none"
           />
         </div>
@@ -421,9 +494,12 @@ export const BlockItem = memo(({
   return (
     prev.block.id === next.block.id &&
     prev.block.content === next.block.content &&
+    prev.block.contentEn === next.block.contentEn &&
     prev.block.url === next.block.url &&
     prev.block.title === next.block.title &&
+    prev.block.titleEn === next.block.titleEn &&
     prev.block.caption === next.block.caption &&
+    prev.block.captionEn === next.block.captionEn &&
     prev.isDeleting === next.isDeleting &&
     prev.preview === next.preview &&
     prev.stagedFile === next.stagedFile &&
@@ -433,4 +509,3 @@ export const BlockItem = memo(({
     JSON.stringify(prev.contacts) === JSON.stringify(next.contacts)
   );
 });
-

@@ -9,11 +9,14 @@
     "lint": "eslint",
     "seed": "npx tsx scripts/seed-admin.ts",
     "seed:posts": "npx tsx scripts/seed-posts.ts",
-    "delete:posts": "npx tsx scripts/delete-all-posts.ts"
+    "delete:posts": "npx tsx scripts/delete-all-posts.ts",
+    "index:chatbot": "npx tsx scripts/index-chatbot.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@google/genai": "^2.9.0",
     "@hono/node-server": "^1.19.11",
+    "@prisma/client": "~6.19.0",
     "@react-pdf/renderer": "^4.3.2",
     "@tailwindcss/typography": "^0.5.19",
     "@tiptap/extension-text-align": "^3.20.4",
@@ -34,8 +37,7 @@
     "react-dom": "19.2.4",
     "react-pdf": "^10.4.1",
     "uploadthing": "^7.7.4",
-    "zod": "^4.3.6",
-    "@prisma/client": "~6.19.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

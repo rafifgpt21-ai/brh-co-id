@@ -82,7 +82,9 @@ model VerificationToken {
 model Post {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   title     String
+  titleEn   String?
   slug      String   @unique
+  slugEn    String?  @unique
   category  String   // 'Buku', 'Jurnal', 'Artikel', 'Opini'
   status    String   @default("Draft") // 'Published' | 'Draft'
   thumbnail String?
@@ -92,13 +94,35 @@ model Post {
   updatedAt DateTime @updatedAt
 }
 
+model KnowledgeChunk {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  sourceType String
+  sourceId   String
+  locale     String   @default("id")
+  chunkIndex Int
+  title      String
+  url        String
+  category   String?
+  thumbnail  String?
+  content    String
+  embedding  Float[]
+  indexedAt  DateTime @default(now())
+
+  @@unique([sourceType, sourceId, locale, chunkIndex])
+  @@index([sourceType, sourceId])
+  @@index([locale])
+}
+
 type Block {
   id       String
   type     String // 'text', 'image', 'video', 'pdf', 'link'
   content  String
+  contentEn String?
   url      String?
   title    String?
+  titleEn  String?
   caption  String?
+  captionEn String?
   isLocked Boolean? @default(false)
 }
 

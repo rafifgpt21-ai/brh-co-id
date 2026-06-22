@@ -3,12 +3,20 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Post } from "@/app/generated/prisma/client";
+import type { Locale } from '@/lib/i18n/config';
+import { formatLocalizedDate } from '@/lib/i18n/config';
+import { getCategoryLabel } from '@/lib/i18n/posts';
 
 interface ArchiveCardProps {
   post: Post;
+  lang: Locale;
+  labels: {
+    categories: Record<string, string>;
+    read: string;
+  };
 }
 
-export default function ArchiveCard({ post }: ArchiveCardProps) {
+export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
   // Extract snippet from first text block (strip HTML)
   const firstTextBlock = (post.blocks as any)?.find((b: any) => b.type === 'text');
   const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
@@ -18,7 +26,7 @@ export default function ArchiveCard({ post }: ArchiveCardProps) {
 
   return (
     <Link
-      href={`/post/${post.slug}`}
+      href={`/${lang}/post/${post.slug}`}
       className="group flex flex-row bg-surface-container-lowest rounded-xl md:rounded-2xl overflow-hidden border border-outline-variant/15 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 h-full min-h-[120px] md:min-h-0"
     >
       {/* Thumbnail (Left) */}
@@ -45,7 +53,7 @@ export default function ArchiveCard({ post }: ArchiveCardProps) {
       <div className="flex-1 p-3.5 md:p-6 lg:p-8 flex flex-col justify-between order-2 min-w-0">
         <div>
           <span className="text-secondary font-label text-[9px] md:text-[11px] font-bold tracking-[0.2em] uppercase mb-1 md:mb-3 block">
-            {post.category}
+            {getCategoryLabel(post.category, labels.categories)}
           </span>
           <h3 className="font-headline font-bold text-[13px] xs:text-sm md:text-lg lg:text-xl text-primary mb-1 md:mb-3 leading-snug line-clamp-3 md:line-clamp-2 lg:line-clamp-3 group-hover:text-secondary transition-colors duration-300">
             {post.title}
@@ -59,14 +67,14 @@ export default function ArchiveCard({ post }: ArchiveCardProps) {
         
         <div className="flex items-center justify-between mt-auto pt-2 md:pt-4 border-t border-outline-variant/10">
           <p className="text-on-surface-variant/60 text-[9px] md:text-xs font-semibold tracking-tighter">
-            {new Date(post.createdAt).toLocaleDateString('id-ID', {
+            {formatLocalizedDate(post.createdAt, lang, {
               day: 'numeric',
               month: 'short',
               year: 'numeric',
             })}
           </p>
           <div className="inline-flex items-center text-secondary font-bold text-[10px] md:text-xs gap-1.5 md:gap-2 group-hover:gap-3 transition-all duration-300">
-            <span className="hidden sm:inline">BACA</span>
+            <span className="hidden sm:inline">{labels.read}</span>
             <span className="material-symbols-outlined text-[15px] md:text-[18px]">east</span>
           </div>
         </div>

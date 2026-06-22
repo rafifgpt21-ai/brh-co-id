@@ -23,7 +23,6 @@ export interface ResearchArea {
 export const languages: { code: LanguageCode; label: string }[] = [
   { code: "id", label: "Indonesia" },
   { code: "en", label: "English" },
-  { code: "ar", label: "العربية" },
 ];
 
 export const about: LocalizedText = {

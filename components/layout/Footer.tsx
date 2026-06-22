@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { CurrentYear } from '@/components/common/CurrentYear';
 import { Suspense } from 'react';
+import type { Locale } from '@/lib/i18n/config';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
 
-export const Footer = () => {
+export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
   return (
     <footer className="w-full py-16 mt-24 bg-tertiary">
       <div className="w-full px-6 md:px-12 lg:px-24 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -11,19 +13,19 @@ export const Footer = () => {
             BRH Intellectual
           </div>
           <p className="text-background/70 font-body text-sm max-w-xs text-center md:text-left">
-            Platform dedikasi untuk pengembangan pemikiran intelektual dan spiritual kontemporer.
+            {dict.footer.description}
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-8 font-label text-xs uppercase tracking-widest font-semibold md:gap-12">
-          <Link href="/biografi" className="text-background/70 hover:text-primary transition-colors">Biografi</Link>
-          <Link href="/riset" className="text-background/70 hover:text-primary transition-colors">Riset</Link>
-          <Link href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 hover:text-primary transition-colors">Kontak</Link>
+          <Link href={`/${lang}/biografi`} className="text-background/70 hover:text-primary transition-colors">{dict.nav.biography}</Link>
+          <Link href={`/${lang}/riset`} className="text-background/70 hover:text-primary transition-colors">{dict.nav.research}</Link>
+          <Link href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 hover:text-primary transition-colors">{dict.footer.contact}</Link>
           <Link href="/admin/login" className="text-background/70 hover:text-primary transition-colors">Admin</Link>
         </div>
       </div>
       <div className="w-full px-6 md:px-12 lg:px-24 mt-16 pt-8 border-t border-background/10 text-center">
         <p className="font-label text-[10px] uppercase tracking-[0.2em] text-background/40">
-          &copy; <Suspense fallback={<span>2026</span>}><CurrentYear /></Suspense> BRH Intellectual Platform. Curated for the Academic Mind.
+          &copy; <Suspense fallback={<span>2026</span>}><CurrentYear /></Suspense> BRH Intellectual Platform. {dict.footer.copyright}
         </p>
       </div>
     </footer>

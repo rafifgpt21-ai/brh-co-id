@@ -25,6 +25,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
       initialData={{
         id: post.id,
         title: post.title,
+        titleEn: (post as any).titleEn || '',
         category: post.category,
         status: post.status,
         thumbnail: post.thumbnail,
@@ -32,9 +33,12 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
           id: b.id,
           type: b.type,
           content: b.content,
+          contentEn: b.contentEn || '',
           url: b.url || '',
           title: b.title || '',
+          titleEn: b.titleEn || '',
           caption: b.caption || '',
+          captionEn: b.captionEn || '',
           isLocked: b.isLocked ?? false,
         })),
       }}

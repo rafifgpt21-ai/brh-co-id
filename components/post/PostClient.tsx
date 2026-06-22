@@ -5,6 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import React from "react";
+import type { Locale } from "@/lib/i18n/config";
+import { formatLocalizedDate } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getCategoryLabel } from "@/lib/i18n/posts";
 
 const SecurePDFViewer = dynamic(
   () => import("@/components/SecurePDFViewer").then((mod) => mod.SecurePDFViewer),
@@ -14,9 +18,11 @@ const SecurePDFViewer = dynamic(
 interface PostClientProps {
   post: any;
   relatedPosts: any[];
+  lang: Locale;
+  dict: Dictionary;
 }
 
-export default function PostClient({ post, relatedPosts }: PostClientProps) {
+export default function PostClient({ post, relatedPosts, lang, dict }: PostClientProps) {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -25,11 +31,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
   });
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return formatLocalizedDate(date, lang);
   };
 
   const getReadingTime = (blocks: any[]) => {
@@ -97,11 +99,11 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
             className="flex flex-col items-center"
           >
             <Link
-              href="/"
+              href={`/${lang}`}
               className="group inline-flex items-center gap-2 text-xs font-bold font-label tracking-widest uppercase text-on-surface-variant hover:text-secondary transition-all mb-10 bg-surface-container-lowest/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-outline-variant/10"
             >
               <span className="material-symbols-outlined text-[16px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-              Kembali Ke Beranda
+              {dict.post.backHome}
             </Link>
 
             <motion.div
@@ -111,7 +113,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
               className="flex flex-wrap justify-center gap-3 mb-8"
             >
               <span className="inline-block rounded-full bg-secondary text-on-secondary px-6 py-2 text-[10px] font-label font-bold tracking-[0.2em] uppercase shadow-lg shadow-secondary/20">
-                {post.category}
+                {getCategoryLabel(post.category, dict.explore.categories)}
               </span>
             </motion.div>
 
@@ -137,7 +139,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
               <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/30" />
               <div className="flex items-center gap-2.5">
                 <span className="material-symbols-outlined text-[18px] opacity-70">schedule</span>
-                {getReadingTime(post.blocks)} Menit Baca
+                {getReadingTime(post.blocks)} {dict.post.minutesRead}
               </div>
             </motion.div>
           </motion.div>
@@ -213,7 +215,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                     className="my-12"
                   >
                     <Link
-                      href={`/pdf-viewer?url=${encodeURIComponent(block.url || block.content)}&title=${encodeURIComponent(block.title || "Dokumen")}`}
+                      href={`/${lang}/pdf-viewer?url=${encodeURIComponent(block.url || block.content)}&title=${encodeURIComponent(block.title || "Dokumen")}`}
                       className="flex items-center gap-6 p-8 rounded-4xl bg-surface-container-high border border-outline-variant/15 hover:bg-surface-container-highest transition-all duration-500 group active:scale-[0.98]"
                     >
                       <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 group-hover:bg-secondary group-hover:text-on-secondary transition-all duration-500">
@@ -221,11 +223,11 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-headline font-bold text-xl text-primary truncate group-hover:text-secondary transition-colors">
-                          {block.title || "Lihat Dokumen PDF"}
+                          {block.title || dict.post.viewPdf}
                         </h4>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="material-symbols-outlined text-[14px] text-on-surface-variant">verified_user</span>
-                          <p className="text-xs text-on-surface-variant font-medium uppercase tracking-widest">Dokumen Terproteksi • Klik untuk Membaca</p>
+                          <p className="text-xs text-on-surface-variant font-medium uppercase tracking-widest">{dict.post.protectedDocument}</p>
                         </div>
                       </div>
                       <div className="w-10 h-10 rounded-full border border-outline-variant/30 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
@@ -254,7 +256,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                       <div className="flex items-center justify-center gap-3">
                         <span className="material-symbols-outlined text-red-600 text-[32px]">play_circle</span>
                         <h3 className="text-2xl font-headline font-extrabold text-primary tracking-tight">
-                          {block.title || "Video Terkait"}
+                          {block.title || dict.post.relatedVideo}
                         </h3>
                       </div>
                       <div className="aspect-video rounded-[2.5rem] overflow-hidden border border-outline-variant/15 bg-black ring-1 ring-white/5">
@@ -295,7 +297,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-headline font-bold text-xl text-primary truncate group-hover:text-secondary transition-colors">
-                          {block.title || "Tautan Terkait"}
+                          {block.title || dict.post.relatedLink}
                         </h4>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="material-symbols-outlined text-[14px] text-on-surface-variant">language</span>
@@ -348,7 +350,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                       >
                         <path d="M13.601 2.326A7.85 7.85 0 0 0 8 0a7.86 7.86 0 0 0-6.68 11.753l-.525 1.917a.4.4 0 0 0 .51.51l1.916-.525A7.86 7.86 0 0 0 16 8a7.86 7.86 0 0 0-2.399-5.674zM10.56 10.695c-.138.38-.722.744-1.077.827-.3.069-.692.13-1.098-.1-.365-.206-.74-.413-1.129-.756-.995-.877-1.63-1.879-1.859-2.222c-.228-.343-.451-.798-.451-1.29 0-.491.258-.731.35-.83.093-.1.207-.15.31-.15.1.004.2.004.288.008.09.003.208-.035.327.245.122.287.418 1.018.455 1.09.036.073.06.158.01.258-.05.1-.077.164-.155.25-.077.09-.162.2-.23.275-.077.075-.158.158-.068.312.09.15.398.654.85 1.054.582.516 1.07.677 1.222.753.15.075.24.064.33-.034.09-.1.38-.443.483-.595.103-.15.207-.126.347-.075.14.05.888.419 1.04.495.152.075.253.11.291.176.038.065.038.379-.1.76z" />
                       </svg>
-                      <span>{block.title || "Hubungi via WhatsApp"}</span>
+                      <span>{block.title || dict.post.whatsapp}</span>
                     </a>
                   </motion.div>
                 );
@@ -365,19 +367,19 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
           viewport={{ once: true }}
           className="flex flex-col items-center pt-12 border-t border-outline-variant/10"
         >
-          <p className="font-label text-xs font-bold tracking-[0.2em] uppercase text-on-surface-variant mb-6">Penutup Artikel</p>
+          <p className="font-label text-xs font-bold tracking-[0.2em] uppercase text-on-surface-variant mb-6">{dict.post.articleEnd}</p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="/"
+              href={`/${lang}`}
               className="px-8 py-3 rounded-full bg-primary text-on-primary font-headline font-bold text-sm hover:translate-y-[-2px] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98]"
             >
-              Beranda
+              {dict.post.home}
             </Link>
             <Link
-              href="/explore"
+              href={`/${lang}/explore`}
               className="px-8 py-3 rounded-full bg-surface-container-high text-primary font-headline font-bold text-sm hover:translate-y-[-2px] transition-all border border-outline-variant/20 active:scale-[0.98]"
             >
-              Katalog Karya
+              {dict.post.catalog}
             </Link>
           </div>
         </motion.div>
@@ -388,8 +390,8 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
         <section className="bg-surface-container-low/30 py-24 border-t border-outline-variant/10 mt-20">
           <div className="max-w-6xl mx-auto px-6">
             <div className="mb-12 text-center">
-              <span className="font-label text-xs font-bold tracking-[0.2em] text-secondary uppercase">Baca Juga</span>
-              <h2 className="font-headline font-bold text-3xl md:text-4xl mt-4 text-primary">Arsip Terkait Lainnya</h2>
+              <span className="font-label text-xs font-bold tracking-[0.2em] text-secondary uppercase">{dict.post.readAlso}</span>
+              <h2 className="font-headline font-bold text-3xl md:text-4xl mt-4 text-primary">{dict.post.relatedArchives}</h2>
             </div>
 
             <motion.div
@@ -414,7 +416,7 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                   }}
                 >
                   <Link
-                    href={`/post/${rPost.slug}`}
+                    href={`/${lang}/post/${rPost.slug}`}
                     className="group flex flex-col h-full bg-surface-container-lowest rounded-3xl overflow-hidden border border-outline-variant/10 hover:border-secondary/30 transition-all duration-500 hover:shadow-xl hover:shadow-secondary/5"
                   >
                     {rPost.thumbnail ? (
@@ -432,13 +434,13 @@ export default function PostClient({ post, relatedPosts }: PostClientProps) {
                     )}
                     <div className="p-8 flex-1 flex flex-col">
                       <span className="text-secondary font-label text-[10px] font-bold tracking-widest uppercase mb-3 block opacity-80">
-                        {rPost.category}
+                        {getCategoryLabel(rPost.category, dict.explore.categories)}
                       </span>
                       <h3 className="font-headline font-bold text-lg text-primary mb-4 leading-snug group-hover:text-secondary transition-colors line-clamp-2">
                         {rPost.title}
                       </h3>
                       <div className="mt-auto flex items-center text-secondary font-bold text-xs gap-2 group-hover:gap-3 transition-all pt-2 border-t border-outline-variant/10">
-                        Selengkapnya
+                        {dict.post.more}
                         <span className="material-symbols-outlined text-[16px]">east</span>
                       </div>
                     </div>

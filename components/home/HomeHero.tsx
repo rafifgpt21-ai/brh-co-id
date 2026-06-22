@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { useLenis } from 'lenis/react';
 import Link from 'next/link';
 import HeroSearch from '@/components/HeroSearch';
-import { ReactNode } from 'react';
+import type { Locale } from '@/lib/i18n/config';
+import type { Dictionary } from '@/lib/i18n/dictionaries';
 
-export default function HomeHero() {
+export default function HomeHero({ lang, dict }: { lang: Locale; dict: Dictionary }) {
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -84,22 +85,22 @@ export default function HomeHero() {
         variants={item}
         className="font-headline font-black text-5xl md:text-7xl lg:text-8xl tracking-tighter text-primary leading-[1.05] mb-8 max-w-6xl"
       >
-        Menyemai Pemikiran,<br />
-        <span className="text-tertiary italic">Menggerakkan</span> Perubahan
+        {dict.home.heroTitleA}<br />
+        <span className="text-tertiary italic">{dict.home.heroTitleB}</span> {dict.home.heroTitleC}
       </motion.h1>
 
       {/* Search Bar Area */}
       <motion.div variants={item} className="w-full max-w-2xl px-4 mt-8 md:mt-12">
-        <HeroSearch />
+        <HeroSearch lang={lang} labels={dict.search} />
 
         {/* Mobile-only Explore Shortcut */}
         <div className="md:hidden mt-6 flex justify-center">
           <Link
-            href="/explore"
+            href={`/${lang}/explore`}
             className="inline-flex items-center gap-2 px-6 py-3 bg-tertiary/10 text-tertiary rounded-full font-headline font-bold text-sm border border-tertiary/20 active:scale-95 transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">explore</span>
-            Jelajahi Semua Karya
+            {dict.home.mobileExplore}
           </Link>
         </div>
       </motion.div>
@@ -110,7 +111,7 @@ export default function HomeHero() {
           onClick={handleScrollToArsip}
           className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-tertiary hover:text-primary transition-all duration-500 cursor-pointer outline-none border-none bg-transparent"
         >
-          <span className="opacity-70 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">EKSPRESI INTELEKTUAL</span>
+          <span className="opacity-70 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">{dict.home.heroLabel}</span>
           <div className="w-12 h-12 rounded-full border border-tertiary/30 flex items-center justify-center group-hover:border-primary transition-colors group-hover:bg-primary/5">
             <span className="material-symbols-outlined group-hover:translate-y-1 transition-transform animate-bounce">south</span>
           </div>
