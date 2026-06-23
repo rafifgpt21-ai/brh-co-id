@@ -2,121 +2,229 @@
 
 import { motion } from 'framer-motion';
 import { useLenis } from 'lenis/react';
+import Image from 'next/image';
 import Link from 'next/link';
 import HeroSearch from '@/components/HeroSearch';
-import type { Locale } from '@/lib/i18n/config';
+import { formatLocalizedDate, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
-export default function HomeHero({ lang, dict }: { lang: Locale; dict: Dictionary }) {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.3,
-      },
-    },
-  };
+type HeroPanelItem =
+  | {
+      kind: "quote" | "insight";
+      id: string;
+      content: string;
+      imageUrl?: string | null;
+      createdAt: Date | string;
+    }
+  | {
+      kind: "article";
+      id: string;
+      title: string;
+      excerpt: string;
+      href: string;
+      category: string;
+      thumbnail?: string | null;
+      createdAt: Date | string;
+    }
+  | null;
 
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.16, 1, 0.3, 1] as any
-      }
-    },
-  };
+type HeroPanelLabels = {
+  quoteOfTheDay: string;
+  insight: string;
+  latestReading: string;
+  emptyTitle: string;
+  emptyDescription: string;
+};
 
+type HomeCopy = {
+  heroLabel: string;
+  heroTitleA: string;
+  heroTitleB: string;
+  heroTitleC: string;
+  mobileExplore: string;
+  archiveTitleA: string;
+  archiveTitleB: string;
+  readMore: string;
+  latestShort?: string;
+};
+
+function truncateText(value: string, limit: number) {
+  return value.length > limit ? `${value.slice(0, limit).trim()}...` : value;
+}
+
+export default function HomeHero({
+  lang,
+  home,
+  search,
+  heroPanelItem,
+  heroPanelLabels,
+}: {
+  lang: Locale;
+  home: HomeCopy;
+  search: Dictionary["search"];
+  heroPanelItem: HeroPanelItem;
+  heroPanelLabels: HeroPanelLabels;
+}) {
   const lenis = useLenis();
 
-  const handleScrollToArsip = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const scrollToLatest = (target: string) => (event: React.MouseEvent) => {
+    event.preventDefault();
     if (lenis) {
-      lenis.scrollTo('#arsip', {
-        offset: -80,
-        duration: 2,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+      lenis.scrollTo(target, {
+        offset: -88,
+        duration: 1.4,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       });
     }
   };
 
+  const renderPanelMeta = (label: string, date?: Date | string, category?: string) => (
+    <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-secondary sm:mb-4 sm:gap-3 sm:text-[11px] sm:tracking-[0.22em]">
+      <span className="shrink-0">{label}</span>
+      <span className="h-px flex-1 bg-outline-variant" />
+      {date && (
+        <span className="max-w-[48%] truncate tracking-normal text-on-surface-variant/55 sm:max-w-none">
+          {category ? `${category} / ` : ""}
+          {formatLocalizedDate(date, lang)}
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <motion.section
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="relative min-h-[85vh] flex flex-col items-center justify-center px-8 text-center overflow-hidden"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className="relative border-b border-outline-variant/30 bg-surface px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 md:px-12 md:pb-12 md:pt-10 lg:px-24 lg:pb-16"
     >
-      {/* Background Elements */}
-      <div className="absolute inset-0 -z-10 opacity-40 pointer-events-none">
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            rotate: [0, 5, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute top-10 left-1/4 w-[500px] h-[500px] bg-secondary-fixed/20 blur-[130px] rounded-full"
-        ></motion.div>
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, -5, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="absolute bottom-10 right-1/4 w-[600px] h-[600px] bg-primary-fixed/20 blur-[130px] rounded-full"
-        ></motion.div>
-      </div>
-
-
-      {/* Main Typography */}
-      <motion.h1
-        variants={item}
-        className="font-headline font-black text-5xl md:text-7xl lg:text-8xl tracking-tighter text-primary leading-[1.05] mb-8 max-w-6xl"
-      >
-        {dict.home.heroTitleA}<br />
-        <span className="text-tertiary italic">{dict.home.heroTitleB}</span> {dict.home.heroTitleC}
-      </motion.h1>
-
-      {/* Search Bar Area */}
-      <motion.div variants={item} className="w-full max-w-2xl px-4 mt-8 md:mt-12">
-        <HeroSearch lang={lang} labels={dict.search} />
-
-        {/* Mobile-only Explore Shortcut */}
-        <div className="md:hidden mt-6 flex justify-center">
-          <Link
-            href={`/${lang}/explore`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-tertiary/10 text-tertiary rounded-full font-headline font-bold text-sm border border-tertiary/20 active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">explore</span>
-            {dict.home.mobileExplore}
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* Primary CTA */}
-      <motion.div variants={item} className="mt-16">
-        <button
-          onClick={handleScrollToArsip}
-          className="group flex flex-col items-center gap-4 font-headline font-bold text-lg tracking-tight text-tertiary hover:text-primary transition-all duration-500 cursor-pointer outline-none border-none bg-transparent"
-        >
-          <span className="opacity-70 text-sm tracking-[0.3em] font-label mb-2 group-hover:opacity-100 transition-opacity">{dict.home.heroLabel}</span>
-          <div className="w-12 h-12 rounded-full border border-tertiary/30 flex items-center justify-center group-hover:border-primary transition-colors group-hover:bg-primary/5">
-            <span className="material-symbols-outlined group-hover:translate-y-1 transition-transform animate-bounce">south</span>
+      <div className="mx-auto grid max-w-7xl gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.62fr)] lg:items-end lg:gap-10">
+        <div className="min-w-0">
+          <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-black uppercase tracking-[0.2em] text-secondary sm:mb-7 sm:text-[11px] sm:tracking-[0.24em] md:mb-8">
+            <span>BRH Intellectual</span>
+            <span className="hidden h-px w-10 bg-outline/45 sm:block" />
+            <span className="hidden sm:inline">{home.heroLabel}</span>
           </div>
-        </button>
-      </motion.div>
+
+          <h1 className="max-w-5xl text-pretty font-headline text-[2.15rem] font-black leading-[1.02] tracking-tight text-primary xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+            {home.heroTitleA}{" "}
+            <span className="text-tertiary">{home.heroTitleB}</span>{" "}
+            <span className="italic text-secondary">{home.heroTitleC}</span>
+          </h1>
+
+          <div className="mt-6 max-w-2xl sm:mt-8">
+            <HeroSearch lang={lang} labels={search} />
+          </div>
+
+          <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:mt-7 sm:flex sm:flex-row sm:gap-3">
+            <Link
+              href={`/${lang}/explore`}
+              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-black text-on-primary transition hover:bg-tertiary sm:px-6"
+            >
+              <span className="material-symbols-outlined text-[19px]">travel_explore</span>
+              <span className="truncate">{home.mobileExplore}</span>
+            </Link>
+            <button
+              type="button"
+              onClick={scrollToLatest('#arsip')}
+              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-full border border-outline-variant/60 bg-surface px-4 text-sm font-black text-primary transition hover:border-secondary hover:bg-surface-container-low sm:px-6"
+            >
+              <span className="material-symbols-outlined text-[19px]">south</span>
+              <span className="hidden sm:inline">{home.archiveTitleA} {home.archiveTitleB}</span>
+              <span className="sm:hidden">{home.latestShort ?? home.archiveTitleA}</span>
+            </button>
+          </div>
+        </div>
+
+        <aside className="border-l-0 border-outline-variant/40 pt-1 sm:pt-2 lg:border-l lg:pl-10">
+          {heroPanelItem?.kind === "quote" && (
+            <button
+              type="button"
+              onClick={scrollToLatest('#notes')}
+              className="group block w-full rounded-lg border border-outline-variant/35 bg-surface-container-lowest/60 p-4 text-left sm:border-x-0 sm:bg-transparent sm:px-0 sm:py-8"
+            >
+              {renderPanelMeta(heroPanelLabels.quoteOfTheDay, heroPanelItem.createdAt)}
+              <p className="text-pretty font-headline text-xl font-black italic leading-tight text-tertiary transition group-hover:text-primary sm:text-2xl md:text-3xl">
+                &ldquo;{truncateText(heroPanelItem.content, 150)}&rdquo;
+              </p>
+              <span className="mt-4 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-secondary sm:mt-6 sm:text-xs">
+                {home.readMore}
+                <span className="material-symbols-outlined text-[17px] transition group-hover:translate-y-0.5">south</span>
+              </span>
+            </button>
+          )}
+
+          {heroPanelItem?.kind === "insight" && (
+            <button
+              type="button"
+              onClick={scrollToLatest('#notes')}
+              className="group block w-full rounded-lg border border-outline-variant/35 bg-surface-container-lowest/60 p-4 text-left sm:border-x-0 sm:bg-transparent sm:px-0 sm:py-8"
+            >
+              {renderPanelMeta(heroPanelLabels.insight, heroPanelItem.createdAt)}
+              <p className="text-pretty font-body text-base font-semibold leading-relaxed text-on-surface transition group-hover:text-primary sm:text-xl md:text-2xl">
+                {truncateText(heroPanelItem.content, 170)}
+              </p>
+              {heroPanelItem.imageUrl && (
+                <div className="relative mt-4 aspect-16/9 overflow-hidden rounded-md bg-surface-container sm:mt-6 sm:rounded-lg">
+                  <Image
+                    src={heroPanelItem.imageUrl}
+                    alt=""
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 420px"
+                    className="object-cover transition duration-700 group-hover:scale-105"
+                  />
+                </div>
+              )}
+            </button>
+          )}
+
+          {heroPanelItem?.kind === "article" && (
+            <Link
+              href={heroPanelItem.href}
+              className="group block w-full rounded-lg border border-outline-variant/35 bg-surface-container-lowest/60 p-4 text-left sm:border-x-0 sm:bg-transparent sm:px-0 sm:py-8"
+            >
+              {renderPanelMeta(heroPanelLabels.latestReading, heroPanelItem.createdAt, heroPanelItem.category)}
+              <h2 className="text-pretty font-headline text-xl font-black leading-tight text-tertiary transition group-hover:text-primary sm:text-2xl md:text-3xl">
+                {heroPanelItem.title}
+              </h2>
+              {heroPanelItem.excerpt && (
+                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-on-surface-variant/75 sm:mt-4 sm:line-clamp-3 sm:text-base">
+                  {heroPanelItem.excerpt}
+                </p>
+              )}
+              {heroPanelItem.thumbnail && (
+                <div className="relative mt-4 aspect-16/9 overflow-hidden rounded-md bg-surface-container sm:mt-6 sm:rounded-lg">
+                  <Image
+                    src={heroPanelItem.thumbnail}
+                    alt=""
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 420px"
+                    className="object-cover transition duration-700 group-hover:scale-105"
+                  />
+                </div>
+              )}
+              <span className="mt-4 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-secondary sm:mt-6 sm:text-xs">
+                {home.readMore}
+                <span className="material-symbols-outlined text-[17px] transition group-hover:translate-x-1">east</span>
+              </span>
+            </Link>
+          )}
+
+          {!heroPanelItem && (
+            <div className="rounded-lg border border-outline-variant/35 bg-surface-container-lowest/60 p-4 sm:border-x-0 sm:bg-transparent sm:px-0 sm:py-8">
+              <p className="font-label text-[10px] font-black uppercase tracking-[0.2em] text-secondary sm:text-[11px] sm:tracking-[0.24em]">
+                {heroPanelLabels.insight}
+              </p>
+              <h2 className="mt-3 font-headline text-xl font-black text-primary sm:mt-4 sm:text-2xl">
+                {heroPanelLabels.emptyTitle}
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-on-surface-variant/70 sm:mt-3 sm:text-base">
+                {heroPanelLabels.emptyDescription}
+              </p>
+            </div>
+          )}
+        </aside>
+      </div>
     </motion.section>
   );
 }

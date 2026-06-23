@@ -1,14 +1,22 @@
 "use server";
 // Force refresh user actions schema definition
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { Role } from "@/app/generated/prisma/client";
+import type { Role } from "@prisma/client";
+
+async function getPrisma() {
+  const { prisma } = await import("@/lib/prisma");
+  return prisma;
+}
+
+async function getSession() {
+  const { auth } = await import("@/auth");
+  return auth();
+}
 
 async function isSuperAdmin() {
-  const session = await auth();
+  const session = await getSession();
   return session?.user?.role === "SUPER_ADMIN";
 }
 
@@ -17,6 +25,7 @@ export async function getUsers() {
     throw new Error("Unauthorized");
   }
 
+  const prisma = await getPrisma();
   return await prisma.user.findMany({
     where: {
       role: {
@@ -55,6 +64,7 @@ export async function createUser(formData: FormData) {
   }
 
   // Check if username already exists
+  const prisma = await getPrisma();
   const existingUser = await prisma.user.findUnique({
     where: { username },
   });
@@ -110,6 +120,7 @@ export async function updateUser(id: string, formData: FormData) {
   }
 
   try {
+    const prisma = await getPrisma();
     await prisma.user.update({
       where: { id },
       data: data as any,
@@ -129,12 +140,13 @@ export async function deleteUser(id: string) {
   }
 
   // Prevent deleting self
-  const session = await auth();
+  const session = await getSession();
   if (session?.user?.id === id) {
     return { error: "Cannot delete yourself" };
   }
 
   try {
+    const prisma = await getPrisma();
     await prisma.user.delete({
       where: { id },
     });
@@ -148,11 +160,12 @@ export async function deleteUser(id: string) {
 }
 
 export async function getContactsForDropdown(): Promise<{ id: string, name: string | null, phone: string | null }[]> {
-  const session = await auth();
+  const session = await getSession();
   if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
     throw new Error("Unauthorized");
   }
 
+  const prisma = await getPrisma();
   const result = await prisma.user.findMany({
     where: {
       phone: { not: null, whitespace: { not: "" } },

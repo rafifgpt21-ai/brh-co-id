@@ -7,8 +7,6 @@ import { useParams } from "next/navigation";
 import LanguageTabs from "@/components/common/LanguageTabs";
 import {
   about,
-  books,
-  journals,
   languages,
   type LanguageCode,
 } from "@/lib/brh-content";
@@ -73,33 +71,6 @@ const RoleItem = ({
         {role}
       </h3>
       <p className="font-body text-sm text-on-surface/70">{organization}</p>
-    </div>
-  </motion.div>
-);
-
-const BookItem = ({
-  title,
-  year,
-  dir,
-}: {
-  title: string;
-  year: string;
-  dir: "ltr" | "rtl";
-}) => (
-  <motion.div
-    whileHover={{ scale: 1.02, y: -2 }}
-    whileTap={{ scale: 0.98 }}
-    className="group cursor-default rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-    dir={dir}
-  >
-    <div className="flex items-start gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/5 text-secondary transition-colors group-hover:bg-secondary group-hover:text-white">
-        <span className="material-symbols-outlined text-xl">book</span>
-      </div>
-      <div>
-        <h4 className="font-headline text-sm font-bold leading-tight text-primary">{title}</h4>
-        <p className="mt-1 font-label text-[10px] text-on-surface/40">{year}</p>
-      </div>
     </div>
   </motion.div>
 );
@@ -333,80 +304,6 @@ export default function BiografiPage() {
             </div>
           </section>
 
-          <section>
-            <SectionHeader num="04" title="Karya Tulis" />
-
-            <LanguageTabs languages={languages} defaultLanguage={defaultLanguage}>
-              {(language) => {
-                const dir = language === "ar" ? "rtl" : "ltr";
-
-                return (
-                  <motion.div
-                    key={language}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-16"
-                  >
-                    <div>
-                      <h3 className="mb-6 flex items-center gap-2 font-headline text-xl font-bold">
-                        <span className="material-symbols-outlined text-secondary">menu_book</span>
-                        Buku Pilihan
-                      </h3>
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        {books.map((book) => (
-                          <BookItem
-                            key={`${book.year}-${book.title.id}`}
-                            title={book.title[language]}
-                            year={book.year}
-                            dir={dir}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="mb-6 flex items-center gap-2 font-headline text-xl font-bold">
-                        <span className="material-symbols-outlined text-secondary">article</span>
-                        Publikasi Jurnal
-                      </h3>
-                      <div className="space-y-6">
-                        {journals.map((journal) => (
-                          <motion.div
-                            key={journal.url}
-                            initial={{ opacity: 0, x: 20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            className="group border-b border-gray-100 pb-6 transition-colors last:border-0 hover:border-secondary/20"
-                          >
-                            <p className="mb-2 font-label text-[10px] uppercase tracking-widest text-on-surface/40">
-                              {journal.year}
-                            </p>
-                            <a
-                              href={journal.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
-                              <h4 className="text-balance font-headline font-bold leading-snug text-primary transition-colors group-hover:text-secondary">
-                                {journal.title}
-                              </h4>
-                              <p className="mt-2 font-body text-sm italic text-on-surface/60">
-                                {journal.reference}
-                              </p>
-                              <div className="mt-3 flex items-center gap-2 font-label text-[10px] font-bold text-secondary opacity-0 transition-opacity group-hover:opacity-100">
-                                LIHAT DOKUMEN
-                                <span className="material-symbols-outlined text-xs">open_in_new</span>
-                              </div>
-                            </a>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              }}
-            </LanguageTabs>
-          </section>
         </main>
       </div>
     </div>

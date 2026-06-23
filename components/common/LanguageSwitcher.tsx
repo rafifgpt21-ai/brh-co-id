@@ -15,7 +15,10 @@ export function LanguageSwitcher({ currentLocale }: LanguageSwitcherProps) {
   function switchLocale(locale: Locale) {
     document.cookie = `${localeCookieName}=${locale}; path=/; max-age=31536000; SameSite=Lax`;
     const query = searchParams.toString();
-    const nextPath = withLocale(pathname || "/", locale);
+    const currentPath = pathname || "/";
+    const nextPath = currentPath.startsWith("/admin")
+      ? currentPath
+      : withLocale(currentPath, locale);
     router.push(query ? `${nextPath}?${query}` : nextPath);
     router.refresh();
   }

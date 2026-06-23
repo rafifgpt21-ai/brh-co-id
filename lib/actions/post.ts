@@ -1,10 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { revalidatePath, updateTag, cacheTag, cacheLife } from "next/cache";
 import { deleteFilesFromStorage } from "@/lib/uploadthing-server";
-import { indexPublishedPost, removePostFromKnowledgeIndex } from "@/lib/chatbot/indexing";
 import { z } from "zod";
 
 // Helper: generate slug from title
@@ -63,8 +60,19 @@ const postFormSchema = z.object({
   blocks: z.array(blockSchema),
 });
 
+async function getPrisma() {
+  const { prisma } = await import("@/lib/prisma");
+  return prisma;
+}
+
+async function getSession() {
+  const { auth } = await import("@/auth");
+  return auth();
+}
+
 async function refreshPostKnowledgeIndex(postId: string) {
   try {
+    const { indexPublishedPost } = await import("@/lib/chatbot/indexing");
     await indexPublishedPost(postId);
   } catch (error) {
     console.error("Error refreshing chatbot knowledge index:", error);
@@ -73,7 +81,7 @@ async function refreshPostKnowledgeIndex(postId: string) {
 
 // CREATE or UPDATE a post
 export async function savePost(data: PostFormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
     return { success: false, error: "Unauthorized" };
   }
@@ -86,6 +94,7 @@ export async function savePost(data: PostFormData) {
   const validData = parsedData.data;
 
   try {
+    const prisma = await getPrisma();
     const slug = generateSlug(validData.title);
     const slugEn = validData.titleEn?.trim() ? generateSlug(validData.titleEn) : null;
 
@@ -225,12 +234,13 @@ export async function savePost(data: PostFormData) {
 
 // DELETE a post
 export async function deletePost(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
     return { success: false, error: "Unauthorized" };
   }
 
   try {
+    const prisma = await getPrisma();
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) {
       return { success: false, error: "Post tidak ditemukan" };
@@ -256,6 +266,7 @@ export async function deletePost(id: string) {
     }
 
     await prisma.post.delete({ where: { id } });
+    const { removePostFromKnowledgeIndex } = await import("@/lib/chatbot/indexing");
     await removePostFromKnowledgeIndex(id);
     
     revalidatePath("/admin");
@@ -276,7 +287,7 @@ export async function getPosts(options?: {
   category?: string;
   locale?: string;
 }) {
-  const session = await auth();
+  const session = await getSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
 
   return getPostsInternal(options, isAdmin);
@@ -294,6 +305,7 @@ async function getPostsInternal(options?: {
   cacheLife("minutes");
 
   try {
+    const prisma = await getPrisma();
     const where: Record<string, unknown> = {};
 
     if (!isAdmin) {
@@ -324,7 +336,7 @@ async function getPostsInternal(options?: {
 
 // GET single post by id
 export async function getPostById(id: string) {
-  const session = await auth();
+  const session = await getSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
   return getPostByIdInternal(id, isAdmin);
 }
@@ -334,6 +346,7 @@ async function getPostByIdInternal(id: string, isAdmin: boolean) {
   cacheTag("posts", `post-${id}`);
   
   try {
+    const prisma = await getPrisma();
     const post = await prisma.post.findUnique({ where: { id } });
     if (post && post.status !== "Published" && !isAdmin) {
       return null;
@@ -346,7 +359,7 @@ async function getPostByIdInternal(id: string, isAdmin: boolean) {
 
 // GET single post by slug (for public view)
 export async function getPostBySlug(slug: string) {
-  const session = await auth();
+  const session = await getSession();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
   return getPostBySlugInternal(slug, isAdmin);
 }
@@ -356,6 +369,7 @@ async function getPostBySlugInternal(slug: string, isAdmin: boolean) {
   cacheTag("posts", `post-slug-${slug}`);
 
   try {
+    const prisma = await getPrisma();
     const post = await prisma.post.findFirst({
       where: {
         OR: [
@@ -375,11 +389,12 @@ async function getPostBySlugInternal(slug: string, isAdmin: boolean) {
 
 // Check if a file URL (PDF/Image) is authorized to be viewed
 export async function getPostByFileUrl(url: string) {
-  const session = await auth();
+  const session = await getSession();
   const role = session?.user?.role;
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
 
   try {
+    const prisma = await getPrisma();
     // Find any post containing this URL in its blocks
     const post = await prisma.post.findFirst({
       where: {

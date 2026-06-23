@@ -9,6 +9,7 @@
     "lint": "eslint",
     "seed": "npx tsx scripts/seed-admin.ts",
     "seed:posts": "npx tsx scripts/seed-posts.ts",
+    "reset:content": "npx tsx scripts/reset-database.ts",
     "delete:posts": "npx tsx scripts/delete-all-posts.ts",
     "index:chatbot": "npx tsx scripts/index-chatbot.ts"
   },

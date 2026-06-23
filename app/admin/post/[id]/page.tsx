@@ -2,8 +2,13 @@ import { PostEditor } from "@/components/admin/PostEditor";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getPostById } from "@/lib/actions/post";
+import { Suspense } from "react";
 
-export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
+function PostEditorFallback() {
+  return <div className="min-h-[70vh] animate-pulse rounded-2xl bg-surface-container-low" />;
+}
+
+async function EditPostContent({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session) {
     redirect("/admin/login");
@@ -43,5 +48,13 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
         })),
       }}
     />
+  );
+}
+
+export default function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<PostEditorFallback />}>
+      <EditPostContent params={params} />
+    </Suspense>
   );
 }

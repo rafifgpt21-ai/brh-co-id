@@ -1,18 +1,40 @@
-import { auth } from "@/auth";
-import Link from "next/link";
+import { Header } from "@/components/layout/Header";
+import { LenisProvider } from "@/components/providers/LenisProvider";
+import { defaultLocale, hasLocale, localeCookieName, type Locale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Not explicitly requiring session here since pages handle redirects, 
-  // but we can leave the server component wrapper.
+async function getAdminLocale(): Promise<Locale> {
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get(localeCookieName)?.value;
+  if (hasLocale(cookieLocale)) return cookieLocale;
 
+  const headerStore = await headers();
+  const acceptedLanguage = headerStore.get("accept-language")?.toLowerCase() || "";
+  if (acceptedLanguage.includes("id")) return "id";
+
+  return defaultLocale;
+}
+
+async function AdminHeader() {
+  const lang = await getAdminLocale();
+  const dict = await getDictionary(lang);
+
+  return <Header lang={lang} dict={dict} />;
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-transparent flex flex-col font-sans">
-      <div className="flex-1 px-1 sm:px-6 w-full mx-auto pt-2 md:pt-4 pb-8 lg:pb-16">
-        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center text-sm text-on-surface-variant">Memuat admin...</div>}>
+    <LenisProvider>
+      <Suspense fallback={<div className="h-20 w-full bg-[#fcf8fa]/80" />}>
+        <AdminHeader />
+      </Suspense>
+      <main className="flex-1 pt-20">
+        <div className="w-full px-1 sm:px-6 mx-auto pt-2 md:pt-4 pb-8 lg:pb-16">
           {children}
-        </Suspense>
-      </div>
-    </div>
+        </div>
+      </main>
+    </LenisProvider>
   );
 }

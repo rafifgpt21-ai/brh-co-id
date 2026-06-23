@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { QuickPostComposer } from "@/components/home/QuickPostComposer";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -37,14 +38,18 @@ function getSourceMeta(source: ChatSource) {
 export function ChatWidget({
   lang,
   dict,
+  isAdmin = false,
+  quickPostLabels,
 }: {
   lang: Locale;
   dict: Dictionary["chat"];
+  isAdmin?: boolean;
+  quickPostLabels?: Dictionary["quickPost"];
 }) {
   const pathname = usePathname();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<"chat" | "note" | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -56,9 +61,9 @@ export function ChatWidget({
   ]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (activePanel !== "chat") return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [isOpen, messages, isLoading]);
+  }, [activePanel, messages, isLoading]);
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/pdf-viewer")) {
     return null;
@@ -127,8 +132,38 @@ export function ChatWidget({
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-40 flex flex-col items-end gap-3 sm:inset-x-auto sm:right-5 sm:bottom-5">
-      {isOpen && (
+    <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[60] flex flex-col items-end gap-3 sm:inset-x-auto sm:right-5 sm:bottom-5">
+      {activePanel === "note" && isAdmin && quickPostLabels && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/35 p-0 backdrop-blur-sm sm:items-center sm:p-6">
+          <button
+            type="button"
+            aria-label={quickPostLabels.cancel}
+            className="absolute inset-0 cursor-default"
+            onClick={() => setActivePanel(null)}
+          />
+          <section className="relative z-10 w-full max-w-xl overflow-hidden rounded-t-[1.5rem] bg-surface-container-lowest shadow-[0_24px_90px_rgba(41,47,54,0.28)] sm:rounded-2xl">
+            <div className="flex items-center justify-between border-b border-outline-variant/20 px-4 py-3 sm:px-5">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="material-symbols-outlined text-[21px] text-secondary">edit_note</span>
+                <h2 className="truncate font-headline text-sm font-black text-primary">
+                  {quickPostLabels.composeTitle}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePanel(null)}
+                className="grid h-10 w-10 place-items-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high"
+                aria-label={quickPostLabels.cancel}
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <QuickPostComposer labels={quickPostLabels} hideHeader />
+          </section>
+        </div>
+      )}
+
+      {activePanel === "chat" && (
         <section className="flex h-[min(680px,calc(100dvh-6rem))] w-full max-w-[430px] flex-col overflow-hidden rounded-xl border border-outline-variant/25 bg-surface shadow-[0_20px_70px_rgba(41,47,54,0.22)] sm:w-[430px]">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-outline-variant/20 bg-primary px-4 py-3 text-on-primary">
             <div className="min-w-0">
@@ -138,7 +173,7 @@ export function ChatWidget({
             <button
               type="button"
               aria-label={dict.close}
-              onClick={() => setIsOpen(false)}
+              onClick={() => setActivePanel(null)}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-md hover:bg-white/10"
             >
               <span className="material-symbols-outlined text-[22px]">close</span>
@@ -248,16 +283,48 @@ export function ChatWidget({
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        aria-label={dict.open}
-        className="grid h-14 w-14 place-items-center rounded-full bg-primary text-on-primary shadow-[0_12px_30px_rgba(0,0,0,0.22)] transition hover:scale-105"
-      >
-        <span className="material-symbols-outlined text-[26px]">
-          {isOpen ? "keyboard_arrow_down" : "chat"}
-        </span>
-      </button>
+      {isAdmin && quickPostLabels ? (
+        <div className="flex max-w-full items-center gap-2 rounded-full border border-outline-variant/25 bg-surface/92 p-1.5 shadow-[0_14px_40px_rgba(41,47,54,0.18)] backdrop-blur-xl">
+          <button
+            type="button"
+            onClick={() => setActivePanel((current) => (current === "note" ? null : "note"))}
+            aria-label={quickPostLabels.composeTitle}
+            className={`inline-flex h-12 min-w-0 items-center gap-2 rounded-full px-4 text-xs font-black transition sm:px-5 ${
+              activePanel === "note"
+                ? "bg-primary text-on-primary"
+                : "bg-surface-container-lowest text-primary hover:bg-surface-container"
+            }`}
+          >
+            <span className="material-symbols-outlined text-[21px]">edit_note</span>
+            <span className="truncate">{quickPostLabels.composeTitle}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActivePanel((current) => (current === "chat" ? null : "chat"))}
+            aria-label={dict.open}
+            className={`grid h-12 w-12 place-items-center rounded-full transition ${
+              activePanel === "chat"
+                ? "bg-primary text-on-primary"
+                : "bg-tertiary text-on-tertiary hover:bg-primary"
+            }`}
+          >
+            <span className="material-symbols-outlined text-[23px]">
+              {activePanel === "chat" ? "keyboard_arrow_down" : "chat"}
+            </span>
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setActivePanel((current) => (current === "chat" ? null : "chat"))}
+          aria-label={dict.open}
+          className="grid h-14 w-14 place-items-center rounded-full bg-primary text-on-primary shadow-[0_12px_30px_rgba(0,0,0,0.22)] transition hover:scale-105"
+        >
+          <span className="material-symbols-outlined text-[26px]">
+            {activePanel === "chat" ? "keyboard_arrow_down" : "chat"}
+          </span>
+        </button>
+      )}
     </div>
   );
 }

@@ -2,8 +2,13 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getPosts } from "@/lib/actions/post";
 import { AdminPostList } from "@/components/admin/AdminPostList";
+import { Suspense } from "react";
 
-export default async function AdminDashboard() {
+function AdminPageFallback() {
+  return <div className="min-h-[50vh] animate-pulse rounded-2xl bg-surface-container-low" />;
+}
+
+async function AdminDashboardContent() {
   const session = await auth();
   
   if (!session) {
@@ -28,4 +33,12 @@ export default async function AdminDashboard() {
   }));
 
   return <AdminPostList initialPosts={serializedPosts} />;
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <AdminDashboardContent />
+    </Suspense>
+  );
 }

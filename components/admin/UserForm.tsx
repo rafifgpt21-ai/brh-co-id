@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createUser, updateUser } from '@/lib/actions/user-actions';
-import { Role } from "@/app/generated/prisma/client";
+import { Role } from "@prisma/client";
 interface UserFormProps {
   user?: {
     id: string;

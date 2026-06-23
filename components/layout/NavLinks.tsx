@@ -15,6 +15,7 @@ export const getNavLinks = (isAdmin: boolean | undefined, lang: Locale, labels: 
   { href: `/${lang}`, label: labels.home },
   { href: `/${lang}/explore`, label: labels.explore },
   { href: `/${lang}/biografi`, label: labels.biography },
+  { href: `/${lang}/publikasi`, label: labels.publications },
   { href: `/${lang}/riset`, label: labels.research },
   ...(isAdmin ? [{ href: '/admin', label: labels.admin }] : []),
 ];

@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import {
   defaultLocale,
   hasLocale,
@@ -18,7 +17,7 @@ function getLocale(request: NextRequest): Locale {
   return defaultLocale;
 }
 
-const authProxy = auth((request) => {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/admin")) {
@@ -47,9 +46,9 @@ const authProxy = auth((request) => {
   const url = request.nextUrl.clone();
   url.pathname = pathname === "/" ? `/${locale}` : `/${locale}${pathname}`;
   return NextResponse.redirect(url);
-});
+}
 
-export { authProxy as proxy, authProxy as middleware, authProxy as default };
+export { proxy as middleware, proxy as default };
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.png|.*\\..*).*)"],

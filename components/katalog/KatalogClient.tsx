@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useTransition } from "react";
-import { Post } from "@/app/generated/prisma/client";
+import type { Post } from "@prisma/client";
 import ArchiveCard from "./ArchiveCard";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";

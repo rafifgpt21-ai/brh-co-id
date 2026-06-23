@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Post } from "@/app/generated/prisma/client";
+import type { Post } from "@prisma/client";
 import type { Locale } from '@/lib/i18n/config';
 import { formatLocalizedDate } from '@/lib/i18n/config';
 import { getCategoryLabel } from '@/lib/i18n/posts';

@@ -1,4 +1,4 @@
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import { FloatingActions } from "@/components/chat/FloatingActions";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { LenisProvider } from "@/components/providers/LenisProvider";
@@ -35,7 +35,7 @@ export default async function PublicLayout({
       </main>
       <Footer lang={lang} dict={dict} />
       <Suspense fallback={null}>
-        <ChatWidget lang={lang} dict={dict.chat} />
+        <FloatingActions lang={lang} dict={dict} />
       </Suspense>
     </LenisProvider>
   );

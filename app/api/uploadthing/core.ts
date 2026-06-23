@@ -1,12 +1,11 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 
-import { auth } from "@/auth";
-
 const f = createUploadthing();
 
 // Function to check for actual admin user
 const checkAuth = async () => {
+  const { auth } = await import("@/auth");
   const session = await auth();
   const role = session?.user?.role;
   if (!session || (role !== "ADMIN" && role !== "SUPER_ADMIN")) return null;

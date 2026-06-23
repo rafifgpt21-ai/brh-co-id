@@ -1,189 +1,271 @@
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { auth } from '@/auth';
 import { getPosts } from '@/lib/actions/post';
+import { getQuickPosts } from '@/lib/actions/quick-post';
 import HomeHero from '@/components/home/HomeHero';
+import { QuickPostFeed } from '@/components/home/QuickPostFeed';
 import { formatLocalizedDate, hasLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
-import { localizePost, getCategoryLabel } from '@/lib/i18n/posts';
+import { getCategoryLabel, localizePost } from '@/lib/i18n/posts';
 import { notFound } from 'next/navigation';
-
-// Dynamically import components that are below the fold
 
 const ScrollReveal = dynamic(() => import('@/components/home/ScrollReveal'), {
   ssr: true,
 });
 
+type LocalizedHomePost = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  thumbnail?: string | null;
+  createdAt: Date | string;
+  blocks?: Array<{
+    type: string;
+    content?: string | null;
+  }>;
+};
+
+type HeroPanelItem =
+  | {
+      kind: "quote" | "insight";
+      id: string;
+      content: string;
+      imageUrl?: string | null;
+      createdAt: Date | string;
+    }
+  | {
+      kind: "article";
+      id: string;
+      title: string;
+      excerpt: string;
+      href: string;
+      category: string;
+      thumbnail?: string | null;
+      createdAt: Date | string;
+    }
+  | null;
+
+function getPostSnippet(post: LocalizedHomePost) {
+  const firstTextBlock = post.blocks?.find((block) => block.type === 'text');
+  const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
+  return plainContent
+    ? plainContent.substring(0, 170) + (plainContent.length > 170 ? '...' : '')
+    : '';
+}
+
 export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
   const { lang: rawLang } = await params;
   if (!hasLocale(rawLang)) notFound();
+
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  const quickPosts = await getQuickPosts({ includeDrafts: isAdmin, limit: 12 });
   const allPosts = await getPosts({ status: 'Published', locale: lang });
-  const latestPosts = allPosts.slice(0, 4).map((post: any) => localizePost(post, lang));
+  const latestPosts = allPosts.slice(0, 4).map((post) => localizePost(post, lang) as LocalizedHomePost);
+  const latestQuote = quickPosts.find((post) => post.type === "QUOTE");
+  const latestInsight = quickPosts.find((post) => post.type !== "QUOTE");
+  const latestArticle = latestPosts[0];
+  const heroPanelItem: HeroPanelItem = latestQuote
+    ? {
+        kind: "quote",
+        id: latestQuote.id,
+        content: latestQuote.content,
+        createdAt: latestQuote.createdAt,
+      }
+    : latestInsight
+      ? {
+          kind: "insight",
+          id: latestInsight.id,
+          content: latestInsight.content,
+          imageUrl: latestInsight.imageUrl,
+          createdAt: latestInsight.createdAt,
+        }
+      : latestArticle
+        ? {
+            kind: "article",
+            id: latestArticle.id,
+            title: latestArticle.title,
+            excerpt: getPostSnippet(latestArticle),
+            href: `/${lang}/post/${latestArticle.slug}`,
+            category: getCategoryLabel(latestArticle.category, dict.explore.categories),
+            thumbnail: latestArticle.thumbnail,
+            createdAt: latestArticle.createdAt,
+          }
+        : null;
+  const quickPostFeedLabels = {
+    emptyTitle: dict.quickPost.emptyTitle,
+    emptyDescription: dict.quickPost.emptyDescription,
+    normal: dict.quickPost.normal,
+    quote: dict.quickPost.quote,
+    readMore: dict.quickPost.readMore,
+    showLess: dict.quickPost.showLess,
+    draftBadge: dict.quickPost.draftBadge,
+    publish: dict.quickPost.publish,
+    edit: dict.quickPost.edit,
+    save: dict.quickPost.save,
+    cancel: dict.quickPost.cancel,
+    delete: dict.quickPost.delete,
+  };
 
   return (
-    <div className="overflow-x-hidden">
-      {/* Hero Section */}
-      <HomeHero lang={lang} dict={dict} />
+    <div className="overflow-x-hidden bg-surface pb-24 sm:pb-0">
+      <HomeHero
+        lang={lang}
+        home={dict.home}
+        search={dict.search}
+        heroPanelItem={heroPanelItem}
+        heroPanelLabels={dict.home.heroPanel}
+      />
 
+      <section className="w-full px-4 py-8 sm:px-6 sm:py-12 md:px-12 lg:px-24 lg:py-20">
+        <div className="mx-auto max-w-7xl">
+          <QuickPostFeed
+            quickPosts={quickPosts}
+            isAdmin={isAdmin}
+            lang={lang}
+            labels={quickPostFeedLabels}
+          />
+        </div>
+      </section>
 
-      {/* Content Section */}
-      <section id="arsip" className="w-full px-6 md:px-12 lg:px-24 mx-auto py-32 bg-surface">
-        <ScrollReveal className="mb-20">
-          <span className="font-label text-xs font-bold tracking-[0.3em] text-secondary uppercase block mb-4">{dict.home.archiveEyebrow}</span>
-          <h2 className="font-headline font-black text-4xl md:text-5xl lg:text-6xl text-primary leading-tight tracking-tighter">
-            {dict.home.archiveTitleA} <span className="text-secondary italic">{dict.home.archiveTitleB}</span>
-          </h2>
-          <div className="w-20 h-1.5 bg-secondary mt-8 rounded-full"></div>
-        </ScrollReveal>
+      <section id="arsip" className="w-full bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24">
+        <div className="mx-auto max-w-7xl">
+          <ScrollReveal className="mb-6 flex flex-col gap-4 border-b border-outline-variant/35 pb-6 sm:mb-8 sm:gap-5 sm:pb-8 md:flex-row md:items-end md:justify-between">
+            <div>
+              <span className="font-label text-[10px] font-black uppercase tracking-[0.24em] text-secondary sm:text-xs sm:tracking-[0.28em]">
+                {dict.home.archiveEyebrow}
+              </span>
+              <h2 className="mt-3 max-w-3xl font-headline text-3xl font-black leading-tight tracking-tight text-primary sm:mt-4 md:text-5xl">
+                {dict.home.archiveTitleA} <span className="text-tertiary">{dict.home.archiveTitleB}</span>
+              </h2>
+            </div>
+            <Link
+              href={`/${lang}/explore`}
+              className="inline-flex h-12 w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary"
+            >
+              {dict.home.viewAll}
+              <span className="material-symbols-outlined text-[19px]">grid_view</span>
+            </Link>
+          </ScrollReveal>
 
-        {latestPosts.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {latestPosts.map((post: any, index: number) => {
-              // Extract snippet from first text block
-              const firstTextBlock = post.blocks?.find((b: any) => b.type === 'text');
-              const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
-              const snippet = plainContent
-                ? plainContent.substring(0, 160) + (plainContent.length > 160 ? '...' : '')
-                : '';
+          {latestPosts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
+              {latestPosts.map((post, index) => {
+                const snippet = getPostSnippet(post);
+                const isLead = index === 0;
 
-              return (
-                <ScrollReveal key={post.id} delay={index * 0.1}>
-                  <Link
-                    href={`/${lang}/post/${post.slug}`}
-                    className="group relative flex flex-col sm:flex-row bg-surface-container-lowest rounded-[32px] overflow-hidden border border-outline-variant/15 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-700 hover:-translate-y-2 h-full"
-                  >
-                    {/* Info Area (Left) */}
-                    <div className="flex-1 p-8 md:p-10 flex flex-col justify-between order-2 sm:order-1 relative z-10">
-                      <div>
-                        <div className="flex items-center gap-3 mb-6">
-                          <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                          <span className="text-on-surface-variant font-label text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
-                            {getCategoryLabel(post.category, dict.explore.categories)}
-                          </span>
-                        </div>
-                        <h3 className="font-headline font-black text-2xl md:text-3xl text-primary mb-5 leading-[1.2] tracking-tight group-hover:text-secondary transition-colors duration-500">
-                          {post.title}
-                        </h3>
-                        {snippet && (
-                          <p className="text-on-surface-variant/70 text-base line-clamp-3 mb-8 font-body leading-relaxed group-hover:text-on-surface transition-colors duration-500">
-                            {snippet}
-                          </p>
+                return (
+                  <ScrollReveal key={post.id} delay={index * 0.08} className={isLead ? "lg:col-span-2 lg:row-span-2" : ""}>
+                    <Link
+                      href={`/${lang}/post/${post.slug}`}
+                      className={`group flex h-full overflow-hidden rounded-lg border border-outline-variant/30 bg-surface transition hover:border-secondary/50 hover:shadow-xl hover:shadow-primary/5 ${
+                        isLead ? "flex-col" : "flex-col"
+                      }`}
+                    >
+                      <div className={`relative order-2 overflow-hidden bg-surface-container md:order-1 ${isLead ? "aspect-16/9 md:aspect-16/10" : "aspect-16/9 md:aspect-16/11"}`}>
+                        {post.thumbnail ? (
+                          <Image
+                            src={post.thumbnail}
+                            alt={post.title}
+                            fill
+                            sizes={isLead ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 1024px) 100vw, 25vw"}
+                            className="object-cover transition duration-700 group-hover:scale-105"
+                            priority={index < 2}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <span className="material-symbols-outlined text-5xl text-secondary/35">menu_book</span>
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between mt-auto pt-6 border-t border-outline-variant/10">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">calendar_today</span>
-                          <p className="text-on-surface-variant/60 text-xs font-bold tracking-tight">
+                      <div className={`${isLead ? "p-4 sm:p-5 md:p-8" : "p-4 sm:p-5"} order-1 flex flex-1 flex-col md:order-2`}>
+                        <div className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-secondary sm:mb-4 sm:text-[11px] sm:tracking-[0.18em]">
+                          <span>{getCategoryLabel(post.category, dict.explore.categories)}</span>
+                          <span className="h-px w-6 bg-outline-variant" />
+                          <span className="tracking-normal text-on-surface-variant/55">
                             {formatLocalizedDate(post.createdAt, lang)}
+                          </span>
+                        </div>
+                        <h3 className={`${isLead ? "text-2xl md:text-4xl" : "text-xl"} text-pretty font-headline font-black leading-tight text-primary transition group-hover:text-tertiary`}>
+                          {post.title}
+                        </h3>
+                        {snippet && (
+                          <p className={`${isLead ? "text-sm sm:text-base" : "text-sm"} mt-3 line-clamp-3 leading-relaxed text-on-surface-variant/75 sm:mt-4`}>
+                            {snippet}
                           </p>
-                        </div>
-                        <div className="inline-flex items-center text-secondary font-black text-xs gap-2 group-hover:gap-4 transition-all duration-500 uppercase tracking-widest">
+                        )}
+                        <span className="mt-5 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-secondary sm:mt-6 sm:text-xs">
                           {dict.home.readMore}
-                          <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">east</span>
-                        </div>
+                          <span className="material-symbols-outlined text-[17px] transition group-hover:translate-x-1">east</span>
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Thumbnail (Right) */}
-                    <div className="w-full sm:w-48 md:w-64 lg:w-56 xl:w-72 aspect-square sm:aspect-auto shrink-0 relative overflow-hidden order-1 sm:order-2 text-primary font-black text-lg">
-                      {post.thumbnail ? (
-                        <Image
-                          src={post.thumbnail}
-                          alt={post.title}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out grayscale-20 group-hover:grayscale-0"
-                          priority={index < 2} // Prioritize first two images for LCP
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-linear-to-br from-secondary/10 to-primary/15 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-secondary/30 text-6xl">menu_book</span>
-                        </div>
-                      )}
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent group-hover:opacity-0 transition-opacity duration-500"></div>
-                    </div>
-                  </Link>
-                </ScrollReveal>
-              );
-            })}
-          </div>
-        ) : (
-          <ScrollReveal>
-            <div className="text-center py-32 bg-surface-container-low rounded-[40px] border border-dashed border-outline-variant/30">
-              <div className="inline-flex w-24 h-24 items-center justify-center rounded-full bg-surface-container-highest mb-8 text-on-surface-variant/20">
-                <span className="material-symbols-outlined text-5xl">inventory_2</span>
+                    </Link>
+                  </ScrollReveal>
+                );
+              })}
+            </div>
+          ) : (
+            <ScrollReveal>
+              <div className="border-y border-dashed border-outline-variant/40 py-12 text-center sm:py-20">
+                <span className="material-symbols-outlined text-4xl text-secondary/35 sm:text-5xl">inventory_2</span>
+                <h3 className="mt-4 text-xl font-black tracking-tight text-primary sm:mt-5 sm:text-2xl">{dict.home.emptyTitle}</h3>
+                <p className="mx-auto mt-2 max-w-sm text-on-surface-variant/65">{dict.home.emptyDescription}</p>
               </div>
-              <h3 className="text-2xl font-black text-primary mb-2 tracking-tight">{dict.home.emptyTitle}</h3>
-              <p className="text-on-surface-variant/60 max-w-sm mx-auto">{dict.home.emptyDescription}</p>
+            </ScrollReveal>
+          )}
+        </div>
+      </section>
+
+      <section className="w-full px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24">
+        <div className="mx-auto grid max-w-7xl gap-8 border-y border-outline-variant/35 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-center">
+          <ScrollReveal>
+            <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container">
+              <Image
+                src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
+                alt="Dr. Budi Rahman Hakim (BRH)"
+                fill
+                sizes="(max-width: 1024px) 100vw, 320px"
+                className="object-cover grayscale transition duration-700 hover:grayscale-0"
+              />
             </div>
           </ScrollReveal>
-        )}
 
-        <ScrollReveal delay={0.4} className="mt-20 text-center">
-          <Link
-            href={`/${lang}/explore`}
-            className="inline-flex items-center gap-4 px-10 py-5 bg-primary text-on-primary rounded-full font-headline font-bold text-lg hover:bg-secondary transition-all duration-500 hover:shadow-xl hover:shadow-secondary/20 hover:-translate-y-1"
-          >
-            {dict.home.viewAll}
-            <span className="material-symbols-outlined">grid_view</span>
-          </Link>
-        </ScrollReveal>
-      </section>
-
-      {/* Biography Section */}
-      <section className="w-full py-24 bg-surface-container-lowest">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <ScrollReveal className="relative flex justify-center lg:justify-end">
-              <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-[48px] overflow-hidden rotate-3 hover:rotate-0 transition-transform duration-700 shadow-2xl">
-                <Image
-                  src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
-                  alt="Dr. Budi Rahman Hakim (BRH)"
-                  fill
-                  className="object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                />
+          <ScrollReveal delay={0.12}>
+            <span className="font-label text-xs font-black uppercase tracking-[0.28em] text-secondary">
+              {dict.home.biographyEyebrow}
+            </span>
+            <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(280px,0.7fr)] lg:items-start">
+              <div>
+                <h2 className="font-headline text-3xl font-black leading-tight tracking-tight text-primary md:text-5xl">
+                  Dr. Budi Rahman <span className="text-secondary">Hakim</span> (BRH)
+                </h2>
+                <p className="mt-6 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg">
+                  {dict.home.biographyCopy}
+                </p>
+                <Link
+                  href={`/${lang}/biografi`}
+                  className="mt-7 inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary transition hover:text-secondary"
+                >
+                  {dict.home.biographyCta}
+                  <span className="material-symbols-outlined text-[18px]">east</span>
+                </Link>
               </div>
-              <div className="absolute -z-10 -bottom-6 -right-6 w-full h-full bg-secondary/10 rounded-[48px] rotate-6"></div>
-            </ScrollReveal>
-            
-            <ScrollReveal delay={0.2}>
-              <span className="font-label text-xs font-bold tracking-[0.3em] text-secondary uppercase block mb-6">{dict.home.biographyEyebrow}</span>
-              <h2 className="font-headline font-black text-4xl md:text-5xl text-primary mb-8 leading-tight tracking-tight">
-                Dr. Budi Rahman <span className="text-secondary italic">Hakim</span> (BRH)
-              </h2>
-              <p className="text-on-surface-variant text-lg font-body leading-relaxed mb-10 max-w-xl">
-                {dict.home.biographyCopy}
-              </p>
-              <Link
-                href={`/${lang}/biografi`}
-                className="inline-flex items-center gap-3 font-headline font-bold text-primary hover:text-secondary group transition-colors"
-              >
-                {dict.home.biographyCta}
-                <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">east</span>
-              </Link>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
 
-      {/* Featured Quote / Philosophic Section */}
-      <section className="w-full py-32 bg-primary relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
-        </div>
-        <div className="max-w-5xl mx-auto px-8 text-center relative z-10">
-          <ScrollReveal>
-            <span className="material-symbols-outlined text-secondary text-7xl mb-12 opacity-50 italic">format_quote</span>
-            <h2 className="font-headline font-black text-xl md:text-2xl lg:text-3xl text-on-primary leading-relaxed tracking-tight mb-12 italic">
-              &quot;Penghancur kehidupanmu itu (seringkali) bukan orang lain tapi dirimu sendiri, karena pikiranmu sendiri. Jangan biarkan pikiranmu menjadi monster penghancur dengan kebiasaan berpikir negatif. Sebaliknya, jadikan ia superhero dengan kebiasaan berpikir positif dalam melihat & menyikapi keadaan bahkan yang terlihat dan terasa negatif sekalipun. Pikiran baik itu energi penarik kenyataan baik, sebaliknya, pikiran buruk merupakan energi penarik kenyataan buruk di kehidupanmu.&quot;
-            </h2>
-            <div className="flex flex-col items-center">
-              <div className="h-1 w-20 bg-secondary mb-6"></div>
-              <p className="font-label text-on-primary/60 tracking-[0.4em] uppercase font-bold text-sm">{dict.home.quoteAuthor}</p>
+              <figure className="border-l-0 border-outline-variant/35 pt-2 lg:border-l lg:pl-8">
+                <span className="material-symbols-outlined text-4xl text-secondary/45">format_quote</span>
+                <blockquote className="mt-4 text-pretty font-headline text-xl font-black italic leading-snug text-tertiary md:text-2xl">
+                  Penghancur kehidupanmu itu seringkali bukan orang lain tapi dirimu sendiri, karena pikiranmu sendiri.
+                </blockquote>
+                <figcaption className="mt-5 font-label text-xs font-black uppercase tracking-[0.24em] text-secondary">
+                  {dict.home.quoteAuthor}
+                </figcaption>
+              </figure>
             </div>
           </ScrollReveal>
         </div>

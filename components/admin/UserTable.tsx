@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { deleteUser } from '@/lib/actions/user-actions';
 import { UserForm } from './UserForm';
-import { Role } from "@/app/generated/prisma/client";
+import { Role } from "@prisma/client";
 
 type User = {
   id: string;

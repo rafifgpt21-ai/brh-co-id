@@ -1,5 +1,5 @@
 // Force refresh prisma client schema loading
-import { PrismaClient } from "../app/generated/prisma";
+import { PrismaClient } from "@prisma/client";
 
 const prismaClientSingleton = () => {
   return new PrismaClient();

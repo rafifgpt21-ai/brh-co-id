@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { generateGroundedAnswer } from "@/lib/ai/gemini";
-import { retrieveKnowledge } from "@/lib/chatbot/retrieval";
-import { checkRateLimit } from "@/lib/rate-limit";
 import { defaultLocale, hasLocale } from "@/lib/i18n/config";
-import { prisma } from "@/lib/prisma";
 
 const chatRequestSchema = z.object({
   message: z.string().trim().min(3).max(1000),
@@ -61,6 +58,7 @@ export async function GET() {
   const startedAt = Date.now();
 
   try {
+    const { prisma } = await import("@/lib/prisma");
     const [knowledgeTotal, knowledgeId, knowledgeEn, publishedPosts] = await Promise.all([
       prisma.knowledgeChunk.count(),
       prisma.knowledgeChunk.count({ where: { locale: "id" } }),
@@ -147,6 +145,7 @@ export async function POST(request: NextRequest) {
     const identifier = getClientIdentifier(request);
 
     stage = "rate_limit";
+    const { checkRateLimit } = await import("@/lib/rate-limit");
     const rateLimit = await checkRateLimit(identifier, limit, windowMs);
 
     if (!rateLimit.success) {
@@ -170,6 +169,7 @@ export async function POST(request: NextRequest) {
     ].filter(Boolean).join("\n");
 
     stage = "retrieve_knowledge";
+    const { retrieveKnowledge } = await import("@/lib/chatbot/retrieval");
     const { chunks, context, sources } = await retrieveKnowledge(retrievalQuery, 6, locale);
 
     if (!chunks.length) {
