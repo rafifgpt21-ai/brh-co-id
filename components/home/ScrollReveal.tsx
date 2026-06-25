@@ -18,19 +18,9 @@ export default function ScrollReveal({
   className = '',
   duration = 0.6,
 }: ScrollRevealProps) {
-  const directions = {
-    up: { y: 40 },
-    down: { y: -40 },
-    left: { x: 40 },
-    right: { x: -40 },
-  };
-
   return (
     <motion.div
-      initial={{ 
-        opacity: 0, 
-        ...directions[direction] 
-      }}
+      initial={false}
       whileInView={{ 
         opacity: 1, 
         y: 0, 
@@ -42,6 +32,7 @@ export default function ScrollReveal({
         delay: delay,
         ease: [0.21, 0.47, 0.32, 0.98],
       }}
+      style={{ opacity: 1 }}
       className={className}
     >
       {children}

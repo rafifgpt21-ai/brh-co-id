@@ -3,6 +3,7 @@ import { createEmbedding } from "@/lib/ai/gemini";
 import type { Locale } from "@/lib/i18n/config";
 
 export type ChatSource = {
+  sourceId?: string;
   title: string;
   url: string;
   category?: string | null;
@@ -24,8 +25,23 @@ type MongoVectorSearchResult = {
 
 const VECTOR_INDEX_NAME = process.env.CHAT_VECTOR_INDEX_NAME || "knowledge_embedding_vector_index";
 
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/#/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function compactSearchText(value: string) {
+  return normalizeSearchText(value).replace(/\s+/g, "");
+}
+
 function normalizeSourceKey(source: ChatSource) {
-  return `${source.sourceType}:${source.url}`;
+  return `${source.sourceType}:${source.sourceId || source.url}`;
 }
 
 function uniqueSources(chunks: RetrievedChunk[]) {
@@ -37,6 +53,7 @@ function uniqueSources(chunks: RetrievedChunk[]) {
     if (!seen.has(key)) {
       seen.add(key);
       sources.push({
+        sourceId: chunk.sourceId,
         title: chunk.title,
         url: chunk.url,
         category: chunk.category,
@@ -56,7 +73,7 @@ function mergeChunks(...groups: RetrievedChunk[][]) {
 
   for (const group of groups) {
     for (const chunk of group) {
-      const key = `${chunk.sourceType}:${chunk.url}:${chunk.content.slice(0, 80)}`;
+      const key = `${chunk.sourceType}:${chunk.sourceId || chunk.url}:${chunk.content.slice(0, 80)}`;
       if (!seen.has(key)) {
         seen.add(key);
         merged.push(chunk);
@@ -78,6 +95,27 @@ function extractQuotedPhrases(query: string) {
   ].filter((phrase) => phrase.length > 7)));
 }
 
+function extractTitleCandidates(query: string) {
+  const normalized = normalizeSearchText(query)
+    .replace(/\b(bagaimana|tentang|mengenai|adakah|ada|artikel|judul|dengan|yang|apa|isi|dari|ini|itu)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = normalized.split(/\s+/).filter((word) => word.length > 2);
+  const candidates = new Set<string>(extractQuotedPhrases(query).map(normalizeSearchText));
+
+  for (let size = Math.min(8, words.length); size >= 3; size--) {
+    for (let index = 0; index <= words.length - size; index++) {
+      candidates.add(words.slice(index, index + size).join(" "));
+    }
+  }
+
+  if (normalized.length > 7) {
+    candidates.add(normalized);
+  }
+
+  return Array.from(candidates).filter((candidate) => candidate.length > 7);
+}
+
 function extractPaths(query: string) {
   return Array.from(query.matchAll(/\/post\/[A-Za-z0-9-_%]+/g))
     .map((match) => match[0])
@@ -85,6 +123,7 @@ function extractPaths(query: string) {
 }
 
 function mapChunk(chunk: {
+  sourceId?: string | null;
   sourceType: string;
   title: string;
   url: string;
@@ -94,6 +133,7 @@ function mapChunk(chunk: {
   score?: number;
 }): RetrievedChunk {
   return {
+    sourceId: chunk.sourceId || undefined,
     sourceType: chunk.sourceType,
     title: chunk.title,
     url: chunk.url,
@@ -123,7 +163,7 @@ async function exactPathSearch(query: string, limit: number, locale: Locale) {
 }
 
 async function exactTitleSearch(query: string, limit: number, locale: Locale) {
-  const phrases = extractQuotedPhrases(query);
+  const phrases = extractTitleCandidates(query);
   if (!phrases.length) {
     return [];
   }
@@ -139,7 +179,20 @@ async function exactTitleSearch(query: string, limit: number, locale: Locale) {
     orderBy: { indexedAt: "desc" },
   });
 
-  return chunks.map((chunk) => mapChunk({ ...chunk, score: 1 }));
+  const compactPhrases = phrases.map(compactSearchText);
+
+  return chunks
+    .map((chunk) => {
+      const title = normalizeSearchText(chunk.title);
+      const compactTitle = compactSearchText(chunk.title);
+      const exactScore = phrases.some((phrase) => title.includes(phrase)) ? 30 : 0;
+      const compactScore = compactPhrases.some((phrase) => compactTitle.includes(phrase)) ? 24 : 0;
+
+      return mapChunk({ ...chunk, score: exactScore + compactScore });
+    })
+    .filter((chunk) => (chunk.score || 0) > 0)
+    .sort((left, right) => (right.score || 0) - (left.score || 0))
+    .slice(0, limit);
 }
 
 async function vectorSearch(query: string, limit: number, locale: Locale) {
@@ -160,6 +213,7 @@ async function vectorSearch(query: string, limit: number, locale: Locale) {
       {
         $project: {
           _id: 0,
+          sourceId: 1,
           sourceType: 1,
           title: 1,
           url: 1,
@@ -177,16 +231,20 @@ async function vectorSearch(query: string, limit: number, locale: Locale) {
 }
 
 async function keywordFallbackSearch(query: string, limit: number, locale: Locale) {
-  const terms = query
-    .toLowerCase()
+  const terms = normalizeSearchText(query)
     .split(/\s+/)
-    .map((term) => term.replace(/[^\w-]/g, ""))
     .filter((term) => term.length > 3)
-    .slice(0, 6);
+    .slice(0, 10);
 
   if (!terms.length) {
     return [];
   }
+
+  const quickPostIntent = /\b(quick\s*post|brh\s*notes|catatan|note|notes|quote|kutipan)\b/i.test(query);
+  const normalizedQuery = terms.join(" ");
+  const phraseCandidates = Array.from(query.matchAll(/\b[\p{L}\p{N}]+(?:\s+[\p{L}\p{N}]+){1,3}\b/gu))
+    .map((match) => match[0].toLowerCase())
+    .filter((phrase) => phrase.length > 8);
 
   const chunks = await prisma.knowledgeChunk.findMany({
     where: {
@@ -197,11 +255,35 @@ async function keywordFallbackSearch(query: string, limit: number, locale: Local
         { category: { contains: term, mode: "insensitive" } },
       ]),
     },
-    take: limit,
+    take: Math.max(limit * 8, 24),
     orderBy: { indexedAt: "desc" },
   });
 
-  return chunks.map(mapChunk);
+  return chunks
+    .map((chunk) => {
+      const title = normalizeSearchText(chunk.title);
+      const category = normalizeSearchText(chunk.category || "");
+      const content = normalizeSearchText(chunk.content);
+      const compactTitle = compactSearchText(chunk.title);
+      const compactQuery = compactSearchText(query);
+      const termScore = terms.reduce((score, term) => {
+        const inTitle = title.includes(term) ? 4 : 0;
+        const inCategory = category.includes(term) ? 3 : 0;
+        const inContent = content.includes(term) ? 1 : 0;
+        return score + inTitle + inCategory + inContent;
+      }, 0);
+      const phraseScore = phraseCandidates.some((phrase) => content.includes(phrase) || title.includes(phrase)) ? 8 : 0;
+      const quickPostScore = quickPostIntent && chunk.sourceType === "quick_post" ? 10 : 0;
+      const directQueryScore = normalizedQuery && content.includes(normalizedQuery) ? 10 : 0;
+      const titleQueryScore = compactQuery.length > 12 && compactTitle.includes(compactQuery) ? 18 : 0;
+
+      return mapChunk({
+        ...chunk,
+        score: termScore + phraseScore + quickPostScore + directQueryScore + titleQueryScore,
+      });
+    })
+    .sort((left, right) => (right.score || 0) - (left.score || 0))
+    .slice(0, limit);
 }
 
 export async function retrieveKnowledge(query: string, limit = 6, locale: Locale = "en") {

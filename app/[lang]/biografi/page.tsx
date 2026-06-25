@@ -31,7 +31,7 @@ const EducationItem = ({
   scholarship?: string;
 }) => (
   <motion.div
-    initial={{ opacity: 0, x: -10 }}
+    initial={false}
     whileInView={{ opacity: 1, x: 0 }}
     viewport={{ once: true }}
     className="relative border-l border-gray-200 pb-8 pl-8 last:border-0 last:pb-0"
@@ -58,7 +58,7 @@ const RoleItem = ({
   years?: string;
 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
+    initial={false}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     className="group flex flex-col gap-1 md:flex-row md:items-baseline md:gap-4"
@@ -77,7 +77,7 @@ const RoleItem = ({
 
 const SectionHeader = ({ num, title }: { num: string; title: string }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={false}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: "-100px" }}
     className="mb-8 flex items-baseline gap-4"
@@ -93,7 +93,7 @@ const ProfileCopy = ({ language }: { language: LanguageCode }) => {
   return (
     <motion.div
       key={language}
-      initial={{ opacity: 0, y: 12 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       className={`prose prose-lg max-w-none font-body leading-relaxed text-on-surface/80 ${
         isArabic ? "text-right prose-p:leading-loose" : ""
@@ -138,7 +138,7 @@ export default function BiografiPage() {
       <section className="relative overflow-hidden px-6 pb-24 pt-12 md:px-12 lg:px-24">
         <div className="relative z-10 flex flex-col items-center gap-12 md:flex-row lg:gap-20">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
             className="group relative"
@@ -158,7 +158,7 @@ export default function BiografiPage() {
 
           <div className="flex-1 text-center md:text-left">
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
               className="mb-6 font-headline text-5xl font-black leading-none tracking-tighter text-primary md:text-7xl"
@@ -166,7 +166,7 @@ export default function BiografiPage() {
               Budi Rahman <span className="text-secondary">Hakim</span>
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
               className="mx-auto max-w-2xl font-body text-xl font-light italic leading-relaxed text-on-surface/70 md:mx-0 md:text-2xl"
@@ -174,7 +174,7 @@ export default function BiografiPage() {
               &quot;Merintis jalan tengah antara dzikir dan pikir, antara spiritualitas dan transformasi sosial.&quot;
             </motion.p>
             <motion.div
-              initial="hidden"
+              initial={false}
               animate="show"
               variants={{
                 hidden: { opacity: 0 },

@@ -50,6 +50,24 @@ function refreshQuickPostPaths() {
   updateTag("quick-posts");
 }
 
+async function refreshQuickPostKnowledgeIndex(id: string) {
+  try {
+    const { indexPublishedQuickPost } = await import("@/lib/chatbot/indexing");
+    await indexPublishedQuickPost(id);
+  } catch (error) {
+    console.error("Error refreshing quick post knowledge index:", error);
+  }
+}
+
+async function removeQuickPostKnowledgeIndex(id: string) {
+  try {
+    const { removeQuickPostFromKnowledgeIndex } = await import("@/lib/chatbot/indexing");
+    await removeQuickPostFromKnowledgeIndex(id);
+  } catch (error) {
+    console.error("Error removing quick post knowledge index:", error);
+  }
+}
+
 export async function createQuickPost(data: QuickPostFormData) {
   const session = await requireAdmin();
   if (!session) {
@@ -76,6 +94,7 @@ export async function createQuickPost(data: QuickPostFormData) {
     });
 
     refreshQuickPostPaths();
+    await refreshQuickPostKnowledgeIndex(quickPost.id);
     return { success: true, id: quickPost.id };
   } catch (error) {
     console.error("Error creating quick post:", error);
@@ -103,6 +122,7 @@ export async function updateQuickPostStatus(data: { id: string; status: "Publish
     });
 
     refreshQuickPostPaths();
+    await refreshQuickPostKnowledgeIndex(quickPost.id);
     return { success: true, id: quickPost.id };
   } catch (error) {
     console.error("Error updating quick post:", error);
@@ -134,6 +154,7 @@ export async function updateQuickPost(data: { id: string; type: "NORMAL" | "QUOT
     });
 
     refreshQuickPostPaths();
+    await refreshQuickPostKnowledgeIndex(quickPost.id);
     return { success: true, id: quickPost.id };
   } catch (error) {
     console.error("Error updating quick post:", error);
@@ -164,6 +185,7 @@ export async function deleteQuickPost(id: string) {
 
     await prisma.quickPost.delete({ where: { id } });
     refreshQuickPostPaths();
+    await removeQuickPostKnowledgeIndex(id);
     return { success: true };
   } catch (error) {
     console.error("Error deleting quick post:", error);

@@ -24,6 +24,7 @@ type IndexResult = {
 };
 
 const EMBEDDING_BATCH_SIZE = 32;
+const QUICK_POST_TITLE_LIMIT = 72;
 
 function postToKnowledgeSource(post: {
   id: string;
@@ -50,6 +51,36 @@ function postToKnowledgeSource(post: {
     category: localizedPost.category,
     thumbnail: post.thumbnail,
     content,
+  };
+}
+
+function truncateTitle(value: string) {
+  if (value.length <= QUICK_POST_TITLE_LIMIT) {
+    return value;
+  }
+
+  return `${value.slice(0, QUICK_POST_TITLE_LIMIT).trim()}...`;
+}
+
+function quickPostToKnowledgeSource(quickPost: {
+  id: string;
+  type: string;
+  content: string;
+  imageUrl?: string | null;
+}, locale: Locale): KnowledgeSource {
+  const content = htmlToText(quickPost.content);
+  const isQuote = quickPost.type === "QUOTE";
+  const label = isQuote ? (locale === "en" ? "BRH Quote" : "Kutipan BRH") : "BRH Notes";
+
+  return {
+    sourceType: "quick_post",
+    sourceId: quickPost.id,
+    locale,
+    title: `${label}: ${truncateTitle(content)}`,
+    url: `/${locale}/catatan#notes`,
+    category: isQuote ? (locale === "en" ? "Quote" : "Kutipan") : "BRH Notes",
+    thumbnail: isQuote ? null : quickPost.imageUrl,
+    content: [label, content].join("\n"),
   };
 }
 
@@ -101,6 +132,15 @@ export async function removePostFromKnowledgeIndex(postId: string) {
   });
 }
 
+export async function removeQuickPostFromKnowledgeIndex(quickPostId: string) {
+  await prisma.knowledgeChunk.deleteMany({
+    where: {
+      sourceType: "quick_post",
+      sourceId: quickPostId,
+    },
+  });
+}
+
 export async function indexPublishedPost(postId: string) {
   const post = await prisma.post.findUnique({ where: { id: postId } });
 
@@ -114,6 +154,19 @@ export async function indexPublishedPost(postId: string) {
   return { sourceId: postId, locale: "en" as const, chunks: idResult.chunks + enResult.chunks };
 }
 
+export async function indexPublishedQuickPost(quickPostId: string) {
+  const quickPost = await prisma.quickPost.findUnique({ where: { id: quickPostId } });
+
+  if (!quickPost || quickPost.status !== "Published") {
+    await removeQuickPostFromKnowledgeIndex(quickPostId);
+    return { sourceId: quickPostId, chunks: 0 };
+  }
+
+  const idResult = await replaceSourceChunks(quickPostToKnowledgeSource(quickPost, "id"));
+  const enResult = await replaceSourceChunks(quickPostToKnowledgeSource(quickPost, "en"));
+  return { sourceId: quickPostId, locale: "en" as const, chunks: idResult.chunks + enResult.chunks };
+}
+
 export async function indexStaticKnowledge() {
   const results: IndexResult[] = [];
 
@@ -125,10 +178,16 @@ export async function indexStaticKnowledge() {
 }
 
 export async function indexAllKnowledge() {
-  const posts = await prisma.post.findMany({
-    where: { status: "Published" },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [posts, quickPosts] = await Promise.all([
+    prisma.post.findMany({
+      where: { status: "Published" },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.quickPost.findMany({
+      where: { status: "Published" },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   await prisma.knowledgeChunk.deleteMany({});
 
@@ -136,6 +195,11 @@ export async function indexAllKnowledge() {
   for (const post of posts) {
     results.push(await replaceSourceChunks(postToKnowledgeSource(post as any, "id")));
     results.push(await replaceSourceChunks(postToKnowledgeSource(post as any, "en")));
+  }
+
+  for (const quickPost of quickPosts) {
+    results.push(await replaceSourceChunks(quickPostToKnowledgeSource(quickPost, "id")));
+    results.push(await replaceSourceChunks(quickPostToKnowledgeSource(quickPost, "en")));
   }
 
   results.push(...await indexStaticKnowledge());

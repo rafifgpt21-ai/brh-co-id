@@ -158,9 +158,10 @@ export default function HomeHero({
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 18 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      style={{ opacity: 1 }}
       className="relative border-b border-outline-variant/30 bg-surface px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 md:px-12 md:pb-12 md:pt-10 lg:px-24 lg:pb-16"
     >
       <div className="mx-auto grid max-w-7xl gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.62fr)] lg:items-end lg:gap-10">

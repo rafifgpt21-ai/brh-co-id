@@ -8,7 +8,7 @@ import {
 import type { Locale } from "@/lib/i18n/config";
 
 export type KnowledgeSource = {
-  sourceType: "post" | "static_page";
+  sourceType: "post" | "static_page" | "quick_post";
   sourceId: string;
   locale: Locale;
   title: string;

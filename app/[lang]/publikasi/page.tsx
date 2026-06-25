@@ -73,7 +73,7 @@ const BookCard = ({
   index: number;
 }) => (
   <motion.article
-    initial={{ opacity: 0, y: 14 }}
+    initial={false}
     whileInView={{ opacity: 1, y: 0 }}
     transition={{ delay: index * 0.03 }}
     viewport={{ once: true }}
@@ -105,7 +105,7 @@ const PublicationContent = ({ language }: { language: LanguageCode }) => {
   return (
     <motion.div
       key={language}
-      initial={{ opacity: 0, y: 14 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-20"
       dir={dir}
@@ -158,7 +158,7 @@ const PublicationContent = ({ language }: { language: LanguageCode }) => {
           {journals.map((journal, index) => (
             <motion.article
               key={journal.url}
-              initial={{ opacity: 0, y: 16 }}
+              initial={false}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.025 }}
               viewport={{ once: true }}
@@ -205,7 +205,7 @@ export default function PublikasiPage() {
                 <div className="space-y-16">
                   <motion.header
                     key={`hero-${language}`}
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     className={`max-w-4xl ${isArabic ? "mr-auto text-right" : ""}`}
                     dir={isArabic ? "rtl" : "ltr"}

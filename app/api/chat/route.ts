@@ -13,6 +13,48 @@ const chatRequestSchema = z.object({
   })).max(8).optional(),
 });
 
+const REFERENCE_INTENT_PATTERNS = [
+  /\blink\b/i,
+  /\blink(nya)?\b/i,
+  /\btautan(nya)?\b/i,
+  /\breferensi(nya)?\b/i,
+  /\breverensi(nya)?\b/i,
+  /\bsumber(nya)?\b/i,
+  /\bsource(s)?\b/i,
+  /\bcitation(s)?\b/i,
+  /\bartikel terkait\b/i,
+  /\bbaca selengkapnya\b/i,
+  /\brujukan(nya)?\b/i,
+  /\blampirkan\b/i,
+  /\bkasih\b.*\b(referensi|reverensi|link|tautan|sumber)\b/i,
+  /\bberikan\b.*\b(referensi|reverensi|link|tautan|sumber)\b/i,
+  /\btampilkan\b.*\b(referensi|reverensi|link|tautan|sumber|artikel)\b/i,
+];
+
+function normalizeIntentText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function wantsReferenceCards(message: string, history: Array<{ role: "user" | "assistant"; content: string }>) {
+  const latest = normalizeIntentText(message);
+
+  if (REFERENCE_INTENT_PATTERNS.some((pattern) => pattern.test(latest))) {
+    return true;
+  }
+
+  const recentUserAskedForReferences = history
+    .slice(-4)
+    .filter((item) => item.role === "user")
+    .some((item) => REFERENCE_INTENT_PATTERNS.some((pattern) => pattern.test(normalizeIntentText(item.content))));
+  const looksLikeContextualFollowUp = latest.length <= 60 && /\b(itu|tadi|yang tadi|nya)\b/i.test(latest);
+
+  return recentUserAskedForReferences && looksLikeContextualFollowUp;
+}
+
 function getClientIdentifier(request: NextRequest) {
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const realIp = request.headers.get("x-real-ip")?.trim();
@@ -59,11 +101,20 @@ export async function GET() {
 
   try {
     const { prisma } = await import("@/lib/prisma");
-    const [knowledgeTotal, knowledgeId, knowledgeEn, publishedPosts] = await Promise.all([
+    const [
+      knowledgeTotal,
+      knowledgeId,
+      knowledgeEn,
+      knowledgeQuickPosts,
+      publishedPosts,
+      publishedQuickPosts,
+    ] = await Promise.all([
       prisma.knowledgeChunk.count(),
       prisma.knowledgeChunk.count({ where: { locale: "id" } }),
       prisma.knowledgeChunk.count({ where: { locale: "en" } }),
+      prisma.knowledgeChunk.count({ where: { sourceType: "quick_post" } }),
       prisma.post.count({ where: { status: "Published" } }),
+      prisma.quickPost.count({ where: { status: "Published" } }),
     ]);
 
     return NextResponse.json({
@@ -75,10 +126,14 @@ export async function GET() {
       database: {
         connected: true,
         publishedPosts,
+        publishedQuickPosts,
         knowledgeTotal,
         knowledgeByLocale: {
           id: knowledgeId,
           en: knowledgeEn,
+        },
+        knowledgeBySourceType: {
+          quickPost: knowledgeQuickPosts,
         },
       },
       notes: [
@@ -162,6 +217,7 @@ export async function POST(request: NextRequest) {
 
     const history = parsed.data.history || [];
     const locale = hasLocale(parsed.data.locale) ? parsed.data.locale : defaultLocale;
+    const includeReferences = wantsReferenceCards(parsed.data.message, history);
     const retrievalQuery = [
       parsed.data.currentPath ? `Halaman saat ini: ${parsed.data.currentPath}` : null,
       ...history.slice(-4).map((message) => message.content),
@@ -184,19 +240,22 @@ export async function POST(request: NextRequest) {
     const answer = await generateGroundedAnswer({
       question: parsed.data.message,
       context,
+      includeReferences,
       history,
     });
 
     console.info("Chat API success:", {
       requestId,
       locale,
-      sources: sources.length,
+      sources: includeReferences ? sources.length : 0,
+      retrievedSources: sources.length,
       chunks: chunks.length,
+      includeReferences,
       durationMs: Date.now() - startedAt,
     });
 
     return NextResponse.json(
-      { answer, sources, requestId },
+      { answer, sources: includeReferences ? sources : [], requestId },
       { headers: { "x-chat-request-id": requestId } }
     );
   } catch (error) {

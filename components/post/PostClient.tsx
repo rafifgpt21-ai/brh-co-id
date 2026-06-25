@@ -98,7 +98,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
 
         <div className="relative z-10 mx-auto max-w-4xl px-6 py-16 text-center md:py-20">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-center"
@@ -112,7 +112,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             </OptimisticLink>
 
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={false}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.08, duration: 0.35 }}
               className="mb-7 flex flex-wrap justify-center gap-3"
@@ -123,7 +123,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="mx-auto mb-8 max-w-3xl text-pretty font-headline text-4xl font-black leading-[1.08] tracking-tight text-primary md:text-6xl"
@@ -132,7 +132,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             </motion.h1>
 
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.18, duration: 0.45 }}
               className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 font-label text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant"
@@ -160,7 +160,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 return (
                   <motion.div
                     key={block.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.45, ease: "easeOut" }}
@@ -183,7 +183,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 return (
                   <motion.div
                     key={block.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -219,7 +219,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 return (
                   <motion.div
                     key={block.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -260,7 +260,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 return (
                   <motion.div
                     key={block.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -296,7 +296,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 return (
                   <motion.div
                     key={block.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -343,7 +343,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 return (
                   <motion.div
                     key={block.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
@@ -378,7 +378,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
 
         {/* Footer Navigation */}
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={false}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           className="flex flex-col items-center pt-12 border-t border-outline-variant/10"
@@ -411,7 +411,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             </div>
 
             <motion.div
-              initial="hidden"
+              initial={false}
               whileInView="show"
               viewport={{ once: true, margin: "-100px" }}
               variants={{

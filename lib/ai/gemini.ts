@@ -86,12 +86,24 @@ export async function createEmbedding(text: string) {
 export async function generateGroundedAnswer(params: {
   question: string;
   context: string;
+  includeReferences?: boolean;
   history?: Array<{
     role: "user" | "assistant";
     content: string;
   }>;
 }) {
   const { llmModel } = getGeminiModelConfig();
+  const referenceInstruction = params.includeReferences
+    ? [
+        "Pengguna meminta link, sumber, atau referensi.",
+        "Jangan tulis URL mentah atau markdown link dalam jawaban.",
+        "Sebutkan secara natural bahwa referensi tersedia di kartu sumber di bawah jawaban.",
+      ]
+    : [
+        "Pengguna tidak meminta link, sumber, atau referensi.",
+        "Jangan menyebut kartu sumber, tautan, link, referensi, atau sumber di dalam jawaban.",
+        "Jawab langsung dan ringkas berdasarkan konteks.",
+      ];
   const historyText = params.history?.length
     ? params.history
         .map((message) => `${message.role === "user" ? "Pengguna" : "Asisten"}: ${message.content}`)
@@ -117,8 +129,8 @@ export async function generateGroundedAnswer(params: {
                   "Jawab dengan bahasa yang sama dengan pertanyaan pengguna.",
                   "Gunakan riwayat percakapan hanya untuk memahami maksud pertanyaan lanjutan.",
                   "Jangan tulis URL mentah atau markdown link dalam jawaban.",
-                  "Jika pengguna meminta link/tautan/artikel, sebutkan bahwa tautan terkait tersedia di kartu sumber di bawah jawaban.",
-                  "Buat jawaban ringkas, jelas, dan akhiri dengan kalimat yang mengarahkan pengguna melihat sumber terkait.",
+                  ...referenceInstruction,
+                  "Buat jawaban ringkas dan jelas.",
                   "",
                   `Riwayat percakapan:\n${historyText}`,
                   "",
