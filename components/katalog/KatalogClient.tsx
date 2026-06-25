@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
 import type { Post } from "@prisma/client";
 import ArchiveCard from "./ArchiveCard";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { useNavigationFeedback } from "@/components/navigation/NavigationFeedback";
 
 interface KatalogClientProps {
   initialPosts: Post[];
@@ -20,6 +21,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const { startNavigation } = useNavigationFeedback();
 
   const searchFromUrl = searchParams.get("search") || "";
   const categoryFromUrl = searchParams.get("category") || "Semua";
@@ -31,11 +33,6 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
   // Local pagination to avoid rendering too many items
   const [displayLimit, setDisplayLimit] = useState(12);
 
-  useEffect(() => {
-    setInputValue(searchFromUrl);
-    setActiveCategory(categoryFromUrl);
-  }, [searchFromUrl, categoryFromUrl]);
-
   const handleSearchCommit = (e?: React.FormEvent) => {
     e?.preventDefault();
 
@@ -46,7 +43,10 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
       } else {
         params.delete("search");
       }
-        router.push(`/${lang}/explore?${params.toString()}`, { scroll: false });
+      const query = params.toString();
+      const href = query ? `/${lang}/explore?${query}` : `/${lang}/explore`;
+      startNavigation(href);
+      router.replace(href, { scroll: false });
     });
   };
 
@@ -59,7 +59,10 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
       } else {
         params.delete("category");
       }
-      router.push(`/${lang}/explore?${params.toString()}`, { scroll: false });
+      const query = params.toString();
+      const href = query ? `/${lang}/explore?${query}` : `/${lang}/explore`;
+      startNavigation(href);
+      router.replace(href, { scroll: false });
     });
   };
 
@@ -67,50 +70,44 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
     setInputValue("");
     setActiveCategory("Semua");
     setDisplayLimit(12);
-    router.push(`/${lang}/explore`, { scroll: false });
+    startTransition(() => {
+      const href = `/${lang}/explore`;
+      startNavigation(href);
+      router.replace(href, { scroll: false });
+    });
   };
 
   const filteredPosts = initialPosts; // Already filtered by server
   const visiblePosts = useMemo(() => filteredPosts.slice(0, displayLimit), [filteredPosts, displayLimit]);
 
   return (
-    <div className="w-full">
-      {/* Search & Filter Section */}
-      <section className="relative pt-4 pb-4 md:py-24 mb-4 md:mb-12">
-        {/* Decorative Background Elements */}
-        <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-secondary-fixed blur-[140px] rounded-full animate-pulse-slow"></div>
-          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-primary-fixed blur-[120px] rounded-full opacity-60"></div>
-        </div>
-
+    <div className="w-full bg-background">
+      <section className="relative border-b border-outline-variant/25 bg-surface px-0 pb-4 pt-5 md:mb-6 md:py-16">
         <div className="max-w-4xl mx-auto px-6">
-          {/* Header text */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex flex-col md:items-center text-left md:text-center mb-4 md:mb-16"
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-5 flex flex-col text-left md:mb-10 md:items-center md:text-center"
           >
             <span className="font-label text-[10px] md:text-xs font-black tracking-[0.3em] text-secondary uppercase hidden md:block mb-4">{dict.explore.eyebrow}</span>
-            <h1 className="font-headline font-black text-2xl md:text-7xl text-primary mb-1 md:mb-6 tracking-tight">{dict.explore.title}</h1>
-            <p className="text-on-surface-variant/70 text-xs md:text-xl max-w-2xl mx-auto leading-relaxed hidden md:block">
+            <h1 className="font-headline text-2xl font-black tracking-tight text-primary md:mb-5 md:text-6xl">{dict.explore.title}</h1>
+            <p className="mx-auto hidden max-w-2xl text-base leading-relaxed text-on-surface-variant/70 md:block md:text-lg">
               {dict.explore.intro}
             </p>
           </motion.div>
 
-          {/* Search Bar UI */}
-          <div className="relative max-w-3xl mx-auto mb-4 md:mb-12 group md:px-0">
-            <div className="absolute -inset-1 bg-linear-to-r from-secondary/20 via-primary/10 to-secondary/20 rounded-[2.5rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-500"></div>
-
+          <div className="group relative mx-auto mb-4 max-w-3xl md:mb-7 md:px-0">
             <form
               onSubmit={handleSearchCommit}
-              className="relative bg-surface-container-low/90 backdrop-blur-2xl rounded-xl md:rounded-[2.5rem] p-1 md:p-2 flex items-center gap-2 border border-outline-variant/20 shadow-xl shadow-primary/5 group-focus-within:border-secondary/30 transition-all duration-500"
+              className="relative flex items-center gap-2 rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-1.5 shadow-[0_10px_30px_rgba(41,47,54,0.08)] transition group-focus-within:border-secondary/50 group-focus-within:shadow-[0_16px_40px_rgba(41,47,54,0.11)] md:rounded-full md:p-2"
             >
-              <div className="flex-1 flex items-center gap-4 pl-6">
-                <span className={`material-symbols-outlined transition-colors duration-500 ${isPending ? 'text-secondary animate-spin scale-110' : 'text-on-surface-variant/40 group-focus-within:text-secondary'}`}>
+              <div className="flex flex-1 items-center gap-3 pl-3 md:gap-4 md:pl-5">
+                <span className={`material-symbols-outlined transition-colors ${isPending ? 'text-secondary animate-spin' : 'text-on-surface-variant/45 group-focus-within:text-secondary'}`}>
                   {isPending ? 'sync' : 'search'}
                 </span>
                 <input
-                  className="bg-transparent border-none outline-none focus:ring-0 w-full font-body text-sm md:text-lg text-primary placeholder:text-on-surface-variant/40"
+                  className="w-full border-none bg-transparent font-body text-sm text-primary outline-none placeholder:text-on-surface-variant/45 md:text-base"
                   placeholder={dict.explore.searchPlaceholder}
                   type="text"
                   value={inputValue}
@@ -120,7 +117,8 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
                   <button
                     type="button"
                     onClick={() => { setInputValue(""); }}
-                    className="p-1.5 hover:bg-surface-container-high rounded-full text-on-surface-variant/40 hover:text-secondary transition-all"
+                    className="tap-target grid place-items-center rounded-full text-on-surface-variant/45 transition hover:bg-surface-container-high hover:text-secondary"
+                    aria-label="Clear search"
                   >
                     <span className="material-symbols-outlined text-[20px]">close</span>
                   </button>
@@ -130,36 +128,34 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
               <button
                 type="submit"
                 disabled={isPending}
-                className="bg-primary text-on-primary hover:bg-secondary p-2.5 md:p-4 rounded-lg md:rounded-full font-headline font-black transition-all duration-500 shadow-lg shadow-primary/20 hover:shadow-secondary/30 active:scale-95 flex items-center justify-center shrink-0 disabled:opacity-50"
+                className="tap-target flex shrink-0 items-center justify-center rounded-lg bg-primary p-2.5 font-headline font-black text-on-primary shadow-md shadow-primary/15 transition hover:bg-tertiary active:scale-95 disabled:cursor-not-allowed disabled:opacity-55 md:rounded-full md:p-3.5"
+                aria-label="Search"
               >
                 <span className="material-symbols-outlined text-[18px] md:text-[24px]">search</span>
               </button>
             </form>
           </div>
 
-          {/* Category Quick Filters - Scrollable on mobile */}
-          <div className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-2 overflow-x-auto pb-4 md:pb-0 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
+          <div className="sticky top-20 z-30 -mx-6 flex flex-nowrap justify-start gap-2 overflow-x-auto border-y border-outline-variant/20 bg-surface/95 px-6 py-3 backdrop-blur-xl scrollbar-hide md:static md:mx-0 md:flex-wrap md:justify-center md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
             {categories.map((category) => {
               const isActive = activeCategory === category;
               return (
                 <button
                   key={category}
                   onClick={() => handleCategoryChange(category)}
-                  className={`group relative px-4 md:px-6 py-1.5 md:py-2.5 rounded-full text-[10px] md:text-xs font-label font-black tracking-widest uppercase transition-all duration-300 whitespace-nowrap overflow-hidden shrink-0 ${isActive
-                    ? "text-on-secondary shadow-sm md:shadow-lg shadow-secondary/20 scale-105"
-                    : "bg-surface-container-lowest text-on-surface-variant/60 border border-outline-variant/15 hover:border-secondary/40 hover:text-secondary"
+                  className={`group relative h-9 shrink-0 overflow-hidden rounded-full px-4 text-[10px] font-black uppercase tracking-widest transition md:h-10 md:px-5 md:text-xs ${isActive
+                    ? "text-on-secondary shadow-sm shadow-secondary/15"
+                    : "border border-outline-variant/25 bg-surface-container-lowest text-on-surface-variant/70 hover:border-secondary/45 hover:text-secondary"
                     }`}
                 >
-                  {/* Active Background Pill (Animated) */}
                   {isActive && (
                     <motion.div
                       layoutId="active-pill"
                       className="absolute inset-0 bg-secondary"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      transition={{ type: "spring", bounce: 0.12, duration: 0.45 }}
                     />
                   )}
 
-                  {/* Loading Indicator for specific category */}
                   {isActive && isPending && (
                     <motion.span
                       initial={{ opacity: 0, scale: 0.5 }}
@@ -169,10 +165,6 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
                   )}
 
                   <span className="relative z-10">{category === "Semua" ? dict.explore.all : dict.explore.categories[category as keyof typeof dict.explore.categories]}</span>
-
-                  {!isActive && (
-                    <span className="absolute inset-0 bg-secondary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></span>
-                  )}
                 </button>
               );
             })}
@@ -180,11 +172,13 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
         </div>
       </section>
 
-      {/* Grid Section */}
-      <section className="max-w-7xl mx-auto px-4 md:px-12 lg:px-24 mb-32">
-        <div className="flex items-center justify-between mb-12 px-2">
+      <section
+        className="mx-auto mb-28 max-w-7xl px-4 pt-7 md:px-12 lg:px-24"
+        aria-busy={isPending}
+      >
+        <div className="mb-6 flex items-center justify-between px-1 md:mb-9">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary/10 text-secondary">
               <span className="material-symbols-outlined text-[20px]">grid_view</span>
             </div>
             <p className="font-label text-xs font-black text-on-surface-variant uppercase tracking-widest">
@@ -195,7 +189,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
           {(searchFromUrl || activeCategory !== "Semua") && (
             <button
               onClick={handleReset}
-              className="text-xs font-black text-secondary hover:text-primary transition-colors flex items-center gap-2 uppercase tracking-widest"
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-secondary transition-colors hover:text-primary"
             >
               <span className="material-symbols-outlined text-[16px]">restart_alt</span>
               {dict.explore.resetFilter}
@@ -228,8 +222,13 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
                 initial="hidden"
                 animate="show"
                 exit="exit"
-                className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-8 lg:gap-12 transition-all duration-700 ${isPending ? 'opacity-40 grayscale-20 scale-[0.99] pointer-events-none' : 'opacity-100'}`}
+                className={`relative grid grid-cols-1 gap-4 transition-opacity duration-200 md:grid-cols-2 md:gap-8 lg:gap-10 ${isPending ? 'opacity-80' : 'opacity-100'}`}
               >
+                {isPending && (
+                  <div className="absolute inset-x-0 -top-3 z-10 h-1 overflow-hidden rounded-full bg-surface-container">
+                    <div className="h-full w-1/3 animate-pulse rounded-full bg-secondary" />
+                  </div>
+                )}
                 {visiblePosts.map((post) => (
                   <motion.div
                     key={post.id}
@@ -254,7 +253,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
                 <div className="flex justify-center mt-16">
                   <button
                     onClick={() => setDisplayLimit(prev => prev + 8)}
-                    className="group relative px-12 py-5 bg-surface-container-high text-primary font-headline font-black text-sm uppercase tracking-[0.2em] rounded-2xl overflow-hidden transition-all duration-500 hover:bg-secondary hover:text-on-secondary shadow-lg hover:shadow-secondary/20 active:scale-95"
+                    className="group relative h-12 overflow-hidden rounded-full bg-surface-container-high px-10 text-sm font-black uppercase tracking-[0.16em] text-primary shadow-sm transition hover:bg-secondary hover:text-on-secondary hover:shadow-lg hover:shadow-secondary/15 active:scale-95"
                   >
                     <span className="relative z-10 flex items-center gap-3">
                       {dict.explore.loadMore}
@@ -268,10 +267,9 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-32 bg-surface-container-low/30 backdrop-blur-xl border-2 border-dashed border-outline-variant/20 rounded-[3rem]"
+              className="rounded-lg border border-dashed border-outline-variant/35 bg-surface-container-lowest py-20 text-center sm:py-28"
             >
-              <div className="inline-flex w-24 h-24 items-center justify-center rounded-4xl bg-surface-container mb-8 text-on-surface-variant/20 relative group">
-                <div className="absolute inset-0 bg-secondary/10 rounded-4xl scale-150 blur-3xl group-hover:bg-secondary/20 transition-all duration-1000"></div>
+              <div className="relative mb-8 inline-flex h-20 w-20 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant/25">
                 <span className="material-symbols-outlined text-5xl relative z-10 transition-transform duration-500 group-hover:scale-110">search_off</span>
               </div>
               <h3 className="text-2xl md:text-3xl font-headline font-black text-primary mb-4 tracking-tight">{dict.explore.emptyTitle}</h3>

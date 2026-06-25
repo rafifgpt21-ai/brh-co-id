@@ -1,23 +1,36 @@
 "use client";
 
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
-import Link from "next/link";
+import { motion, useScroll, useSpring } from "framer-motion";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import React from "react";
 import type { Locale } from "@/lib/i18n/config";
 import { formatLocalizedDate } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getCategoryLabel } from "@/lib/i18n/posts";
+import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 
-const SecurePDFViewer = dynamic(
-  () => import("@/components/SecurePDFViewer").then((mod) => mod.SecurePDFViewer),
-  { ssr: false }
-);
+type PostBlock = {
+  id: string;
+  type: "text" | "image" | "video" | "pdf" | "link" | "contact" | string;
+  content?: string | null;
+  url?: string | null;
+  title?: string | null;
+  caption?: string | null;
+};
+
+type PublicPost = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  thumbnail?: string | null;
+  createdAt: Date | string;
+  blocks: PostBlock[];
+};
 
 interface PostClientProps {
-  post: any;
-  relatedPosts: any[];
+  post: PublicPost;
+  relatedPosts: PublicPost[];
   lang: Locale;
   dict: Dictionary;
 }
@@ -30,11 +43,11 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
     restDelta: 0.001
   });
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return formatLocalizedDate(date, lang);
   };
 
-  const getReadingTime = (blocks: any[]) => {
+  const getReadingTime = (blocks: PostBlock[]) => {
     const text = blocks
       .filter(b => b.type === 'text')
       .map(b => b.content)
@@ -61,12 +74,10 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
       {/* Reading Progress Bar */}
       <motion.div
         style={{ scaleX }}
-        className="fixed top-0 left-0 right-0 h-1.5 bg-secondary origin-left z-50 rounded-r-full shadow-[0_0_10px_rgba(var(--color-secondary),0.5)]"
+        className="fixed left-0 right-0 top-0 z-50 h-1 bg-secondary origin-left"
       />
 
-      {/* Hero Section */}
-      <header className="relative w-full overflow-hidden flex flex-col items-center justify-center min-h-[60vh] md:min-h-[75vh]">
-        {/* Background Layer */}
+      <header className="relative flex min-h-[54vh] w-full flex-col items-center justify-center overflow-hidden border-b border-outline-variant/20 md:min-h-[62vh]">
         <div className="absolute inset-0 z-0">
           {post.thumbnail ? (
             <div className="relative h-full w-full overflow-hidden">
@@ -75,44 +86,38 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 alt={post.title}
                 fill
                 priority
-                className="w-full h-full object-cover blur-md scale-110 opacity-80"
+                className="h-full w-full scale-110 object-cover opacity-80 blur-md"
               />
               <div className="absolute inset-0 bg-linear-to-t from-background via-background/20 to-transparent" />
               <div className="absolute inset-0 bg-linear-to-b from-background/10 to-transparent" />
             </div>
           ) : (
-            <div className="h-full bg-background flex flex-col items-center justify-center p-8 border-b border-outline-variant/10">
-              <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-secondary-fixed blur-[120px] rounded-full"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary-fixed blur-[120px] rounded-full"></div>
-              </div>
-            </div>
+            <div className="h-full bg-background" />
           )}
         </div>
 
-        {/* Floating Content Header */}
-        <div className="max-w-4xl mx-auto px-6 relative z-10 text-center py-20">
+        <div className="relative z-10 mx-auto max-w-4xl px-6 py-16 text-center md:py-20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-center"
           >
-            <Link
-              href={`/${lang}`}
-              className="group inline-flex items-center gap-2 text-xs font-bold font-label tracking-widest uppercase text-on-surface-variant hover:text-secondary transition-all mb-10 bg-surface-container-lowest/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-outline-variant/10"
+            <OptimisticLink
+              href={`/${lang}/explore`}
+              className="group mb-8 inline-flex items-center gap-2 rounded-full border border-outline-variant/25 bg-surface-container-lowest/85 px-5 py-2.5 font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant backdrop-blur-md transition hover:border-secondary/35 hover:text-secondary"
             >
               <span className="material-symbols-outlined text-[16px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-              {dict.post.backHome}
-            </Link>
+              {dict.post.catalog}
+            </OptimisticLink>
 
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="flex flex-wrap justify-center gap-3 mb-8"
+              transition={{ delay: 0.08, duration: 0.35 }}
+              className="mb-7 flex flex-wrap justify-center gap-3"
             >
-              <span className="inline-block rounded-full bg-secondary text-on-secondary px-6 py-2 text-[10px] font-label font-bold tracking-[0.2em] uppercase shadow-lg shadow-secondary/20">
+              <span className="inline-block rounded-full bg-secondary text-on-secondary px-5 py-2 font-label text-[10px] font-bold uppercase tracking-[0.2em] shadow-sm shadow-secondary/15">
                 {getCategoryLabel(post.category, dict.explore.categories)}
               </span>
             </motion.div>
@@ -120,8 +125,8 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="text-4xl md:text-6xl lg:text-7xl font-headline font-extrabold text-primary leading-[1.1] mb-10 tracking-tight max-w-3xl mx-auto"
+              transition={{ delay: 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="mx-auto mb-8 max-w-3xl text-pretty font-headline text-4xl font-black leading-[1.08] tracking-tight text-primary md:text-6xl"
             >
               {post.title}
             </motion.h1>
@@ -129,8 +134,8 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 1 }}
-              className="flex items-center justify-center gap-6 text-on-surface-variant font-label text-[11px] uppercase tracking-[0.2em] font-bold"
+              transition={{ delay: 0.18, duration: 0.45 }}
+              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 font-label text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant"
             >
               <div className="flex items-center gap-2.5">
                 <span className="material-symbols-outlined text-[18px] opacity-70">calendar_today</span>
@@ -147,10 +152,10 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
       </header>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-0 md:px-6 py-4 md:py-10 relative">
-        <div className="rounded-none px-4 py-8 md:px-0 md:py-12 mb-20 shadow-none">
-          <div className="space-y-16">
-            {post.blocks.map((block: any) => {
+      <div className="relative mx-auto max-w-4xl px-0 py-4 md:px-6 md:py-10">
+        <div className="mb-20 rounded-none px-4 py-8 shadow-none md:px-0 md:py-12">
+          <div className="space-y-14 md:space-y-16">
+            {post.blocks.map((block) => {
               if (block.type === "text") {
                 return (
                   <motion.div
@@ -158,8 +163,8 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="prose prose-base md:prose-lg max-w-none text-on-surface leading-[1.6] md:leading-[1.7] font-body tracking-tight md:tracking-normal
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    className="prose prose-base md:prose-lg max-w-none text-on-surface leading-[1.68] md:leading-[1.78] font-body tracking-normal
                       prose-headings:font-headline prose-headings:text-primary prose-headings:tracking-tight
                       prose-h2:text-xl md:text-2xl prose-h2:mt-12 prose-h2:mb-6
                       prose-p:mb-6 prose-p:text-on-surface/90
@@ -172,6 +177,9 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 );
               }
               if (block.type === "image") {
+                const imageSrc = block.url || block.content;
+                if (!imageSrc) return null;
+
                 return (
                   <motion.div
                     key={block.id}
@@ -187,7 +195,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                       )}
                       <div className="rounded-4xl overflow-hidden border border-outline-variant/10 bg-surface-container-low transform transition-transform duration-700">
                         <Image
-                          src={block.url || block.content}
+                          src={imageSrc}
                           alt={block.title || "Image content"}
                           width={1600}
                           height={900}
@@ -205,6 +213,9 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 );
               }
               if (block.type === "pdf") {
+                const documentSrc = block.url || block.content;
+                if (!documentSrc) return null;
+
                 return (
                   <motion.div
                     key={block.id}
@@ -214,8 +225,8 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="my-12"
                   >
-                    <Link
-                      href={`/${lang}/pdf-viewer?url=${encodeURIComponent(block.url || block.content)}&title=${encodeURIComponent(block.title || "Dokumen")}`}
+                    <OptimisticLink
+                      href={`/${lang}/pdf-viewer?url=${encodeURIComponent(documentSrc)}&title=${encodeURIComponent(block.title || "Dokumen")}`}
                       className="flex items-center gap-6 p-8 rounded-4xl bg-surface-container-high border border-outline-variant/15 hover:bg-surface-container-highest transition-all duration-500 group active:scale-[0.98]"
                     >
                       <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 group-hover:bg-secondary group-hover:text-on-secondary transition-all duration-500">
@@ -233,7 +244,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                       <div className="w-10 h-10 rounded-full border border-outline-variant/30 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
                         <span className="material-symbols-outlined text-secondary">east</span>
                       </div>
-                    </Link>
+                    </OptimisticLink>
                     {block.caption && (
                       <p className="text-sm text-on-surface-variant font-medium italic mt-6 border-l-2 border-secondary/20 pl-4">
                         {block.caption}
@@ -243,6 +254,9 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 );
               }
               if (block.type === "video") {
+                const videoSrc = block.url || block.content;
+                if (!videoSrc) return null;
+
                 return (
                   <motion.div
                     key={block.id}
@@ -261,7 +275,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                       </div>
                       <div className="aspect-video rounded-[2.5rem] overflow-hidden border border-outline-variant/15 bg-black ring-1 ring-white/5">
                         <iframe
-                          src={getEmbedUrl(block.url || block.content)}
+                          src={getEmbedUrl(videoSrc)}
                           className="w-full h-full"
                           allowFullScreen
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -277,6 +291,8 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 );
               }
               if (block.type === "link") {
+                if (!block.url) return null;
+
                 return (
                   <motion.div
                     key={block.id}
@@ -317,7 +333,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 );
               }
               if (block.type === "contact") {
-                let cleanPhone = block.content.replace(/\D/g, "");
+                let cleanPhone = (block.content || "").replace(/\D/g, "");
                 if (cleanPhone.startsWith("0")) {
                   cleanPhone = "62" + cleanPhone.slice(1);
                 }
@@ -369,18 +385,18 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
         >
           <p className="font-label text-xs font-bold tracking-[0.2em] uppercase text-on-surface-variant mb-6">{dict.post.articleEnd}</p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link
+            <OptimisticLink
               href={`/${lang}`}
               className="px-8 py-3 rounded-full bg-primary text-on-primary font-headline font-bold text-sm hover:translate-y-[-2px] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98]"
             >
               {dict.post.home}
-            </Link>
-            <Link
+            </OptimisticLink>
+            <OptimisticLink
               href={`/${lang}/explore`}
               className="px-8 py-3 rounded-full bg-surface-container-high text-primary font-headline font-bold text-sm hover:translate-y-[-2px] transition-all border border-outline-variant/20 active:scale-[0.98]"
             >
               {dict.post.catalog}
-            </Link>
+            </OptimisticLink>
           </div>
         </motion.div>
       </div>
@@ -407,7 +423,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
               }}
               className="grid grid-cols-1 md:grid-cols-3 gap-8"
             >
-              {(relatedPosts as any[]).map((rPost: any) => (
+              {relatedPosts.map((rPost) => (
                 <motion.div
                   key={rPost.id}
                   variants={{
@@ -415,7 +431,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                     show: { opacity: 1, y: 0 }
                   }}
                 >
-                  <Link
+                  <OptimisticLink
                     href={`/${lang}/post/${rPost.slug}`}
                     className="group flex flex-col h-full bg-surface-container-lowest rounded-3xl overflow-hidden border border-outline-variant/10 hover:border-secondary/30 transition-all duration-500 hover:shadow-xl hover:shadow-secondary/5"
                   >
@@ -444,7 +460,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                         <span className="material-symbols-outlined text-[16px]">east</span>
                       </div>
                     </div>
-                  </Link>
+                  </OptimisticLink>
                 </motion.div>
               ))}
             </motion.div>

@@ -1,4 +1,4 @@
-import { getPosts } from "@/lib/actions/post";
+import { getPublishedPosts } from "@/lib/data/public-content";
 import KatalogClient from "@/components/katalog/KatalogClient";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -8,6 +8,56 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import KatalogSkeleton from "@/components/katalog/KatalogSkeleton";
+
+export const unstable_instant = {
+  prefetch: "runtime",
+  samples: [
+    {
+      params: { lang: "en" },
+      searchParams: { search: null, category: null },
+      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
+      cookies: [],
+    },
+    {
+      params: { lang: "id" },
+      searchParams: { search: null, category: null },
+      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
+      cookies: [],
+    },
+    {
+      params: { lang: "en" },
+      searchParams: { search: "tasawuf", category: null },
+      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
+      cookies: [],
+    },
+  ],
+};
+
+async function ExploreResults({
+  lang,
+  dict,
+  searchParams,
+}: {
+  lang: Locale;
+  dict: Awaited<ReturnType<typeof getDictionary>>;
+  searchParams: Promise<{ search?: string; category?: string }>;
+}) {
+  const { search, category } = await searchParams;
+  const posts = await getPublishedPosts({
+    search: search || undefined,
+    category: category && category !== "Semua" ? category : undefined,
+  });
+  const localizedPosts = posts.map((post) => localizePost(post, lang));
+
+  return (
+    <KatalogClient
+      key={`${search || ""}-${category || ""}`}
+      initialPosts={localizedPosts}
+      lang={lang}
+      dict={dict}
+    />
+  );
+}
 
 export default async function KaryaPage({
   params,
@@ -20,19 +70,11 @@ export default async function KaryaPage({
   if (!hasLocale(rawLang)) notFound();
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
-  const { search, category } = await searchParams;
-  const posts = await getPosts({
-    status: 'Published',
-    locale: lang,
-    search: search || undefined,
-    category: category && category !== 'Semua' ? category : undefined
-  });
-  const localizedPosts = posts.map((post: any) => localizePost(post, lang));
 
   return (
     <main className="min-h-screen pt-0 md:pt-12">
       <Suspense fallback={<KatalogSkeleton />}>
-        <KatalogClient initialPosts={localizedPosts} lang={lang} dict={dict} />
+        <ExploreResults lang={lang} dict={dict} searchParams={searchParams} />
       </Suspense>
     </main>
   );

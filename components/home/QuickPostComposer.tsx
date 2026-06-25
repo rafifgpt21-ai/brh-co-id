@@ -23,9 +23,13 @@ type QuickPostLabels = {
 export function QuickPostComposer({
   labels,
   hideHeader = false,
+  onSubmitStart,
+  onSubmitResult,
 }: {
   labels: QuickPostLabels;
   hideHeader?: boolean;
+  onSubmitStart?: (status: "Published" | "Draft") => void;
+  onSubmitResult?: (result: { success: boolean; message: string; status: "Published" | "Draft" }) => void;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +70,7 @@ export function QuickPostComposer({
 
     setIsSubmitting(true);
     setMessage("");
+    onSubmitStart?.(status);
 
     try {
       let imageUrl = "";
@@ -82,17 +87,22 @@ export function QuickPostComposer({
       });
 
       if (!result.success) {
-        setMessage(result.error || "Gagal menyimpan catatan");
+        const errorMessage = result.error || "Gagal menyimpan catatan";
+        setMessage(errorMessage);
+        onSubmitResult?.({ success: false, message: errorMessage, status });
         return;
       }
 
       setContent("");
       removeImage();
       setMessage(labels.success);
+      onSubmitResult?.({ success: true, message: labels.success, status });
       router.refresh();
     } catch (error) {
       console.error("Note submit error:", error);
-      setMessage("Gagal menyimpan catatan");
+      const errorMessage = "Gagal menyimpan catatan";
+      setMessage(errorMessage);
+      onSubmitResult?.({ success: false, message: errorMessage, status });
     } finally {
       setIsSubmitting(false);
     }

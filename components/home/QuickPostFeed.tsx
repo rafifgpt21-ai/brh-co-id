@@ -2,6 +2,7 @@
 
 import { deleteQuickPost, updateQuickPost, updateQuickPostStatus } from "@/lib/actions/quick-post";
 import { formatLocalizedDate, type Locale } from "@/lib/i18n/config";
+import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -16,12 +17,15 @@ type QuickPostItem = {
 };
 
 type QuickPostFeedLabels = {
+  eyebrow: string;
+  title: string;
   emptyTitle: string;
   emptyDescription: string;
   normal: string;
   quote: string;
   readMore: string;
   showLess: string;
+  viewAll: string;
   draftBadge: string;
   publish: string;
   edit: string;
@@ -39,15 +43,18 @@ export function QuickPostFeed({
   isAdmin,
   lang,
   labels,
+  hrefAll,
+  variant = "full",
 }: {
   quickPosts: QuickPostItem[];
   isAdmin: boolean;
   lang: Locale;
   labels: QuickPostFeedLabels;
+  hrefAll?: string;
+  variant?: "preview" | "full";
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<QuickPostItem | null>(null);
   const [editType, setEditType] = useState<"NORMAL" | "QUOTE">("NORMAL");
   const [editContent, setEditContent] = useState("");
@@ -67,7 +74,6 @@ export function QuickPostFeed({
   };
 
   const removeQuickPost = (id: string) => {
-    setOpenMenuId(null);
     startTransition(async () => {
       const result = await deleteQuickPost(id);
       if (!result.success) alert(result.error || "Gagal menghapus catatan");
@@ -76,7 +82,6 @@ export function QuickPostFeed({
   };
 
   const startEdit = (post: QuickPostItem) => {
-    setOpenMenuId(null);
     setEditingPost(post);
     setEditType(post.type === "QUOTE" ? "QUOTE" : "NORMAL");
     setEditContent(post.content);
@@ -111,9 +116,11 @@ export function QuickPostFeed({
     });
   };
 
-  if (quickPosts.length === 0) {
+  const isPreview = variant === "preview";
+  const visibleQuickPosts = isPreview ? quickPosts.slice(0, 3) : quickPosts;
+  if (visibleQuickPosts.length === 0) {
     return (
-      <section id="notes" className="border-y border-outline-variant/35 py-8 sm:py-14">
+      <section id="notes" className="border-y border-outline-variant/35 py-8 sm:py-12">
         <div className="mx-auto max-w-3xl text-center">
           <span className="material-symbols-outlined text-3xl text-secondary/45 sm:text-4xl">edit_note</span>
           <h2 className="mt-3 font-headline text-xl font-black text-primary sm:mt-4 sm:text-2xl">{labels.emptyTitle}</h2>
@@ -127,28 +134,80 @@ export function QuickPostFeed({
 
   return (
     <section id="notes" className="w-full">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {quickPosts.map((post, index) => {
+      {isPreview && (
+        <div className="mb-5 flex flex-col gap-4 border-b border-outline-variant/25 pb-5 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:pb-6">
+          <div>
+            <span className="font-label text-[10px] font-black uppercase tracking-[0.24em] text-secondary">
+              {labels.eyebrow}
+            </span>
+            <h2 className="mt-2 font-headline text-2xl font-black leading-tight tracking-tight text-primary sm:text-3xl">
+              {labels.title}
+            </h2>
+          </div>
+          {hrefAll && (
+            <OptimisticLink
+              href={hrefAll}
+              className="inline-flex h-11 w-fit items-center gap-2 rounded-full bg-primary px-5 text-xs font-black uppercase tracking-wider text-on-primary shadow-lg shadow-primary/10 transition hover:bg-tertiary active:scale-[0.98]"
+            >
+              {labels.viewAll}
+              <span className="material-symbols-outlined text-[18px]">east</span>
+            </OptimisticLink>
+          )}
+        </div>
+      )}
+
+      <div className={isPreview ? "grid grid-cols-1 gap-0 lg:grid-cols-3 lg:gap-6" : "grid grid-cols-1 gap-6 lg:grid-cols-12"}>
+        {visibleQuickPosts.map((post, index) => {
           const isQuote = post.type === "QUOTE";
           const isExpanded = Boolean(expanded[post.id]);
-          const isLong = post.content.length > (index === 0 ? 420 : 210);
-          const visibleContent = isExpanded ? post.content : truncate(post.content, index === 0 ? 420 : 210);
-          const isFeatured = index === 0;
+          const previewLimit = isPreview ? 145 : index === 0 ? 420 : 210;
+          const isLong = post.content.length > previewLimit;
+          const visibleContent = isExpanded ? post.content : truncate(post.content, previewLimit);
+          const isFeatured = !isPreview && index === 0;
 
           return (
             <article
               key={post.id}
-              className={`group border-outline-variant/35 ${
-                isFeatured
+              className={`group relative border-outline-variant/35 ${
+                isPreview
+                  ? "border-t py-4 first:border-t-0 lg:border-l lg:border-t-0 lg:py-1 lg:pl-6 lg:first:border-l-0 lg:first:pl-0"
+                  : isFeatured
                   ? "border-y py-5 sm:py-7 lg:col-span-7 lg:row-span-2 lg:py-9"
                   : "border-t py-5 sm:py-6 lg:col-span-5"
               }`}
             >
+              {isAdmin && (
+                <div
+                  className={`absolute right-2 top-3 z-10 flex items-center gap-1.5 rounded-full border border-outline-variant/20 bg-surface-container-lowest/95 p-1 shadow-xl shadow-primary/10 backdrop-blur transition sm:right-0 sm:top-4 sm:opacity-0 sm:translate-y-1 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-y-0 sm:group-focus-within:opacity-100 ${
+                    isPending ? "pointer-events-none opacity-60" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => startEdit(post)}
+                    className="grid h-8 w-8 place-items-center rounded-full text-secondary transition hover:bg-secondary/10"
+                    title={labels.edit}
+                    aria-label={labels.edit}
+                  >
+                    <span className="material-symbols-outlined text-[17px]">edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeQuickPost(post.id)}
+                    className="grid h-8 w-8 place-items-center rounded-full text-error transition hover:bg-error/10"
+                    title={labels.delete}
+                    aria-label={labels.delete}
+                  >
+                    <span className="material-symbols-outlined text-[17px]">delete</span>
+                  </button>
+                </div>
+              )}
+
               {post.imageUrl && !isQuote && (
                 <button
                   type="button"
                   onClick={() => toggleExpanded(post.id)}
-                  className={`relative mb-6 block w-full overflow-hidden rounded-lg bg-surface-container ${isFeatured ? "aspect-16/9" : "aspect-16/10"}`}
+                  className={`relative mb-4 block w-full overflow-hidden rounded-lg bg-surface-container ${isPreview ? "aspect-16/7 sm:aspect-16/6 lg:aspect-16/9" : isFeatured ? "aspect-16/9" : "aspect-16/10"}`}
                 >
                   <Image
                     src={post.imageUrl}
@@ -162,7 +221,7 @@ export function QuickPostFeed({
 
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 {isQuote && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-secondary">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-secondary sm:text-[10px]">
                     <span className="material-symbols-outlined text-[15px]">format_quote</span>
                     {labels.quote}
                   </span>
@@ -179,11 +238,11 @@ export function QuickPostFeed({
 
               <button type="button" onClick={() => toggleExpanded(post.id)} className="block w-full text-left">
                 {isQuote ? (
-                  <p className={`${isFeatured ? "text-2xl sm:text-3xl md:text-5xl" : "text-xl sm:text-2xl md:text-3xl"} text-pretty font-headline font-black italic leading-tight tracking-tight text-primary`}>
+                  <p className={`${isPreview ? "text-lg sm:text-xl lg:text-2xl" : isFeatured ? "text-2xl sm:text-3xl md:text-5xl" : "text-xl sm:text-2xl md:text-3xl"} text-pretty font-headline font-black italic leading-tight tracking-tight text-primary`}>
                     &ldquo;{visibleContent}&rdquo;
                   </p>
                 ) : (
-                  <p className={`${isFeatured ? "text-lg sm:text-xl md:text-2xl" : "text-base md:text-lg"} whitespace-pre-wrap text-pretty font-body leading-relaxed text-on-surface`}>
+                  <p className={`${isPreview ? "text-sm sm:text-base" : isFeatured ? "text-lg sm:text-xl md:text-2xl" : "text-base md:text-lg"} whitespace-pre-wrap text-pretty font-body leading-relaxed text-on-surface`}>
                     {visibleContent}
                   </p>
                 )}
@@ -215,42 +274,6 @@ export function QuickPostFeed({
                         {labels.publish}
                       </button>
                     )}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setOpenMenuId((current) => (current === post.id ? null : post.id))}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high hover:text-primary"
-                        title="Actions"
-                        aria-label="Note actions"
-                        aria-expanded={openMenuId === post.id}
-                      >
-                        <span className="material-symbols-outlined text-[19px]">more_horiz</span>
-                      </button>
-
-                      {openMenuId === post.id && (
-                        <>
-                          <button type="button" className="fixed inset-0 z-30 cursor-default" aria-label="Close menu" onClick={() => setOpenMenuId(null)} />
-                          <div className="absolute bottom-11 right-0 z-40 w-44 overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-1.5 shadow-2xl shadow-primary/10">
-                            <button
-                              type="button"
-                              onClick={() => startEdit(post)}
-                              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-black text-primary transition hover:bg-surface-container"
-                            >
-                              <span className="material-symbols-outlined text-[18px] text-secondary">edit</span>
-                              {labels.edit}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeQuickPost(post.id)}
-                              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-black text-error transition hover:bg-error/10"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
-                              {labels.delete}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
                   </div>
                 )}
               </div>

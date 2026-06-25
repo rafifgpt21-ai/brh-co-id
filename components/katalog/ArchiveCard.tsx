@@ -1,11 +1,16 @@
 "use client";
 
 import Image from 'next/image';
-import Link from 'next/link';
 import type { Post } from "@prisma/client";
 import type { Locale } from '@/lib/i18n/config';
 import { formatLocalizedDate } from '@/lib/i18n/config';
 import { getCategoryLabel } from '@/lib/i18n/posts';
+import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
+
+type ArchiveBlock = {
+  type?: string;
+  content?: string | null;
+};
 
 interface ArchiveCardProps {
   post: Post;
@@ -18,29 +23,31 @@ interface ArchiveCardProps {
 
 export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
   // Extract snippet from first text block (strip HTML)
-  const firstTextBlock = (post.blocks as any)?.find((b: any) => b.type === 'text');
+  const firstTextBlock = Array.isArray(post.blocks)
+    ? (post.blocks as ArchiveBlock[]).find((block) => block.type === 'text')
+    : undefined;
   const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
   const snippet = plainContent 
     ? plainContent.substring(0, 100) + (plainContent.length > 100 ? '...' : '')
     : '';
 
   return (
-    <Link
+    <OptimisticLink
       href={`/${lang}/post/${post.slug}`}
-      className="group flex flex-row bg-surface-container-lowest rounded-xl md:rounded-2xl overflow-hidden border border-outline-variant/15 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 h-full min-h-[120px] md:min-h-0"
+      className="surface-lift-hover group flex h-full min-h-[120px] flex-row overflow-hidden rounded-lg border border-outline-variant/25 bg-surface-container-lowest md:min-h-0"
     >
       {/* Thumbnail (Left) */}
       <div className="w-28 xs:w-36 md:w-40 lg:w-48 xl:w-52 aspect-square md:aspect-auto shrink-0 relative overflow-hidden order-1">
         {post.thumbnail ? (
           <>
             <Image
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               alt={post.title}
               src={post.thumbnail}
               fill
               sizes="(max-width: 768px) 30vw, (max-width: 1024px) 200px, 250px"
             />
-            <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500"></div>
+            <div className="absolute inset-0 bg-black/5 transition-colors duration-300 group-hover:bg-transparent"></div>
           </>
         ) : (
           <div className="w-full h-full bg-linear-to-br from-secondary/5 to-primary/10 flex items-center justify-center">
@@ -55,7 +62,7 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
           <span className="text-secondary font-label text-[9px] md:text-[11px] font-bold tracking-[0.2em] uppercase mb-1 md:mb-3 block">
             {getCategoryLabel(post.category, labels.categories)}
           </span>
-          <h3 className="font-headline font-bold text-[13px] xs:text-sm md:text-lg lg:text-xl text-primary mb-1 md:mb-3 leading-snug line-clamp-3 md:line-clamp-2 lg:line-clamp-3 group-hover:text-secondary transition-colors duration-300">
+          <h3 className="mb-1 line-clamp-3 font-headline text-[13px] font-black leading-snug text-primary transition-colors duration-200 group-hover:text-tertiary xs:text-sm md:mb-3 md:line-clamp-2 md:text-lg lg:line-clamp-3 lg:text-xl">
             {post.title}
           </h3>
           {snippet && (
@@ -79,6 +86,6 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+    </OptimisticLink>
   );
 }

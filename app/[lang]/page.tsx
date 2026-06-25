@@ -1,8 +1,9 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { auth } from '@/auth';
-import { getPosts } from '@/lib/actions/post';
+import { connection } from 'next/server';
+import { getLatestPublishedQuickPostByType, getPublishedPosts } from '@/lib/data/public-content';
 import { getQuickPosts } from '@/lib/actions/quick-post';
 import HomeHero from '@/components/home/HomeHero';
 import { QuickPostFeed } from '@/components/home/QuickPostFeed';
@@ -10,6 +11,25 @@ import { formatLocalizedDate, hasLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getCategoryLabel, localizePost } from '@/lib/i18n/posts';
 import { notFound } from 'next/navigation';
+import { RouteSkeleton } from '@/components/ui/RouteSkeleton';
+import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
+import { SectionSkeleton } from '@/components/ui/SectionSkeleton';
+
+export const unstable_instant = {
+  prefetch: "runtime",
+  samples: [
+    {
+      params: { lang: "en" },
+      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
+      cookies: [],
+    },
+    {
+      params: { lang: "id" },
+      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
+      cookies: [],
+    },
+  ],
+};
 
 const ScrollReveal = dynamic(() => import('@/components/home/ScrollReveal'), {
   ssr: true,
@@ -45,8 +65,7 @@ type HeroPanelItem =
       category: string;
       thumbnail?: string | null;
       createdAt: Date | string;
-    }
-  | null;
+    };
 
 function getPostSnippet(post: LocalizedHomePost) {
   const firstTextBlock = post.blocks?.find((block) => block.type === 'text');
@@ -56,54 +75,17 @@ function getPostSnippet(post: LocalizedHomePost) {
     : '';
 }
 
-export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang: rawLang } = await params;
-  if (!hasLocale(rawLang)) notFound();
-
-  const lang: Locale = rawLang;
-  const dict = await getDictionary(lang);
-  const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  const quickPosts = await getQuickPosts({ includeDrafts: isAdmin, limit: 12 });
-  const allPosts = await getPosts({ status: 'Published', locale: lang });
-  const latestPosts = allPosts.slice(0, 4).map((post) => localizePost(post, lang) as LocalizedHomePost);
-  const latestQuote = quickPosts.find((post) => post.type === "QUOTE");
-  const latestInsight = quickPosts.find((post) => post.type !== "QUOTE");
-  const latestArticle = latestPosts[0];
-  const heroPanelItem: HeroPanelItem = latestQuote
-    ? {
-        kind: "quote",
-        id: latestQuote.id,
-        content: latestQuote.content,
-        createdAt: latestQuote.createdAt,
-      }
-    : latestInsight
-      ? {
-          kind: "insight",
-          id: latestInsight.id,
-          content: latestInsight.content,
-          imageUrl: latestInsight.imageUrl,
-          createdAt: latestInsight.createdAt,
-        }
-      : latestArticle
-        ? {
-            kind: "article",
-            id: latestArticle.id,
-            title: latestArticle.title,
-            excerpt: getPostSnippet(latestArticle),
-            href: `/${lang}/post/${latestArticle.slug}`,
-            category: getCategoryLabel(latestArticle.category, dict.explore.categories),
-            thumbnail: latestArticle.thumbnail,
-            createdAt: latestArticle.createdAt,
-          }
-        : null;
-  const quickPostFeedLabels = {
+function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>) {
+  return {
+    eyebrow: dict.quickPost.eyebrow,
+    title: dict.quickPost.title,
     emptyTitle: dict.quickPost.emptyTitle,
     emptyDescription: dict.quickPost.emptyDescription,
     normal: dict.quickPost.normal,
     quote: dict.quickPost.quote,
     readMore: dict.quickPost.readMore,
     showLess: dict.quickPost.showLess,
+    viewAll: dict.quickPost.viewAll,
     draftBadge: dict.quickPost.draftBadge,
     publish: dict.quickPost.publish,
     edit: dict.quickPost.edit,
@@ -111,29 +93,83 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
     cancel: dict.quickPost.cancel,
     delete: dict.quickPost.delete,
   };
+}
+
+async function getHeroPanelItems(lang: Locale, dict: Awaited<ReturnType<typeof getDictionary>>): Promise<HeroPanelItem[]> {
+  const [latestQuote, latestInsight, latestPosts] = await Promise.all([
+    getLatestPublishedQuickPostByType("QUOTE"),
+    getLatestPublishedQuickPostByType("NORMAL"),
+    getPublishedPosts({ limit: 1 }),
+  ]);
+
+  const items: HeroPanelItem[] = [];
+
+  if (latestQuote) {
+    items.push({
+      kind: "quote",
+      id: latestQuote.id,
+      content: latestQuote.content,
+      createdAt: latestQuote.createdAt,
+    });
+  }
+
+  if (latestInsight) {
+    items.push({
+      kind: "insight",
+      id: latestInsight.id,
+      content: latestInsight.content,
+      imageUrl: latestInsight.imageUrl,
+      createdAt: latestInsight.createdAt,
+    });
+  }
+
+  const latestPost = latestPosts[0];
+  if (latestPost) {
+    const localizedPost = localizePost(latestPost, lang) as LocalizedHomePost;
+    items.push({
+      kind: "article",
+      id: localizedPost.id,
+      title: localizedPost.title,
+      excerpt: getPostSnippet(localizedPost),
+      href: `/${lang}/post/${localizedPost.slug}`,
+      category: getCategoryLabel(localizedPost.category, dict.explore.categories),
+      thumbnail: localizedPost.thumbnail,
+      createdAt: localizedPost.createdAt,
+    });
+  }
+
+  return items;
+}
+
+async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  await connection();
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+  const quickPosts = await getQuickPosts({ includeDrafts: isAdmin, limit: 4 });
+  const quickPostFeedLabels = getQuickPostFeedLabels(dict);
 
   return (
-    <div className="overflow-x-hidden bg-surface pb-24 sm:pb-0">
-      <HomeHero
-        lang={lang}
-        home={dict.home}
-        search={dict.search}
-        heroPanelItem={heroPanelItem}
-        heroPanelLabels={dict.home.heroPanel}
-      />
+    <section className="w-full px-4 py-7 sm:px-6 sm:py-9 md:px-12 lg:px-24 lg:py-12">
+      <div className="mx-auto max-w-7xl">
+        <QuickPostFeed
+          quickPosts={quickPosts}
+          isAdmin={isAdmin}
+          lang={lang}
+          labels={quickPostFeedLabels}
+          hrefAll={`/${lang}/catatan`}
+          variant="preview"
+        />
+      </div>
+    </section>
+  );
+}
 
-      <section className="w-full px-4 py-8 sm:px-6 sm:py-12 md:px-12 lg:px-24 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <QuickPostFeed
-            quickPosts={quickPosts}
-            isAdmin={isAdmin}
-            lang={lang}
-            labels={quickPostFeedLabels}
-          />
-        </div>
-      </section>
+async function HomeArchiveSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  const allPosts = await getPublishedPosts();
+  const latestPosts = allPosts.slice(0, 5).map((post) => localizePost(post, lang) as LocalizedHomePost);
 
-      <section id="arsip" className="w-full bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24">
+  return (
+    <section id="arsip" className="w-full border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <ScrollReveal className="mb-6 flex flex-col gap-4 border-b border-outline-variant/35 pb-6 sm:mb-8 sm:gap-5 sm:pb-8 md:flex-row md:items-end md:justify-between">
             <div>
@@ -144,13 +180,13 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
                 {dict.home.archiveTitleA} <span className="text-tertiary">{dict.home.archiveTitleB}</span>
               </h2>
             </div>
-            <Link
+            <OptimisticLink
               href={`/${lang}/explore`}
-              className="inline-flex h-12 w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary"
+              className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98]"
             >
               {dict.home.viewAll}
               <span className="material-symbols-outlined text-[19px]">grid_view</span>
-            </Link>
+            </OptimisticLink>
           </ScrollReveal>
 
           {latestPosts.length > 0 ? (
@@ -161,9 +197,9 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
 
                 return (
                   <ScrollReveal key={post.id} delay={index * 0.08} className={isLead ? "lg:col-span-2 lg:row-span-2" : ""}>
-                    <Link
+                    <OptimisticLink
                       href={`/${lang}/post/${post.slug}`}
-                      className={`group flex h-full overflow-hidden rounded-lg border border-outline-variant/30 bg-surface transition hover:border-secondary/50 hover:shadow-xl hover:shadow-primary/5 ${
+                      className={`surface-lift-hover group flex h-full overflow-hidden rounded-lg border border-outline-variant/30 bg-surface ${
                         isLead ? "flex-col" : "flex-col"
                       }`}
                     >
@@ -174,7 +210,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
                             alt={post.title}
                             fill
                             sizes={isLead ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 1024px) 100vw, 25vw"}
-                            className="object-cover transition duration-700 group-hover:scale-105"
+                            className="object-cover transition duration-700 group-hover:scale-[1.03]"
                             priority={index < 2}
                           />
                         ) : (
@@ -205,7 +241,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
                           <span className="material-symbols-outlined text-[17px] transition group-hover:translate-x-1">east</span>
                         </span>
                       </div>
-                    </Link>
+                    </OptimisticLink>
                   </ScrollReveal>
                 );
               })}
@@ -221,11 +257,15 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           )}
         </div>
       </section>
+  );
+}
 
-      <section className="w-full px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24">
+function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  return (
+    <section className="w-full px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24">
         <div className="mx-auto grid max-w-7xl gap-8 border-y border-outline-variant/35 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-center">
           <ScrollReveal>
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container">
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container shadow-[0_14px_45px_rgba(41,47,54,0.08)]">
               <Image
                 src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
                 alt="Dr. Budi Rahman Hakim (BRH)"
@@ -248,13 +288,13 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
                 <p className="mt-6 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg">
                   {dict.home.biographyCopy}
                 </p>
-                <Link
+                <OptimisticLink
                   href={`/${lang}/biografi`}
                   className="mt-7 inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary transition hover:text-secondary"
                 >
                   {dict.home.biographyCta}
                   <span className="material-symbols-outlined text-[18px]">east</span>
-                </Link>
+                </OptimisticLink>
               </div>
 
               <figure className="border-l-0 border-outline-variant/35 pt-2 lg:border-l lg:pl-8">
@@ -270,6 +310,45 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           </ScrollReveal>
         </div>
       </section>
+  );
+}
+
+function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  return (
+    <>
+      <Suspense fallback={<section className="w-full px-4 py-8 sm:px-6 sm:py-12 md:px-12 lg:px-24 lg:py-20"><SectionSkeleton variant="compact" /></section>}>
+        <HomeQuickPostsSection lang={lang} dict={dict} />
+      </Suspense>
+      <Suspense fallback={<section className="w-full border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-20"><SectionSkeleton variant="cards" /></section>}>
+        <HomeArchiveSection lang={lang} dict={dict} />
+      </Suspense>
+      <Suspense fallback={<section className="w-full px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24"><SectionSkeleton variant="media" /></section>}>
+        <HomeBiographySection lang={lang} dict={dict} />
+      </Suspense>
+    </>
+  );
+}
+
+export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang: rawLang } = await params;
+  if (!hasLocale(rawLang)) notFound();
+
+  const lang: Locale = rawLang;
+  const dict = await getDictionary(lang);
+  const heroPanelItems = await getHeroPanelItems(lang, dict);
+
+  return (
+    <div className="overflow-x-hidden bg-surface pb-24 sm:pb-0">
+      <HomeHero
+        lang={lang}
+        home={dict.home}
+        search={dict.search}
+        heroPanelItems={heroPanelItems}
+        heroPanelLabels={dict.home.heroPanel}
+      />
+      <Suspense fallback={<RouteSkeleton />}>
+        <HomeStreamedContent lang={lang} dict={dict} />
+      </Suspense>
     </div>
   );
 }

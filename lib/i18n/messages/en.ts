@@ -69,6 +69,11 @@ export const dictionary = {
     emptyDescription: "Short reflections and recent quotes will appear here.",
     readMore: "Read",
     showLess: "Close",
+    viewAll: "View All Notes",
+    allTitle: "All BRH Notes",
+    allIntro:
+      "A collection of short reflections, quotes, and recent thought updates from BRH Intellectual.",
+    backHome: "Back to Home",
     draftBadge: "Draft",
     edit: "Edit",
     save: "Save",

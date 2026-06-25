@@ -69,6 +69,11 @@ export const dictionary = {
     emptyDescription: "Refleksi singkat dan quote terbaru akan muncul di sini.",
     readMore: "Baca",
     showLess: "Tutup",
+    viewAll: "Lihat Semua Catatan",
+    allTitle: "Semua Catatan BRH",
+    allIntro:
+      "Kumpulan refleksi singkat, quote, dan update pemikiran terbaru dari BRH Intellectual.",
+    backHome: "Kembali ke Beranda",
     draftBadge: "Draft",
     edit: "Edit",
     save: "Simpan",

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getNavLinks } from './NavLinks';
+import { getNavLinks, isNavLinkCurrent } from './NavLinks';
+import { isPendingNavigationTarget, OptimisticLink, useNavigationFeedback } from '@/components/navigation/NavigationFeedback';
 import type { Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
@@ -12,22 +13,26 @@ interface MobileMenuProps {
   isAdmin?: boolean;
   lang: Locale;
   dict: Dictionary;
+  drawerControls?: ReactNode;
 }
 
-export const MobileMenu = ({ isAdmin, lang, dict }: MobileMenuProps) => {
+export const MobileMenu = ({ isAdmin, lang, dict, drawerControls }: MobileMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { pendingHref } = useNavigationFeedback();
   const links = getNavLinks(isAdmin, lang, dict.nav);
 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Close menu when pathname changes
   useEffect(() => {
-    setIsOpen(false);
+    const timer = window.setTimeout(() => setIsOpen(false), 0);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   // Prevent scrolling when menu is open
@@ -69,12 +74,15 @@ export const MobileMenu = ({ isAdmin, lang, dict }: MobileMenuProps) => {
 
           <div className="space-y-8 mt-4">
             {links.map((link, i) => {
-              const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+              const isCurrentRoute = isNavLinkCurrent(pathname, link.href, lang);
+              const isActive = isPendingNavigationTarget(pendingHref, link.href) || (!pendingHref && isCurrentRoute);
 
               return (
-                <Link
+                <OptimisticLink
                   key={link.href}
                   href={link.href}
+                  active={isActive}
+                  onClick={() => setIsOpen(false)}
                   style={{
                     transitionDelay: isOpen ? `${150 + i * 80}ms` : '0ms',
                   }}
@@ -84,7 +92,7 @@ export const MobileMenu = ({ isAdmin, lang, dict }: MobileMenuProps) => {
                     } ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}`}
                 >
                   {link.label}
-                </Link>
+                </OptimisticLink>
               );
             })}
           </div>
@@ -93,12 +101,17 @@ export const MobileMenu = ({ isAdmin, lang, dict }: MobileMenuProps) => {
             style={{ transitionDelay: isOpen ? '500ms' : '0ms' }}
             className={`mt-auto pt-10 border-t border-slate-100 space-y-4 transition-all duration-700 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
           >
+            {drawerControls && (
+              <div className="flex w-full flex-col items-stretch gap-4 pb-5">
+                {drawerControls}
+              </div>
+            )}
             <div>
               <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">
               Platform
               </p>
               <p className="text-sm font-headline font-semibold text-tertiary">
-                BRH Intellectual
+                BRH
               </p>
             </div>
             <div className="text-xs text-slate-500 font-medium leading-relaxed">

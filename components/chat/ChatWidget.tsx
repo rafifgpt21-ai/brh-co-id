@@ -52,6 +52,7 @@ export function ChatWidget({
   const [activePanel, setActivePanel] = useState<"chat" | "note" | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [notice, setNotice] = useState<{ tone: "success" | "error" | "loading"; message: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -64,6 +65,12 @@ export function ChatWidget({
     if (activePanel !== "chat") return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [activePanel, messages, isLoading]);
+
+  useEffect(() => {
+    if (!notice || notice.tone === "loading") return;
+    const timer = window.setTimeout(() => setNotice(null), 4200);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/pdf-viewer")) {
     return null;
@@ -158,7 +165,27 @@ export function ChatWidget({
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
-            <QuickPostComposer labels={quickPostLabels} hideHeader />
+            <QuickPostComposer
+              labels={quickPostLabels}
+              hideHeader
+              onSubmitStart={(status) => {
+                setActivePanel(null);
+                setNotice({
+                  tone: "loading",
+                  message: status === "Published" ? "Publishing note..." : "Saving draft...",
+                });
+              }}
+              onSubmitResult={(result) => {
+                setNotice({
+                  tone: result.success ? "success" : "error",
+                  message: result.success
+                    ? result.status === "Published"
+                      ? "Note published."
+                      : "Draft saved."
+                    : result.message,
+                });
+              }}
+            />
           </section>
         </div>
       )}
@@ -281,6 +308,24 @@ export function ChatWidget({
             </p>
           </form>
         </section>
+      )}
+
+      {notice && (
+        <div
+          role="status"
+          className={`mr-1 flex max-w-[min(92vw,360px)] items-center gap-2 rounded-full border px-4 py-3 text-xs font-black shadow-[0_14px_40px_rgba(41,47,54,0.18)] backdrop-blur-xl ${
+            notice.tone === "error"
+              ? "border-error/20 bg-error/95 text-white"
+              : notice.tone === "success"
+                ? "border-secondary/20 bg-secondary text-on-secondary"
+                : "border-outline-variant/25 bg-surface/95 text-primary"
+          }`}
+        >
+          <span className={`material-symbols-outlined text-[18px] ${notice.tone === "loading" ? "animate-spin" : ""}`}>
+            {notice.tone === "error" ? "error" : notice.tone === "success" ? "check_circle" : "progress_activity"}
+          </span>
+          <span className="min-w-0 truncate">{notice.message}</span>
+        </div>
       )}
 
       {isAdmin && quickPostLabels ? (

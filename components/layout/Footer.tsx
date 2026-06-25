@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { CurrentYear } from '@/components/common/CurrentYear';
 import { Suspense } from 'react';
 import type { Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
+import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 
 export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
   return (
@@ -17,10 +17,10 @@ export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-8 font-label text-xs uppercase tracking-widest font-semibold md:gap-12">
-          <Link href={`/${lang}/biografi`} className="text-background/70 hover:text-primary transition-colors">{dict.nav.biography}</Link>
-          <Link href={`/${lang}/riset`} className="text-background/70 hover:text-primary transition-colors">{dict.nav.research}</Link>
-          <Link href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 hover:text-primary transition-colors">{dict.footer.contact}</Link>
-          <Link href="/admin/login" className="text-background/70 hover:text-primary transition-colors">Admin</Link>
+          <OptimisticLink href={`/${lang}/biografi`} className="text-background/70 hover:text-primary transition-colors">{dict.nav.biography}</OptimisticLink>
+          <OptimisticLink href={`/${lang}/riset`} className="text-background/70 hover:text-primary transition-colors">{dict.nav.research}</OptimisticLink>
+          <a href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 hover:text-primary transition-colors">{dict.footer.contact}</a>
+          <OptimisticLink href="/admin/login" className="text-background/70 hover:text-primary transition-colors">Admin</OptimisticLink>
         </div>
       </div>
       <div className="w-full px-6 md:px-12 lg:px-24 mt-16 pt-8 border-t border-background/10 text-center">

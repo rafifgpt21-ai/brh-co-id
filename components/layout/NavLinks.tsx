@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { isPendingNavigationTarget, OptimisticLink, useNavigationFeedback } from '@/components/navigation/NavigationFeedback';
 import type { Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
@@ -20,19 +20,33 @@ export const getNavLinks = (isAdmin: boolean | undefined, lang: Locale, labels: 
   ...(isAdmin ? [{ href: '/admin', label: labels.admin }] : []),
 ];
 
+export function isNavLinkCurrent(pathname: string | null, href: string, lang: Locale) {
+  if (!pathname) return false;
+  const localeRoot = `/${lang}`;
+
+  if (href === localeRoot) {
+    return pathname === localeRoot;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export const NavLinks = ({ isAdmin, lang, dict }: NavLinksProps) => {
   const pathname = usePathname();
+  const { pendingHref } = useNavigationFeedback();
   const links = getNavLinks(isAdmin, lang, dict.nav);
 
   return (
     <div className="hidden lg:flex items-center gap-10 font-headline font-medium tracking-tight">
       {links.map((link) => {
-        const isActive = pathname === link.href || (link.href !== `/${lang}` && pathname?.startsWith(link.href));
+        const isCurrentRoute = isNavLinkCurrent(pathname, link.href, lang);
+        const isActive = isPendingNavigationTarget(pendingHref, link.href) || (!pendingHref && isCurrentRoute);
         
         return (
-          <Link
+          <OptimisticLink
             key={link.href}
             href={link.href}
+            active={isActive}
             className={`transition-colors duration-300 font-headline font-medium tracking-tight ${
               isActive 
                 ? "text-primary" 
@@ -40,7 +54,7 @@ export const NavLinks = ({ isAdmin, lang, dict }: NavLinksProps) => {
             }`}
           >
             {link.label}
-          </Link>
+          </OptimisticLink>
         );
       })}
     </div>
