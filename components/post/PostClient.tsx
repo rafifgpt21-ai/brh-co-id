@@ -92,7 +92,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
         className="fixed left-0 right-0 top-0 z-50 h-1 bg-secondary origin-left"
       />
 
-      <header className="relative flex min-h-[54vh] w-full flex-col items-center justify-center overflow-hidden border-b border-outline-variant/20 md:min-h-[62vh]">
+      <header className="relative flex min-h-[54vh] w-full flex-col items-center justify-center overflow-visible border-b border-outline-variant/20 md:min-h-[62vh]">
         <div className="absolute inset-0 z-0">
           {post.thumbnail ? (
             <div className="relative h-full w-full overflow-hidden">
