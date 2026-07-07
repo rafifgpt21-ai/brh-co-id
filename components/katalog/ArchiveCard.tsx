@@ -10,6 +10,7 @@ import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 type ArchiveBlock = {
   type?: string;
   content?: string | null;
+  url?: string | null;
 };
 
 interface ArchiveCardProps {
@@ -26,6 +27,12 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
   const firstTextBlock = Array.isArray(post.blocks)
     ? (post.blocks as ArchiveBlock[]).find((block) => block.type === 'text')
     : undefined;
+  const firstImageBlock = Array.isArray(post.blocks)
+    ? (post.blocks as ArchiveBlock[]).find((block) => block.type === 'image')
+    : undefined;
+  const thumbnailSrc = post.thumbnail || firstImageBlock?.url || firstImageBlock?.content || "";
+  const isLocalBookCover =
+    thumbnailSrc.startsWith("/book-cover/") || thumbnailSrc.startsWith("/api/book-cover/");
   const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
   const snippet = plainContent 
     ? plainContent.substring(0, 100) + (plainContent.length > 100 ? '...' : '')
@@ -38,14 +45,15 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
     >
       {/* Thumbnail (Left) */}
       <div className="w-28 xs:w-36 md:w-40 lg:w-48 xl:w-52 aspect-square md:aspect-auto shrink-0 relative overflow-hidden order-1">
-        {post.thumbnail ? (
+        {thumbnailSrc ? (
           <>
             <Image
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
               alt={post.title}
-              src={post.thumbnail}
+              src={thumbnailSrc}
               fill
               sizes="(max-width: 768px) 30vw, (max-width: 1024px) 200px, 250px"
+              unoptimized={isLocalBookCover}
             />
             <div className="absolute inset-0 bg-black/5 transition-colors duration-300 group-hover:bg-transparent"></div>
           </>

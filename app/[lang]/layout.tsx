@@ -50,7 +50,7 @@ function HeaderFallback() {
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-outline-variant/20 bg-background/86 backdrop-blur-xl transition-colors duration-200">
-      <div className="flex h-20 w-full items-center justify-between px-6 md:px-8 lg:px-12 xl:px-24">
+      <div className="flex h-14 w-full items-center justify-between px-5 md:px-8 lg:px-12 xl:px-24">
         <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
           <OptimisticLink href={`/${lang}`}>BRH Intellectual</OptimisticLink>
         </div>
@@ -130,7 +130,7 @@ export default function PublicLayout({
         <Suspense fallback={<HeaderFallback />}>
           <LocalizedHeader params={params} />
         </Suspense>
-        <main className="flex-1 pt-20">
+        <main className="flex-1 pt-14">
           {children}
         </main>
         <Suspense fallback={<FooterFallback />}>

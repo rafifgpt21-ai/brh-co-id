@@ -2,6 +2,8 @@ export type LanguageCode = "id" | "en" | "ar";
 
 export type LocalizedText = Record<LanguageCode, string[]>;
 
+export { featuredBooks, type FeaturedBook } from "./featured-books";
+
 export interface PublicationBook {
   year: string;
   title: Record<LanguageCode, string>;

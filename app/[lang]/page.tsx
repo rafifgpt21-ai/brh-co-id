@@ -268,7 +268,7 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
               <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container shadow-[0_14px_45px_rgba(41,47,54,0.08)]">
               <Image
                 src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
-                alt="Dr. Budi Rahman Hakim (BRH)"
+                alt="Budi Rahman Hakim (BRH)"
                 fill
                 sizes="(max-width: 1024px) 100vw, 320px"
                 className="object-cover grayscale transition duration-700 hover:grayscale-0"
@@ -283,7 +283,7 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
             <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(280px,0.7fr)] lg:items-start">
               <div>
                 <h2 className="font-headline text-3xl font-black leading-tight tracking-tight text-primary md:text-5xl">
-                  Dr. Budi Rahman <span className="text-secondary">Hakim</span> (BRH)
+                  Budi Rahman <span className="text-secondary">Hakim</span> (BRH)
                 </h2>
                 <p className="mt-6 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg">
                   {dict.home.biographyCopy}

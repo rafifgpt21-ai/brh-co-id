@@ -35,6 +35,10 @@ interface PostClientProps {
   dict: Dictionary;
 }
 
+function isLocalBookCover(src?: string | null) {
+  return Boolean(src?.startsWith("/book-cover/") || src?.startsWith("/api/book-cover/"));
+}
+
 export default function PostClient({ post, relatedPosts, lang, dict }: PostClientProps) {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -86,6 +90,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 alt={post.title}
                 fill
                 priority
+                unoptimized={isLocalBookCover(post.thumbnail)}
                 className="h-full w-full scale-110 object-cover opacity-80 blur-md"
               />
               <div className="absolute inset-0 bg-linear-to-t from-background via-background/20 to-transparent" />
@@ -199,6 +204,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                           alt={block.title || "Image content"}
                           width={1600}
                           height={900}
+                          unoptimized={isLocalBookCover(imageSrc)}
                           className="w-full h-auto block"
                           sizes="(max-width: 768px) 100vw, 1200px"
                         />
@@ -443,6 +449,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                           alt={rPost.title}
                           src={rPost.thumbnail}
                           sizes="(max-width: 768px) 100vw, 33vw"
+                          unoptimized={isLocalBookCover(rPost.thumbnail)}
                         />
                       </div>
                     ) : (

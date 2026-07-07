@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 const CONFIRM_FLAG = '--confirm'
 const CONFIRM_VALUE = 'reset-brh-content'
+const CONTENT_SOURCE_TYPES = ['post', 'quick_post']
 
 function hasConfirmation() {
   const confirmFlagIndex = process.argv.indexOf(CONFIRM_FLAG)
@@ -12,18 +13,22 @@ function hasConfirmation() {
 
 async function main() {
   const confirmed = hasConfirmation()
-  const [postCount, postKnowledgeChunkCount] = await Promise.all([
+  const [postCount, quickPostCount, contentKnowledgeChunkCount] = await Promise.all([
     prisma.post.count(),
+    prisma.quickPost.count(),
     prisma.knowledgeChunk.count({
       where: {
-        sourceType: 'post',
+        sourceType: {
+          in: CONTENT_SOURCE_TYPES,
+        },
       },
     }),
   ])
 
   console.log('BRH content database reset')
   console.log(`Posts to delete: ${postCount}`)
-  console.log(`Post knowledge chunks to delete: ${postKnowledgeChunkCount}`)
+  console.log(`Quick posts to delete: ${quickPostCount}`)
+  console.log(`Content knowledge chunks to delete: ${contentKnowledgeChunkCount}`)
   console.log('Preserved data: users, accounts, sessions, verification tokens, rate limits, and static knowledge chunks.')
 
   if (!confirmed) {
@@ -34,20 +39,27 @@ async function main() {
   }
 
   console.log('')
-  console.log('Confirmation accepted. Deleting post knowledge chunks and posts...')
+  console.log('Confirmation accepted. Deleting content knowledge chunks, posts, and quick posts...')
 
   const knowledgeChunks = await prisma.knowledgeChunk.deleteMany({
     where: {
-      sourceType: 'post',
+      sourceType: {
+        in: CONTENT_SOURCE_TYPES,
+      },
     },
   })
-  const posts = await prisma.post.deleteMany({})
+  const [posts, quickPosts] = await Promise.all([
+    prisma.post.deleteMany({}),
+    prisma.quickPost.deleteMany({}),
+  ])
 
-  console.log(`Deleted post knowledge chunks: ${knowledgeChunks.count}`)
+  console.log(`Deleted content knowledge chunks: ${knowledgeChunks.count}`)
   console.log(`Deleted posts: ${posts.count}`)
+  console.log(`Deleted quick posts: ${quickPosts.count}`)
   console.log('')
   console.log('Content reset complete.')
-  console.log('Run npm run index:chatbot if static chatbot knowledge should be re-indexed.')
+  console.log('Run npm run seed:quick-posts if default quick posts should be restored.')
+  console.log('Run npm run index:chatbot if chatbot knowledge should be re-indexed.')
 }
 
 main()

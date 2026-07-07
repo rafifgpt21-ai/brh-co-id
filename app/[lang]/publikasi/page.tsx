@@ -1,26 +1,37 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import LanguageTabs from "@/components/common/LanguageTabs";
+import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import {
   about,
   books,
+  featuredBooks,
   journals,
   languages,
+  type FeaturedBook,
   type LanguageCode,
 } from "@/lib/brh-content";
 
+type ActiveLanguage = "id" | "en";
+
 const pageLabels: Record<
-  LanguageCode,
+  ActiveLanguage,
   {
     eyebrow: string;
     title: string;
     intro: string;
     context: string;
-    books: string;
+    featuredBooks: string;
+    featuredIntro: string;
+    bibliography: string;
     journals: string;
     viewDocument: string;
+    readBook: string;
+    highlights: string;
+    audience: string;
   }
 > = {
   id: {
@@ -29,9 +40,15 @@ const pageLabels: Record<
     intro:
       "Buku, artikel jurnal, dan kajian akademik yang menghubungkan spiritualitas Islam dengan persoalan sosial, pendidikan, kesejahteraan, dan pembangunan peradaban.",
     context: "Latar Intelektual",
-    books: "Buku",
+    featuredBooks: "Buku Unggulan",
+    featuredIntro:
+      "Enam karya terbaru yang merangkum pemikiran BRH tentang tasawuf, pendidikan karakter, neosufisme, ekonomi-politik, dan masa depan peradaban.",
+    bibliography: "Bibliografi Lainnya",
     journals: "Artikel Jurnal",
     viewDocument: "LIHAT DOKUMEN",
+    readBook: "BACA POST",
+    highlights: "Poin Utama",
+    audience: "Pembaca",
   },
   en: {
     eyebrow: "Academic Works",
@@ -39,29 +56,33 @@ const pageLabels: Record<
     intro:
       "Books, journal articles, and academic studies connecting Islamic spirituality with social issues, education, welfare, and civilizational development.",
     context: "Intellectual Context",
-    books: "Books",
+    featuredBooks: "Featured Books",
+    featuredIntro:
+      "Six recent works presenting BRH's thought on Sufism, character education, Neo-Sufism, political economy, and the future of civilization.",
+    bibliography: "Additional Bibliography",
     journals: "Journal Articles",
     viewDocument: "VIEW DOCUMENT",
-  },
-  ar: {
-    eyebrow: "Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ Ø§Ù„Ø£ÙƒØ§Ø¯ÙŠÙ…ÙŠØ©",
-    title: "Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª",
-    intro:
-      "ÙƒØªØ¨ ÙˆÙ…Ù‚Ø§Ù„Ø§Øª Ø¹Ù„Ù…ÙŠØ© ÙˆØ¯Ø±Ø§Ø³Ø§Øª Ø£ÙƒØ§Ø¯ÙŠÙ…ÙŠØ© ØªØ±Ø¨Ø· Ø§Ù„Ø±ÙˆØ­Ø§Ù†ÙŠØ© Ø§Ù„Ø¥Ø³Ù„Ø§Ù…ÙŠØ© Ø¨Ø§Ù„Ù‚Ø¶Ø§ÙŠØ§ Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠØ© ÙˆØ§Ù„ØªØ¹Ù„ÙŠÙ… ÙˆØ§Ù„Ø±Ø¹Ø§ÙŠØ© ÙˆØ¨Ù†Ø§Ø¡ Ø§Ù„Ø­Ø¶Ø§Ø±Ø©.",
-    context: "Ø§Ù„Ø³ÙŠØ§Ù‚ Ø§Ù„ÙÙƒØ±ÙŠ",
-    books: "Ø§Ù„ÙƒØªØ¨",
-    journals: "Ø§Ù„Ù…Ù‚Ø§Ù„Ø§Øª Ø§Ù„Ø¹Ù„Ù…ÙŠØ©",
-    viewDocument: "Ø¹Ø±Ø¶ Ø§Ù„ÙˆØ«ÙŠÙ‚Ø©",
+    readBook: "READ POST",
+    highlights: "Key Points",
+    audience: "Readers",
   },
 };
 
-const publicationSummary: Record<LanguageCode, string> = {
+const publicationSummary: Record<ActiveLanguage, string> = {
   id: "Budi Rahman Hakim adalah penulis produktif yang karya-karyanya bergerak di bidang tasawuf, tarekat, neo-sufisme, kesejahteraan sosial Islam, pendidikan karakter, dakwah sosial, dan transformasi masyarakat Muslim kontemporer.",
   en: "Budi Rahman Hakim is a prolific author whose works focus on Sufism, Sufi orders, Neo-Sufism, Islamic social welfare, character education, social da'wah, and the transformation of contemporary Muslim society.",
-  ar: "Ø¨ÙˆØ¯ÙŠ Ø±Ø­Ù…Ù† Ø­ÙƒÙŠÙ… ÙƒØ§ØªØ¨ ØºØ²ÙŠØ± Ø§Ù„Ø¥Ù†ØªØ§Ø¬ ØªØªÙ†Ø§ÙˆÙ„ Ø£Ø¹Ù…Ø§Ù„Ù‡ Ø§Ù„ØªØµÙˆÙ ÙˆØ§Ù„Ø·Ø±Ù‚ Ø§Ù„ØµÙˆÙÙŠØ© ÙˆØ§Ù„ØªØµÙˆÙ Ø§Ù„Ø¬Ø¯ÙŠØ¯ ÙˆØ§Ù„Ø±Ø¹Ø§ÙŠØ© Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠØ© Ø§Ù„Ø¥Ø³Ù„Ø§Ù…ÙŠØ©.",
 };
 
-const BookCard = ({
+function getActiveLanguage(language: LanguageCode): ActiveLanguage {
+  return language === "en" ? "en" : "id";
+}
+
+function getBookHref(book: FeaturedBook, language: ActiveLanguage) {
+  const slug = language === "en" ? book.slugEn : book.slug;
+  return `/${language}/post/${slug}`;
+}
+
+function BookCard({
   title,
   year,
   dir,
@@ -71,36 +92,139 @@ const BookCard = ({
   year: string;
   dir: "ltr" | "rtl";
   index: number;
-}) => (
-  <motion.article
-    initial={false}
-    whileInView={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.03 }}
-    viewport={{ once: true }}
-    whileHover={{ y: -3 }}
-    className="group rounded-2xl border border-outline-variant/50 bg-white/80 p-5 shadow-sm transition-all duration-300 hover:border-secondary/30 hover:shadow-xl hover:shadow-primary/5"
-    dir={dir}
-  >
-    <div className="flex items-start gap-4">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary/10 text-secondary transition-colors group-hover:bg-secondary group-hover:text-white">
-        <span className="material-symbols-outlined text-xl">menu_book</span>
+}) {
+  return (
+    <motion.article
+      initial={false}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -3 }}
+      className="group rounded-lg border border-outline-variant/50 bg-white/80 p-5 shadow-sm transition-all duration-300 hover:border-secondary/30 hover:shadow-xl hover:shadow-primary/5"
+      dir={dir}
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary/10 text-secondary transition-colors group-hover:bg-secondary group-hover:text-white">
+          <span className="material-symbols-outlined text-xl">menu_book</span>
+        </div>
+        <div>
+          <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.25em] text-on-surface/40">
+            {year}
+          </p>
+          <h3 className="text-balance font-headline text-base font-black leading-tight text-primary">
+            {title}
+          </h3>
+        </div>
       </div>
-      <div>
-        <p className="mb-2 font-label text-[10px] font-bold uppercase tracking-[0.25em] text-on-surface/40">
-          {year}
-        </p>
-        <h3 className="text-balance font-headline text-base font-black leading-tight text-primary">
-          {title}
-        </h3>
-      </div>
-    </div>
-  </motion.article>
-);
+    </motion.article>
+  );
+}
 
-const PublicationContent = ({ language }: { language: LanguageCode }) => {
+function FeaturedBookCard({
+  book,
+  language,
+  labels,
+  index,
+}: {
+  book: FeaturedBook;
+  language: ActiveLanguage;
+  labels: (typeof pageLabels)[ActiveLanguage];
+  index: number;
+}) {
+  const title = book.title[language];
+  const subtitle = book.subtitle?.[language];
+
+  return (
+    <motion.article
+      initial={false}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+      viewport={{ once: true }}
+      className="group overflow-hidden rounded-lg border border-outline-variant/35 bg-surface shadow-sm transition duration-300 hover:border-secondary/35 hover:shadow-xl hover:shadow-primary/5"
+    >
+      <div className="grid gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
+        <OptimisticLink
+          href={getBookHref(book, language)}
+          className="relative block aspect-[4/5] overflow-hidden bg-surface-container md:aspect-auto"
+        >
+          <Image
+            src={book.cover}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 100vw, 260px"
+            unoptimized={
+              book.cover.startsWith("/book-cover/") || book.cover.startsWith("/api/book-cover/")
+            }
+            className="object-cover transition duration-700 group-hover:scale-[1.03]"
+          />
+        </OptimisticLink>
+
+        <div className="flex flex-col p-5 sm:p-6 lg:p-7">
+          <div className="mb-4 flex flex-wrap items-center gap-2 font-label text-[10px] font-black uppercase tracking-[0.18em] text-secondary">
+            <span>{book.year}</span>
+            <span className="h-px w-6 bg-outline-variant" />
+            <span>{book.category[language]}</span>
+          </div>
+
+          <h3 className="text-pretty font-headline text-2xl font-black leading-tight tracking-tight text-primary md:text-3xl">
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="mt-2 text-sm font-semibold leading-relaxed text-tertiary md:text-base">
+              {subtitle}
+            </p>
+          )}
+          <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-on-surface/75 md:text-base">
+            {book.summary[language]}
+          </p>
+
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+            <div>
+              <p className="mb-2 font-label text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/45">
+                {labels.highlights}
+              </p>
+              <ul className="space-y-2 text-sm leading-relaxed text-on-surface/70">
+                {book.highlights[language].slice(0, 3).map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-2 font-label text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/45">
+                {labels.audience}
+              </p>
+              <ul className="space-y-2 text-sm leading-relaxed text-on-surface/70">
+                {book.audience[language].slice(0, 2).map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-tertiary" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <OptimisticLink
+            href={getBookHref(book, language)}
+            className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-3 font-label text-[11px] font-black uppercase tracking-[0.18em] text-on-primary transition hover:bg-tertiary active:scale-[0.98]"
+          >
+            {labels.readBook}
+            <span className="material-symbols-outlined text-[16px]">east</span>
+          </OptimisticLink>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+function PublicationContent({ language }: { language: LanguageCode }) {
+  const activeLanguage = getActiveLanguage(language);
   const isArabic = language === "ar";
   const dir = isArabic ? "rtl" : "ltr";
-  const labels = pageLabels[language];
+  const labels = pageLabels[activeLanguage];
 
   return (
     <motion.div
@@ -122,23 +246,48 @@ const PublicationContent = ({ language }: { language: LanguageCode }) => {
             isArabic ? "mr-auto text-right prose-p:leading-loose" : ""
           }`}
         >
-          <p>{about[language][0]}</p>
-          <p>{publicationSummary[language]}</p>
+          <p>{about[activeLanguage][0]}</p>
+          <p>{publicationSummary[activeLanguage]}</p>
+        </div>
+      </section>
+
+      <section className={isArabic ? "text-right" : ""}>
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="flex items-baseline gap-4">
+            <span className="font-label text-4xl font-black text-secondary/20">02</span>
+            <h2 className="font-headline text-3xl font-black tracking-tight text-primary md:text-4xl">
+              {labels.featuredBooks}
+            </h2>
+          </div>
+          <p className="max-w-2xl text-sm leading-relaxed text-on-surface/65 md:text-right md:text-base">
+            {labels.featuredIntro}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-6">
+          {featuredBooks.map((book, index) => (
+            <FeaturedBookCard
+              key={book.slug}
+              book={book}
+              language={activeLanguage}
+              labels={labels}
+              index={index}
+            />
+          ))}
         </div>
       </section>
 
       <section className={isArabic ? "text-right" : ""}>
         <div className="mb-8 flex items-baseline gap-4">
-          <span className="font-label text-4xl font-black text-secondary/20">02</span>
+          <span className="font-label text-4xl font-black text-secondary/20">03</span>
           <h2 className="font-headline text-3xl font-black tracking-tight text-primary md:text-4xl">
-            {labels.books}
+            {labels.bibliography}
           </h2>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {books.map((book, index) => (
             <BookCard
               key={`${book.year}-${book.title.id}`}
-              title={book.title[language]}
+              title={book.title[activeLanguage]}
               year={book.year}
               dir={dir}
               index={index}
@@ -149,7 +298,7 @@ const PublicationContent = ({ language }: { language: LanguageCode }) => {
 
       <section className={isArabic ? "text-right" : ""}>
         <div className="mb-8 flex items-baseline gap-4">
-          <span className="font-label text-4xl font-black text-secondary/20">03</span>
+          <span className="font-label text-4xl font-black text-secondary/20">04</span>
           <h2 className="font-headline text-3xl font-black tracking-tight text-primary md:text-4xl">
             {labels.journals}
           </h2>
@@ -185,7 +334,7 @@ const PublicationContent = ({ language }: { language: LanguageCode }) => {
       </section>
     </motion.div>
   );
-};
+}
 
 export default function PublikasiPage() {
   const params = useParams<{ lang?: string }>();
@@ -199,7 +348,8 @@ export default function PublikasiPage() {
           <LanguageTabs languages={languages} defaultLanguage={defaultLanguage}>
             {(language) => {
               const isArabic = language === "ar";
-              const labels = pageLabels[language];
+              const activeLanguage = getActiveLanguage(language);
+              const labels = pageLabels[activeLanguage];
 
               return (
                 <div className="space-y-16">
