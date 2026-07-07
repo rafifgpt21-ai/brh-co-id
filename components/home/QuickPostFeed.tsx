@@ -1,8 +1,10 @@
 "use client";
 
 import { deleteQuickPost, updateQuickPost, updateQuickPostStatus } from "@/lib/actions/quick-post";
+import { ShareActions } from "@/components/common/ShareActions";
 import { formatLocalizedDate, type Locale } from "@/lib/i18n/config";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
+import { buildAbsoluteUrl } from "@/lib/share-url";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -32,10 +34,20 @@ type QuickPostFeedLabels = {
   save: string;
   cancel: string;
   delete: string;
+  share: string;
+  shareToFacebook: string;
+  shareToWhatsapp: string;
+  copyLink: string;
+  linkCopied: string;
 };
 
 function truncate(content: string, length: number) {
   return content.length > length ? `${content.slice(0, length).trim()}...` : content;
+}
+
+function getQuickPostShareTitle(post: QuickPostItem) {
+  const content = truncate(post.content.replace(/\s+/g, " ").trim(), 180);
+  return post.type === "QUOTE" ? `"${content}"` : content;
 }
 
 export function QuickPostFeed({
@@ -164,16 +176,25 @@ export function QuickPostFeed({
           const isLong = post.content.length > previewLimit;
           const visibleContent = isExpanded ? post.content : truncate(post.content, previewLimit);
           const isFeatured = !isPreview && index === 0;
+          const shareUrl = buildAbsoluteUrl(`/${lang}/catatan#quick-post-${post.id}`);
+          const shareLabels = {
+            share: labels.share,
+            shareToFacebook: labels.shareToFacebook,
+            shareToWhatsapp: labels.shareToWhatsapp,
+            copyLink: labels.copyLink,
+            linkCopied: labels.linkCopied,
+          };
 
           return (
             <article
               key={post.id}
+              id={`quick-post-${post.id}`}
               className={`group relative border-outline-variant/35 ${
                 isPreview
-                  ? "border-t py-4 first:border-t-0 lg:border-l lg:border-t-0 lg:py-1 lg:pl-6 lg:first:border-l-0 lg:first:pl-0"
+                  ? "scroll-mt-24 border-t py-4 first:border-t-0 lg:border-l lg:border-t-0 lg:py-1 lg:pl-6 lg:first:border-l-0 lg:first:pl-0"
                   : isFeatured
-                  ? "border-y py-5 sm:py-7 lg:col-span-7 lg:row-span-2 lg:py-9"
-                  : "border-t py-5 sm:py-6 lg:col-span-5"
+                  ? "scroll-mt-24 border-y py-5 sm:py-7 lg:col-span-7 lg:row-span-2 lg:py-9"
+                  : "scroll-mt-24 border-t py-5 sm:py-6 lg:col-span-5"
               }`}
             >
               {isAdmin && (
@@ -261,6 +282,13 @@ export function QuickPostFeed({
                 ) : (
                   <span />
                 )}
+
+                <ShareActions
+                  url={shareUrl}
+                  title={getQuickPostShareTitle(post)}
+                  labels={shareLabels}
+                  variant="quick"
+                />
 
                 {isAdmin && (
                   <div className={`flex items-center gap-2 ${isPending ? "opacity-60 pointer-events-none" : ""}`}>

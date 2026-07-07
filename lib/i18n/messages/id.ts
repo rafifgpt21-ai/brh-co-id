@@ -79,6 +79,11 @@ export const dictionary = {
     save: "Simpan",
     cancel: "Batal",
     delete: "Hapus",
+    share: "Bagikan",
+    shareToFacebook: "Bagikan ke Facebook",
+    shareToWhatsapp: "Bagikan ke WhatsApp",
+    copyLink: "Salin tautan",
+    linkCopied: "Tautan disalin",
   },
   search: {
     placeholder: "Cari topik pemikiran...",
@@ -155,6 +160,11 @@ export const dictionary = {
     readAlso: "Baca Juga",
     relatedArchives: "Arsip Terkait Lainnya",
     more: "Selengkapnya",
+    share: "Bagikan",
+    shareToFacebook: "Bagikan ke Facebook",
+    shareToWhatsapp: "Bagikan ke WhatsApp",
+    copyLink: "Salin tautan",
+    linkCopied: "Tautan disalin",
   },
   pdf: {
     missingTitle: "Dokumen Tidak Ditemukan",

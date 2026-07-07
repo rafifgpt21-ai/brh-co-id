@@ -5,6 +5,7 @@ import PostClient from "@/components/post/PostClient";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { localizePost } from "@/lib/i18n/posts";
+import { buildAbsoluteUrl } from "@/lib/share-url";
 import { Suspense } from "react";
 import { RouteSkeleton } from "@/components/ui/RouteSkeleton";
 
@@ -42,14 +43,23 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   }
   const localizedPost = localizePost(post, lang);
   const firstTextBlock = localizedPost.blocks.find((block) => block.type === 'text');
+  const description = firstTextBlock?.content?.replace(/<[^>]*>/g, '').slice(0, 160) || `${dict.home.readMore} ${localizedPost.title}`;
+  const canonicalUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}`);
 
   return {
     title: `${localizedPost.title} | BRH Intellectual Platform`,
-    description: firstTextBlock?.content?.replace(/<[^>]*>/g, '').slice(0, 160) || `${dict.home.readMore} ${localizedPost.title}`,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: localizedPost.title,
-      description: `${dict.post.descriptionPrefix} ${localizedPost.title}`,
-      images: post.thumbnail ? [post.thumbnail] : [],
+      description,
+      url: canonicalUrl,
+      siteName: "BRH Intellectual Platform",
+      type: "article",
+      publishedTime: new Date(post.createdAt).toISOString(),
+      images: post.thumbnail ? [{ url: post.thumbnail, alt: localizedPost.title }] : [],
     },
   };
 }

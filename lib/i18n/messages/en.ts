@@ -79,6 +79,11 @@ export const dictionary = {
     save: "Save",
     cancel: "Cancel",
     delete: "Delete",
+    share: "Share",
+    shareToFacebook: "Share to Facebook",
+    shareToWhatsapp: "Share to WhatsApp",
+    copyLink: "Copy link",
+    linkCopied: "Link copied",
   },
   search: {
     placeholder: "Search topics and ideas...",
@@ -155,6 +160,11 @@ export const dictionary = {
     readAlso: "Read Also",
     relatedArchives: "Related Archives",
     more: "Read More",
+    share: "Share",
+    shareToFacebook: "Share to Facebook",
+    shareToWhatsapp: "Share to WhatsApp",
+    copyLink: "Copy link",
+    linkCopied: "Link copied",
   },
   pdf: {
     missingTitle: "Document Not Found",

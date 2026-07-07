@@ -145,7 +145,7 @@ function FeaturedBookCard({
       <div className="grid gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
         <OptimisticLink
           href={getBookHref(book, language)}
-          className="relative block aspect-[4/5] overflow-hidden bg-surface-container md:aspect-auto"
+          className="relative block aspect-square overflow-hidden bg-surface-container md:aspect-auto"
         >
           <Image
             src={book.cover}
@@ -155,7 +155,7 @@ function FeaturedBookCard({
             unoptimized={
               book.cover.startsWith("/book-cover/") || book.cover.startsWith("/api/book-cover/")
             }
-            className="object-cover transition duration-700 group-hover:scale-[1.03]"
+            className="object-contain transition duration-700 group-hover:scale-[1.03]"
           />
         </OptimisticLink>
 

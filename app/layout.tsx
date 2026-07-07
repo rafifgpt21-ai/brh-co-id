@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -15,6 +17,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: "BRH Intellectual Web Platform",
   description: "Menyemai Pemikiran, Menggerakkan Perubahan",
   icons: {

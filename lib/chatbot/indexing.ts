@@ -77,7 +77,7 @@ function quickPostToKnowledgeSource(quickPost: {
     sourceId: quickPost.id,
     locale,
     title: `${label}: ${truncateTitle(content)}`,
-    url: `/${locale}/catatan#notes`,
+    url: `/${locale}/catatan#quick-post-${quickPost.id}`,
     category: isQuote ? (locale === "en" ? "Quote" : "Kutipan") : "BRH Notes",
     thumbnail: isQuote ? null : quickPost.imageUrl,
     content: [label, content].join("\n"),

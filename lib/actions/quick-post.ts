@@ -47,6 +47,8 @@ function refreshQuickPostPaths() {
   revalidatePath("/");
   revalidatePath("/id");
   revalidatePath("/en");
+  revalidatePath("/id/catatan");
+  revalidatePath("/en/catatan");
   updateTag("quick-posts");
 }
 

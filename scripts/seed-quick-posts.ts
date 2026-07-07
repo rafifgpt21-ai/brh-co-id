@@ -4,60 +4,32 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const quoteContents = [
-  'Penghancur kehidupanmu itu seringkali bukan orang lain, tetapi dirimu sendiri, karena pikiranmu sendiri.',
-  'Transformasi sejati dimulai bukan ketika kita membentuk ulang arsitektur global di luar sana, melainkan ketika kita mampu menata lanskap batin dan pikiran kita sendiri.',
-  'Kita sering menyalahkan kekuatan dari luar atas pertumbuhan yang mandek, padahal jangkar terberat yang menahan kita lahir dari asumsi-asumsi yang tidak pernah kita periksa.',
-  'Kedaulatan diri yang paling tinggi adalah kesadaran bahwa dunia merespons siapa diri kita, bukan hanya apa yang kita inginkan.',
-  'Mengintegrasikan hikmah tasawuf ke dalam peradaban modern bukan berarti kembali ke masa lalu, melainkan menambatkan laju masa depan pada kebenaran yang abadi.',
-  'Spiritualitas tanpa ketelitian intelektual mudah jatuh menjadi dogma buta. Intelektualitas tanpa pijakan spiritual dapat berubah menjadi kecerdasan yang merusak.',
-  'Dunia modern mencari kemajuan melalui percepatan, sementara jiwa menemukan keluhurannya melalui keheningan dan zikir kepada Tuhan.',
-  'Kebijaksanaan sejati tidak memisahkan yang sakral dari yang sekuler. Setiap kebijakan yang kita analisis dan setiap struktur yang kita bangun dapat menjadi bentuk pengabdian.',
-  'Pendidikan bukan sekadar transfer pengetahuan secara mekanis, melainkan kebangkitan jiwa untuk menyadari tanggung jawab ilahinya di tengah masyarakat modern.',
-  'Boarding school peradaban tidak cukup hanya menjaga hati dari kekacauan modernitas, tetapi juga harus membekali pikiran untuk membentuk arah masa depannya.',
-  'Kita tidak membangun institusi hanya untuk bertahan menghadapi zaman. Kita membangunnya untuk menanam gagasan dasar yang menggerakkan generasi menuju perubahan positif.',
-  'Tujuan tertinggi keilmuan adalah melayani peradaban: mengubah teori akademik yang abstrak menjadi tindakan nyata yang penuh kasih.',
-  'Arsitektur hijau lebih dari rekayasa keberlanjutan; ia adalah manifestasi fisik dari harmoni spiritual antara manusia dan ciptaan.',
-  'Sistem ekonomi yang etis tidak hanya mengukur akumulasi modal, tetapi juga pemerataan martabat dan kesejahteraan manusia.',
-  'Filsafat modern perlu melampaui dekonstruksi yang sinis dan mulai membangun pilar-pilar etis bagi masa depan yang gemilang.',
-  'Analisis kebijakan global menjadi hampa bila tidak berpusat pada inti perubahan yang paling dalam: peningkatan kesadaran manusia.',
-  'Menanam gagasan membutuhkan keberanian; menggerakkan perubahan membutuhkan konsistensi. Jembatan di antara keduanya adalah niat yang kokoh.',
-  'Jangan mencari jalan yang lebih sedikit tantangannya. Carilah hati yang cukup lapang untuk merangkul semua tantangan dengan syukur dan kebijaksanaan.',
-  'Ekspresi intelektual adalah suara jiwa yang menolak diam di hadapan stagnasi.',
-  'Hidupmu adalah manuskrip yang terus ditulis. Pastikan setiap bab yang kau susun ikut menyumbang pada narasi besar peningkatan martabat manusia.',
+  'Kita mungkin lupa sudah berapa banyak ujian-cobaan hidup datang menghampiri. Dan juga mungkin sudah lupa bagaimana cara kita akhirnya bisa melewati-mengatasi semua. Tapi SATU HAL PASTI, semua ujian-cobaan itu telah menjadikan kita seorang yang BERBEDA dari sebelum ujian-cobaan itu datang. Kita bisa lebih baik mengenali diri kita & siapa saja orang-orang yang slalu ada untuk kita melalui semua.',
+  'Kalau kita yakin BISA, kita pasti BISA. Kelilingi diri kita dengan orang-orang yang hanya menguatkan keyakinan kita bahwa kita BISA.',
+  'Terwujudnya cita-cita hidup dimulai dari kemampuan kita membayangkannya. Kalau kita bisa membayangkannya kita pasti bisa mewujudkannya. Kalau membayangkannya saja kita tidak bisa, apalagi mewujudkannya. Bayangkan masa depan kita sekarang, visualisasikan, rasakan sensasi kehidupan yang kita bayangkan itu mewujud nyata dalam hidup kita maka akan merealita pada waktunya.',
+  'Kamu tidak perlu memutuskan seperti apa masa depanmu. Putuskan saja apa yang akan menjadi kebiasaaanmu setiap hari. Kebiasaan setiap harimu itulah yang akan memutuskan seperti apa masa depanmu.',
+  'Kamu tak punya alasan untuk terus memperdalam penyesalan: keputusan sudah diambil, kesalahan telah terjadi. Pilihan bijaknya: kamu memetik pelajaran dari keputusan & kesalahanmu itu agar ke depan lebih baik & terhindar dari kesalahan yang serupa.',
+  'Perlakukan orang lain sebagaimana kamu sendiri ingin diperlakukan. Jika ingin dicintai, mencintalah. JIka ingin kejujuran, berlaku jujurlah. Jika ingin penghormatan, berperilaku terhormatlah. Ketahuilah, perlakuanmu kepada orang lain akan slalu kembali padamu.',
+  'Pada akhirnya, apa yang kamu posting di media sosial akan menjadi kumpulan cerita. Oleh karenanya rangkailah cerita hidup yang menginspirasi, yang memberi manfaat, yang good vibe & happy ending.',
+  'Kalau hidupmu ingin bertabur kenangan indah maka buatlah sejak sekarang. Sebab apapun yang kamu lakukan sekarang pada akhirnya kelak akan menjadi file kenangan hidupmu.',
+  'Jika kamu tak punya kuasa mengubah dunia, kamu masih punya kuasa mengubah dunia kecilmu, dirimu, ke versi yang lebih baik. Ketahuilah, saat kamu mengubah dunia kecilmu maka dunia sekitarmu juga ikut berubah.',
+  'Keputusan keliru & tindakan salah adalah mata kuliah-mata kuliah penting dari universitas kehidupan. Seringkali kamu tidak akan tahu keputusan tepat & tindakan benar, bila kamu tak pernah belajar dari pengalaman membuat keputusan keliru & tindakan salah.',
+  'Jalanan lurus, datar & beraspal tidak akan bisa mencetak supir terampil. Jalanan yang bisa mencetak supir mahir hanya jalanan berlubang, berlumpur, penuh kelokan tajam & turunan-tanjakan curam.',
+  'Kaya itu soal sikap hati. Terlalu banyak orang yang kaya materi tapi miskin hati: mereka slalu berat untuk berbagi. Tapi tidak sedikit orang yang miskin materi tapi kaya hati: mereka slalu ringan untuk berbagi.',
+  'Kesuksesan adalah kumpulan kegagalan yang slalu disikapi positif sebagai rute perjalanan terjal & berliku yang, tidak bisa tidak, mesti dilalui.',
+  'Kematangan berpikir & kedewasaan sikapmu tidak dibentuk oleh pelajaran di bangku sekolah, tapi, dibentuk melalui pengalamanmu melalui masa-masa sulit yang kadang pahit & menyakitkan di sekolah kehidupan nyata.',
+  'Yang membuat berat bukan perjalananmu itu sendiri, melainkan harapanmu yang sering kelewat tinggi bahwa semua mesti berjalan sesuai keinginanmu.',
+  'Hati-hati saat kamu mencintai & berekspektasi. Sebab akar sakit hati itu karena terlalu dalam mencintai dan akar kekecewaan hati itu karena terlalu tinggi ekspektasi.',
+  'Jejaring pertemananmu itu aset kehidupanmu. Besar tidaknya nilai aset pertemananmu tidak diukur dari kuantitas tapi dari kualitas mereka. Dan kualitas mereka diukur dari besaran energi & vibrasi positif yang mereka sering tularkan kepadamu.',
 ]
-
-const normalQuickPosts = [
-  {
-    content:
-      'Catatan sementara: BRH Intellectual Platform sedang menyiapkan ruang belajar yang menghubungkan tasawuf, pendidikan, kebijakan publik, dan gagasan peradaban. Konten ini masih dummy untuk kebutuhan pengembangan.',
-    imageUrl: 'https://images.unsplash.com/photo-1491841550275-ad7854e35ca6?w=1200&auto=format&fit=crop',
-  },
-  {
-    content:
-      'Agenda dummy: diskusi tematik tentang pendidikan berasrama, pembentukan karakter, dan kesiapan generasi muda menghadapi perubahan sosial modern.',
-    imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&auto=format&fit=crop',
-  },
-  {
-    content:
-      'Pengingat dummy: gagasan besar perlu diturunkan menjadi praktik kecil yang konsisten, dari cara membaca, berdialog, menulis, hingga melayani masyarakat.',
-    imageUrl: null,
-  },
-  {
-    content:
-      'Catatan riset dummy: arsitektur hijau, ekonomi etis, dan analisis kebijakan dapat bertemu dalam satu orientasi yang sama, yaitu menjaga martabat manusia dan keseimbangan ciptaan.',
-    imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&auto=format&fit=crop',
-  },
-]
-
-const seededContents = [...quoteContents, ...normalQuickPosts.map((post) => post.content)]
 
 async function main() {
-  console.log('Seeding BRH quick posts...')
+  console.log('Seeding BRH quote posts...')
 
   const removed = await prisma.quickPost.deleteMany({
     where: {
       content: {
-        in: seededContents,
+        in: quoteContents,
       },
     },
   })
@@ -71,18 +43,11 @@ async function main() {
         status: 'Published',
         createdAt: new Date(Date.now() - (quoteContents.length - index) * 60 * 60 * 1000),
       })),
-      ...normalQuickPosts.map((post, index) => ({
-        type: 'NORMAL',
-        content: post.content,
-        imageUrl: post.imageUrl,
-        status: 'Published',
-        createdAt: new Date(Date.now() - (quoteContents.length + normalQuickPosts.length - index) * 60 * 60 * 1000),
-      })),
     ],
   })
 
-  console.log(`Removed existing seeded quick posts: ${removed.count}`)
-  console.log(`Created quick posts: ${created.count}`)
+  console.log(`Removed existing quote posts: ${removed.count}`)
+  console.log(`Created quote posts: ${created.count}`)
 }
 
 main()

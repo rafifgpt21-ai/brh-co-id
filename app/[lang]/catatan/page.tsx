@@ -4,8 +4,10 @@ import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { getQuickPosts } from "@/lib/actions/quick-post";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
+import { buildAbsoluteUrl } from "@/lib/share-url";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const unstable_instant = {
@@ -24,6 +26,30 @@ export const unstable_instant = {
   ],
 };
 
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang: rawLang } = await params;
+  if (!hasLocale(rawLang)) return { title: "Notes Not Found" };
+
+  const lang: Locale = rawLang;
+  const dict = await getDictionary(lang);
+  const canonicalUrl = buildAbsoluteUrl(`/${lang}/catatan`);
+
+  return {
+    title: `${dict.quickPost.allTitle} | BRH Intellectual Platform`,
+    description: dict.quickPost.allIntro,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: dict.quickPost.allTitle,
+      description: dict.quickPost.allIntro,
+      url: canonicalUrl,
+      siteName: "BRH Intellectual Platform",
+      type: "website",
+    },
+  };
+}
+
 function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>) {
   return {
     eyebrow: dict.quickPost.eyebrow,
@@ -41,6 +67,11 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     save: dict.quickPost.save,
     cancel: dict.quickPost.cancel,
     delete: dict.quickPost.delete,
+    share: dict.quickPost.share,
+    shareToFacebook: dict.quickPost.shareToFacebook,
+    shareToWhatsapp: dict.quickPost.shareToWhatsapp,
+    copyLink: dict.quickPost.copyLink,
+    linkCopied: dict.quickPost.linkCopied,
   };
 }
 

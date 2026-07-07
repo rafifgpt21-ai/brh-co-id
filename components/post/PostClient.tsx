@@ -8,6 +8,8 @@ import { formatLocalizedDate } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getCategoryLabel } from "@/lib/i18n/posts";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
+import { ShareActions } from "@/components/common/ShareActions";
+import { buildAbsoluteUrl } from "@/lib/share-url";
 
 type PostBlock = {
   id: string;
@@ -71,6 +73,15 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
       return url;
     }
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  };
+
+  const shareUrl = buildAbsoluteUrl(`/${lang}/post/${post.slug}`);
+  const shareLabels = {
+    share: dict.post.share,
+    shareToFacebook: dict.post.shareToFacebook,
+    shareToWhatsapp: dict.post.shareToWhatsapp,
+    copyLink: dict.post.copyLink,
+    linkCopied: dict.post.linkCopied,
   };
 
   return (
@@ -151,6 +162,15 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 <span className="material-symbols-outlined text-[18px] opacity-70">schedule</span>
                 {getReadingTime(post.blocks)} {dict.post.minutesRead}
               </div>
+            </motion.div>
+
+            <motion.div
+              initial={false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.24, duration: 0.45 }}
+              className="mt-8"
+            >
+              <ShareActions url={shareUrl} title={post.title} labels={shareLabels} />
             </motion.div>
           </motion.div>
         </div>
@@ -390,6 +410,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
           className="flex flex-col items-center pt-12 border-t border-outline-variant/10"
         >
           <p className="font-label text-xs font-bold tracking-[0.2em] uppercase text-on-surface-variant mb-6">{dict.post.articleEnd}</p>
+          <ShareActions url={shareUrl} title={post.title} labels={shareLabels} className="mb-6" />
           <div className="flex flex-wrap justify-center gap-4">
             <OptimisticLink
               href={`/${lang}`}

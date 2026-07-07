@@ -54,8 +54,8 @@ export const featuredBooks: FeaturedBook[] = [
       en: "Prof. Ismail Fajrie Alatas, Professor of Sufism at New York University",
     },
     summary: {
-      id: "Buku ini menyajikan perjalanan panjang dimensi batin Islam secara jernih dan sistematis, dari akar spiritual masa Nabi dan Sahabat hingga transformasi tasawuf dalam dunia modern. Dr. Budi Rahman Hakim memetakan bagaimana tazkiyah al-nafs tumbuh menjadi gerakan tarekat dan komunitas spiritual yang memberi dampak sosial nyata.",
-      en: "This book presents the long historical journey of Islam's inner dimension, from the spiritual foundations of the Prophet's era and the Companions to the transformation of Sufism in the modern world. Dr. Budi Rahman Hakim maps how tazkiyah al-nafs developed into Sufi orders and spiritual communities with real social impact.",
+      id: "Buku ini menyajikan perjalanan panjang dimensi batin Islam secara jernih dan sistematis, dari akar spiritual masa Nabi dan Sahabat hingga transformasi tasawuf dalam dunia modern. Budi Rahman Hakim memetakan bagaimana tazkiyah al-nafs tumbuh menjadi gerakan tarekat dan komunitas spiritual yang memberi dampak sosial nyata.",
+      en: "This book presents the long historical journey of Islam's inner dimension, from the spiritual foundations of the Prophet's era and the Companions to the transformation of Sufism in the modern world. Budi Rahman Hakim maps how tazkiyah al-nafs developed into Sufi orders and spiritual communities with real social impact.",
     },
     highlights: {
       id: [
@@ -208,8 +208,8 @@ export const featuredBooks: FeaturedBook[] = [
     },
     publisher: "RM Books",
     summary: {
-      id: "Buku ini mengajak pembaca memahami tasawuf sebagai disiplin ilmu yang kokoh, bukan sekadar wirid atau pelarian spiritual. Dr. Budi Rahman Hakim memadukan fondasi ontologis, epistemologis, dan aksiologis untuk menjelaskan hakikat manusia, struktur wujud ruhani, dan jalan menuju ma'rifah dalam bingkai akal dan adab.",
-      en: "This book invites readers to understand Sufism as a rigorous discipline, not merely devotional practice or spiritual escape. Dr. Budi Rahman Hakim brings together ontological, epistemological, and axiological foundations to explain human nature, the structure of spiritual being, and the path toward ma'rifah through reason and adab.",
+      id: "Buku ini mengajak pembaca memahami tasawuf sebagai disiplin ilmu yang kokoh, bukan sekadar wirid atau pelarian spiritual. Budi Rahman Hakim memadukan fondasi ontologis, epistemologis, dan aksiologis untuk menjelaskan hakikat manusia, struktur wujud ruhani, dan jalan menuju ma'rifah dalam bingkai akal dan adab.",
+      en: "This book invites readers to understand Sufism as a rigorous discipline, not merely devotional practice or spiritual escape. Budi Rahman Hakim brings together ontological, epistemological, and axiological foundations to explain human nature, the structure of spiritual being, and the path toward ma'rifah through reason and adab.",
     },
     highlights: {
       id: [
@@ -437,8 +437,8 @@ export const featuredBooks: FeaturedBook[] = [
       en: "Prof. Herman Leonard Beck, Ph.D.",
     },
     summary: {
-      id: "Buku ini membaca kebangkitan kembali Islam Sufi sebagai jawaban atas krisis eksistensial modern, fragmentasi sosial, dan disrupsi digital. Dr. Budi Rahman Hakim menunjukkan tasawuf sebagai jalan hidup yang membentuk etika sosial, memperkuat karakter, dan menumbuhkan kesadaran sejati bagi masa depan peradaban.",
-      en: "This book reads the resurgence of Sufi Islam as a response to modern existential crisis, social fragmentation, and digital disruption. Dr. Budi Rahman Hakim presents Sufism as a way of life that shapes social ethics, strengthens character, and cultivates true awareness for the future of civilization.",
+      id: "Buku ini membaca kebangkitan kembali Islam Sufi sebagai jawaban atas krisis eksistensial modern, fragmentasi sosial, dan disrupsi digital. Budi Rahman Hakim menunjukkan tasawuf sebagai jalan hidup yang membentuk etika sosial, memperkuat karakter, dan menumbuhkan kesadaran sejati bagi masa depan peradaban.",
+      en: "This book reads the resurgence of Sufi Islam as a response to modern existential crisis, social fragmentation, and digital disruption. Budi Rahman Hakim presents Sufism as a way of life that shapes social ethics, strengthens character, and cultivates true awareness for the future of civilization.",
     },
     highlights: {
       id: [

@@ -92,6 +92,11 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     save: dict.quickPost.save,
     cancel: dict.quickPost.cancel,
     delete: dict.quickPost.delete,
+    share: dict.quickPost.share,
+    shareToFacebook: dict.quickPost.shareToFacebook,
+    shareToWhatsapp: dict.quickPost.shareToWhatsapp,
+    copyLink: dict.quickPost.copyLink,
+    linkCopied: dict.quickPost.linkCopied,
   };
 }
 
