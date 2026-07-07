@@ -225,14 +225,14 @@ async function HomeArchiveSection({ lang, dict }: { lang: Locale; dict: Awaited<
                         isLead ? "flex-col" : "flex-col"
                       }`}
                     >
-                      <div className={`relative order-2 overflow-hidden bg-surface-container md:order-1 ${isLead ? "aspect-16/9 md:aspect-16/10" : "aspect-16/9 md:aspect-16/11"}`}>
+                      <div className="relative order-2 aspect-square overflow-hidden bg-surface-container md:order-1">
                         {post.thumbnail ? (
                           <Image
                             src={post.thumbnail}
                             alt={post.title}
                             fill
                             sizes={isLead ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 1024px) 100vw, 25vw"}
-                            className="object-cover transition duration-700 group-hover:scale-[1.03]"
+                            className="object-contain p-1 transition duration-700 group-hover:scale-[1.03]"
                             priority={index < 2}
                           />
                         ) : (

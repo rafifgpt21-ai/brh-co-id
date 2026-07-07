@@ -255,14 +255,14 @@ export default function HomeHero({
                           </div>
 
                           <div className="mt-4 grid shrink-0 grid-cols-[82px_minmax(0,1fr)] items-end gap-3 sm:grid-cols-[98px_minmax(0,1fr)]">
-                            <div className="relative h-16 overflow-hidden rounded-md bg-surface-container sm:h-20">
+                            <div className="relative aspect-square w-[82px] overflow-hidden rounded-md bg-surface-container sm:w-[98px]">
                               {panelDisplay.imageUrl ? (
                                 <Image
                                   src={panelDisplay.imageUrl}
                                   alt=""
                                   fill
                                   sizes="120px"
-                                  className="object-cover transition duration-700 group-hover:scale-105"
+                                  className="object-contain p-1 transition duration-700 group-hover:scale-[1.03]"
                                 />
                               ) : (
                                 <div className="flex h-full w-full items-center justify-center">
@@ -323,14 +323,14 @@ export default function HomeHero({
                             </span>
                           ) : (
                             <div className="mt-4 grid shrink-0 grid-cols-[82px_minmax(0,1fr)] items-end gap-3 sm:grid-cols-[98px_minmax(0,1fr)]">
-                              <div className="relative h-16 overflow-hidden rounded-md bg-surface-container sm:h-20">
+                              <div className="relative aspect-square w-[82px] overflow-hidden rounded-md bg-surface-container sm:w-[98px]">
                                 {panelDisplay.imageUrl ? (
                                   <Image
                                     src={panelDisplay.imageUrl}
                                     alt=""
                                     fill
                                     sizes="120px"
-                                    className="object-cover transition duration-700 group-hover:scale-105"
+                                    className="object-contain p-1 transition duration-700 group-hover:scale-[1.03]"
                                   />
                                 ) : (
                                   <div className="flex h-full w-full items-center justify-center">

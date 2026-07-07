@@ -44,15 +44,15 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
       className="surface-lift-hover group flex h-full min-h-[120px] flex-row overflow-hidden rounded-lg border border-outline-variant/25 bg-surface-container-lowest md:min-h-0"
     >
       {/* Thumbnail (Left) */}
-      <div className="w-28 xs:w-36 md:w-40 lg:w-48 xl:w-52 aspect-square md:aspect-auto shrink-0 relative overflow-hidden order-1">
+      <div className="relative order-1 aspect-square w-28 shrink-0 overflow-hidden bg-surface-container xs:w-36 md:w-40 lg:w-48 xl:w-52">
         {thumbnailSrc ? (
           <>
             <Image
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
               alt={post.title}
               src={thumbnailSrc}
               fill
-              sizes="(max-width: 768px) 30vw, (max-width: 1024px) 200px, 250px"
+              sizes="(max-width: 768px) 36vw, (max-width: 1024px) 160px, 208px"
               unoptimized={isLocalBookCover}
             />
             <div className="absolute inset-0 bg-black/5 transition-colors duration-300 group-hover:bg-transparent"></div>

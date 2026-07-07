@@ -228,14 +228,15 @@ export function QuickPostFeed({
                 <button
                   type="button"
                   onClick={() => toggleExpanded(post.id)}
-                  className={`relative mb-4 block w-full overflow-hidden rounded-lg bg-surface-container ${isPreview ? "aspect-16/7 sm:aspect-16/6 lg:aspect-16/9" : isFeatured ? "aspect-16/9" : "aspect-16/10"}`}
+                  className="relative mb-4 block w-full overflow-hidden rounded-lg bg-surface-container"
                 >
                   <Image
                     src={post.imageUrl}
                     alt=""
-                    fill
+                    width={1600}
+                    height={900}
                     sizes={isFeatured ? "(max-width: 1024px) 100vw, 58vw" : "(max-width: 1024px) 100vw, 42vw"}
-                    className="object-cover transition duration-700 group-hover:scale-105"
+                    className="h-auto w-full transition duration-700 group-hover:scale-[1.03]"
                   />
                 </button>
               )}
