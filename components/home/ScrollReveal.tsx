@@ -14,7 +14,6 @@ interface ScrollRevealProps {
 export default function ScrollReveal({
   children,
   delay = 0,
-  direction = 'up',
   className = '',
   duration = 0.6,
 }: ScrollRevealProps) {

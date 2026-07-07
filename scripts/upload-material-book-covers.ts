@@ -6,30 +6,18 @@ import { UTApi, UTFile } from "uploadthing/server";
 type CoverMapping = Record<string, string>;
 
 const coverFiles: Record<string, string> = {
-  "actualization-of-neo-sufism": "actualization-of-neo-sufism.jpeg",
-  "akhlaq-tasawuf": "akhlaq-tasawuf.jpeg",
-  "pengantar-ilmu-tasawuf": "pengantar-ilmu-tasawuf.jpeg",
-  "resurgensi-islam-sufi": "resurgensi-islam-sufi.jpeg",
-  "selayang-pandang-tasawuf-tarekat-sufi": "selayang-pandang-tasawuf-tarekat-sufi.jpeg",
-  sufinomic: "sufinomic.jpeg",
+  "actualization-of-neo-sufism": "neo sufism.jpeg",
+  "akhlaq-tasawuf": "akhlaq tasawuf (2).jpeg",
+  "pengantar-ilmu-tasawuf": "Pengantar Ilmu Tasawuf (2).jpeg",
+  "resurgensi-islam-sufi": "RESURGENSI ISLAM SUFI Spiritualitas, Modernitas, dan Masa Depan Peradaban.jpeg",
+  "selayang-pandang-tasawuf-tarekat-sufi": "Selayang Pandang Sejarah Tasawuf & Tarekat Sufi (2).jpeg",
+  sufinomic: "sufinomics (2).jpeg",
 };
 
 const mappingPath = path.join(process.cwd(), "lib", "material-book-cover-urls.json");
 
-function getUploadThingAppId() {
-  const token = process.env.UPLOADTHING_TOKEN?.replace(/^['"]|['"]$/g, "");
-  if (!token) throw new Error("UPLOADTHING_TOKEN is missing.");
-
-  const decoded = JSON.parse(Buffer.from(token, "base64").toString("utf8")) as {
-    appId?: string;
-  };
-  if (!decoded.appId) throw new Error("UPLOADTHING_TOKEN does not include appId.");
-
-  return decoded.appId;
-}
-
-function publicUfsUrl(fileKey: string) {
-  return `https://${getUploadThingAppId()}.ufs.sh/f/${fileKey}`;
+function keyFromUfsUrl(url?: string) {
+  return url?.match(/\/f\/([^/?#]+)/)?.[1];
 }
 
 async function readMapping(): Promise<CoverMapping> {
@@ -44,28 +32,29 @@ async function readMapping(): Promise<CoverMapping> {
 async function main() {
   const utapi = new UTApi();
   const mapping = await readMapping();
+  const uploadVersion = Date.now();
   const existingFiles = await utapi.listFiles({ limit: 500 });
-  const existingByCustomId = new Map(
-    existingFiles.files
-      .filter((file) => file.customId?.startsWith("material-book-cover-"))
-      .map((file) => [file.customId, file]),
-  );
 
   for (const [slug, fileName] of Object.entries(coverFiles)) {
-    if (mapping[slug]) {
-      console.log(`Using existing UploadThing URL for ${slug}`);
-      continue;
+    const customIdPrefix = `material-book-cover-${slug}`;
+    const customId = `${customIdPrefix}-${uploadVersion}`;
+    const mappedKey = keyFromUfsUrl(mapping[slug]);
+    const existingKeys = existingFiles.files
+      .filter((file) => file.customId?.startsWith(customIdPrefix))
+      .map((file) => file.key);
+
+    try {
+      const keysToDelete = [...new Set([...existingKeys, ...(mappedKey ? [mappedKey] : [])])];
+      const deleteByKey = keysToDelete.length > 0 ? await utapi.deleteFiles(keysToDelete) : { deletedCount: 0 };
+      const deletedCount = deleteByKey.deletedCount;
+
+      console.log(`Deleted old UploadThing cover for ${slug}: ${deletedCount}`);
+    } catch (error) {
+      console.warn(`Could not delete previous UploadThing cover for ${slug}; continuing with upload.`);
+      console.warn(error);
     }
 
-    const customId = `material-book-cover-${slug}`;
-    const existing = existingByCustomId.get(customId);
-    if (existing) {
-      mapping[slug] = publicUfsUrl(existing.key);
-      console.log(`Using uploaded file for ${slug}: ${mapping[slug]}`);
-      continue;
-    }
-
-    const filePath = path.join(process.cwd(), "public", "book-cover", fileName);
+    const filePath = path.join(process.cwd(), "material", "book-cover", fileName);
     const bytes = await readFile(filePath);
     const file = new UTFile([bytes], fileName, {
       customId,

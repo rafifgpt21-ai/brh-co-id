@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       console.error(`Blocked SSRF attempt to unauthorized domain: ${parsedUrl.hostname}`);
       return new NextResponse("Unauthorized domain", { status: 403 });
     }
-  } catch (e) {
+  } catch {
     return new NextResponse("Invalid URL format", { status: 400 });
   }
 

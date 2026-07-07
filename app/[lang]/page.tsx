@@ -14,6 +14,8 @@ import { notFound } from 'next/navigation';
 import { RouteSkeleton } from '@/components/ui/RouteSkeleton';
 import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 import { SectionSkeleton } from '@/components/ui/SectionSkeleton';
+import { createPageMetadata } from '@/lib/seo';
+import type { Metadata } from 'next';
 
 export const unstable_instant = {
   prefetch: "runtime",
@@ -34,6 +36,21 @@ export const unstable_instant = {
 const ScrollReveal = dynamic(() => import('@/components/home/ScrollReveal'), {
   ssr: true,
 });
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang: rawLang } = await params;
+  if (!hasLocale(rawLang)) return { title: "BRH Insight" };
+
+  const lang: Locale = rawLang;
+  const dict = await getDictionary(lang);
+
+  return createPageMetadata({
+    title: dict.metadata.title,
+    description: dict.metadata.description,
+    path: `/${lang}`,
+    locale: lang,
+  });
+}
 
 type LocalizedHomePost = {
   id: string;

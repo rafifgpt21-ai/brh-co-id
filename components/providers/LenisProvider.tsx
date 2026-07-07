@@ -12,11 +12,6 @@ function LenisScrollHandler() {
     if (lenis) {
       lenis.scrollTo(0, { immediate: true });
       lenis.resize();
-      
-      // Sync with global window object for debugging and external scripts
-      if (typeof window !== 'undefined') {
-        (window as any).lenis = lenis;
-      }
     }
   }, [pathname, lenis]);
 

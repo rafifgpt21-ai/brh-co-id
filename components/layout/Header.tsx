@@ -186,7 +186,7 @@ export const Header = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
       <div className="w-full px-5 md:px-8 lg:px-12 xl:px-24 flex justify-between items-center h-14">
         <div className="flex items-center gap-4">
           <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
-            <OptimisticLink href={`/${lang}`}>BRH</OptimisticLink>
+            <OptimisticLink href={`/${lang}`}>BRH Insight</OptimisticLink>
           </div>
         </div>
         

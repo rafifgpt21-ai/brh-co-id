@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ComponentProps } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -13,6 +13,8 @@ interface FullPDFViewerProps {
   url: string;
   title?: string;
 }
+
+type LoadedPdfDocument = Parameters<NonNullable<ComponentProps<typeof Document>["onLoadSuccess"]>>[0];
 
 // Watermark repeated text
 const WatermarkOverlay = () => (
@@ -27,7 +29,6 @@ const WatermarkOverlay = () => (
 
 interface LazyPageProps {
   index: number;
-  searchText: string;
   scale: number;
   containerWidth: number;
   isTypingPage: boolean;
@@ -39,7 +40,6 @@ interface LazyPageProps {
 // Optimized Page Component with Lazy Loading moved outside to prevent re-mounting on every scroll
 const LazyPage = ({ 
   index, 
-  searchText, 
   scale, 
   containerWidth, 
   isTypingPage, 
@@ -104,18 +104,7 @@ const LazyPage = ({
               </div>
             }
             customTextRenderer={({ str }: { str: string }) => {
-              if (!searchText) return str;
-              const escapedSearchText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const parts = str.split(new RegExp(`(${escapedSearchText})`, 'gi'));
-              return (
-                <span className="pdf-text-item">
-                  {parts.map((part, i) =>
-                    part.toLowerCase() === searchText.toLowerCase()
-                      ? <mark key={i} className="pdf-highlight-mark">{part}</mark>
-                      : part
-                  )}
-                </span>
-              ) as any;
+              return str;
             }}
           />
         </>
@@ -138,7 +127,6 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchResults, setSearchResults] = useState<{ pageIndex: number; matchIndex: number }[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
   const [allPagesText, setAllPagesText] = useState<string[]>([]);
   const [pageInput, setPageInput] = useState("1");
@@ -191,7 +179,7 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
     }
 
     return () => trackingObserver.disconnect();
-  }, [numPages, isTypingPage, containerRef.current]);
+  }, [numPages, isTypingPage, currentPage]);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -211,7 +199,7 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
     };
   }, []);
 
-  const onDocumentLoadSuccess = async (pdf: any) => {
+  const onDocumentLoadSuccess = async (pdf: LoadedPdfDocument) => {
     setNumPages(pdf.numPages);
 
     // Extract text from all pages for search index in background
@@ -220,7 +208,9 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        const text = content.items.map((item: any) => item.str).join(" ");
+        const text = content.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .join(" ");
         textContent.push(text);
       }
       setAllPagesText(textContent);
@@ -229,11 +219,25 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
     }
   };
 
-  useEffect(() => {
+  const scrollToPage = useCallback((pageNumber: number) => {
+    const element = document.getElementById(`page-container-${pageNumber}`);
+    if (element && containerRef.current) {
+      const container = containerRef.current;
+      const targetOffset = element.offsetTop - container.offsetTop;
+      
+      container.scrollTo({
+        top: targetOffset - 16,
+        behavior: 'smooth'
+      });
+      
+      setCurrentPage(pageNumber);
+      setPageInput(pageNumber.toString());
+    }
+  }, []);
+
+  const searchResults = useMemo(() => {
     if (!searchText || allPagesText.length === 0) {
-      setSearchResults([]);
-      setCurrentMatchIndex(-1);
-      return;
+      return [];
     }
 
     const results: { pageIndex: number; matchIndex: number }[] = [];
@@ -249,40 +253,23 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
       }
     });
 
-    setSearchResults(results);
-    if (results.length > 0) {
-      setCurrentMatchIndex(0);
-      // Auto scroll to first result if it's a new search
-      scrollToPage(results[0].pageIndex + 1);
-    }
+    return results;
   }, [searchText, allPagesText]);
 
-  const scrollToPage = (pageNumber: number) => {
-    const element = document.getElementById(`page-container-${pageNumber}`);
-    if (element && containerRef.current) {
-      const container = containerRef.current;
-      const targetOffset = element.offsetTop - container.offsetTop;
-      
-      container.scrollTo({
-        top: targetOffset - 16,
-        behavior: 'smooth'
-      });
-      
-      setCurrentPage(pageNumber);
-      setPageInput(pageNumber.toString());
-    }
-  };
+  const activeMatchIndex = searchResults.length > 0
+    ? Math.max(0, currentMatchIndex) % searchResults.length
+    : -1;
 
   const handleNextMatch = () => {
     if (searchResults.length === 0) return;
-    const nextIndex = (currentMatchIndex + 1) % searchResults.length;
+    const nextIndex = (activeMatchIndex + 1) % searchResults.length;
     setCurrentMatchIndex(nextIndex);
     scrollToPage(searchResults[nextIndex].pageIndex + 1);
   };
 
   const handlePrevMatch = () => {
     if (searchResults.length === 0) return;
-    const prevIndex = (currentMatchIndex - 1 + searchResults.length) % searchResults.length;
+    const prevIndex = (activeMatchIndex - 1 + searchResults.length) % searchResults.length;
     setCurrentMatchIndex(prevIndex);
     scrollToPage(searchResults[prevIndex].pageIndex + 1);
   };
@@ -360,7 +347,7 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
               const p = parseInt(pageInput.trim());
               if (!isNaN(p) && p >= 1 && p <= (numPages || 1)) {
                 scrollToPage(p);
-                (e.target as any).querySelector('input')?.blur();
+                (e.currentTarget.querySelector('input'))?.blur();
               } else {
                 setPageInput(currentPage.toString());
               }
@@ -462,12 +449,12 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
             <div className="flex items-center gap-4">
               <p className="text-xs font-medium text-on-surface-variant flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px] text-primary">info</span>
-                Hasil untuk: <span className="text-primary font-bold italic">"{searchText}"</span>
+                Hasil untuk: <span className="text-primary font-bold italic">&quot;{searchText}&quot;</span>
               </p>
 
               <div className="flex items-center gap-2 bg-surface-container-low px-2 py-0.5 rounded-full border border-outline-variant/10">
                 <span className="text-[10px] font-bold text-primary min-w-[40px] text-center">
-                  {searchResults.length > 0 ? `${currentMatchIndex + 1} / ${searchResults.length}` : "0 / 0"}
+                  {searchResults.length > 0 ? `${activeMatchIndex + 1} / ${searchResults.length}` : "0 / 0"}
                 </span>
                 <div className="flex items-center">
                   <button
@@ -523,7 +510,6 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
             <LazyPage
               key={`page_${index + 1}`}
               index={index}
-              searchText={searchText}
               scale={scale}
               containerWidth={containerWidth}
               isTypingPage={isTypingPage}

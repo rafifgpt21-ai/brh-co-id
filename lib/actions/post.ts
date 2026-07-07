@@ -275,9 +275,10 @@ export async function deletePost(id: string) {
     updateTag(`post-${id}`);
     
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error deleting post:", error);
-    return { success: false, error: `Gagal menghapus postingan: ${error?.message || "Kesalahan tidak dikenal"}` };
+    const message = error instanceof Error ? error.message : "Kesalahan tidak dikenal";
+    return { success: false, error: `Gagal menghapus postingan: ${message}` };
   }
 }
 

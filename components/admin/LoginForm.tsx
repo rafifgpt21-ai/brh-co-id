@@ -1,33 +1,24 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState } from "react";
 import { loginAction } from "@/lib/actions/auth";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function LoginForm() {
   const [state, action, isPending] = useActionState(loginAction, null);
-  const [shake, setShake] = useState(false);
-
-  // Trigger shake animation on error
-  useEffect(() => {
-    if (state?.success === false) {
-      setShake(true);
-      const timer = setTimeout(() => setShake(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [state]);
 
   return (
     <div className="space-y-8">
       <AnimatePresence mode="wait">
         {state?.error && (
           <motion.div
+            key={state.error}
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ 
               opacity: 1, 
               y: 0, 
               scale: 1,
-              x: shake ? [0, -10, 10, -10, 10, 0] : 0 
+              x: [0, -10, 10, -10, 10, 0],
             }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ 

@@ -33,13 +33,14 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
   // Local pagination to avoid rendering too many items
   const [displayLimit, setDisplayLimit] = useState(12);
 
-  const handleSearchCommit = (e?: React.FormEvent) => {
+  const handleSearchCommit = (e?: React.FormEvent, nextValue = inputValue) => {
     e?.preventDefault();
+    const committedValue = nextValue.trim();
 
     startTransition(() => {
       const params = new URLSearchParams(searchParams.toString());
-      if (inputValue.trim()) {
-        params.set("search", inputValue.trim());
+      if (committedValue) {
+        params.set("search", committedValue);
       } else {
         params.delete("search");
       }
@@ -48,6 +49,12 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
       startNavigation(href);
       router.replace(href, { scroll: false });
     });
+  };
+
+  const handleSuggestedKeyword = (keyword: string) => {
+    setInputValue(keyword);
+    setDisplayLimit(12);
+    handleSearchCommit(undefined, keyword);
   };
 
   const handleCategoryChange = (category: string) => {
@@ -276,6 +283,18 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
               <p className="text-on-surface-variant/60 max-w-md mx-auto leading-relaxed mb-10">
                 {dict.explore.emptyDescription}{searchFromUrl ? ` "${searchFromUrl}".` : ""}
               </p>
+              <div className="mb-8 flex flex-wrap justify-center gap-2 px-4">
+                {dict.explore.suggestedKeywords.map((keyword) => (
+                  <button
+                    key={keyword}
+                    type="button"
+                    onClick={() => handleSuggestedKeyword(keyword)}
+                    className="rounded-full border border-outline-variant/35 bg-surface px-4 py-2 text-[11px] font-black uppercase tracking-wider text-secondary transition hover:border-secondary hover:bg-secondary/10 hover:text-primary"
+                  >
+                    {keyword}
+                  </button>
+                ))}
+              </div>
               <button
                 onClick={handleReset}
                 className="inline-flex items-center gap-3 px-10 py-4 bg-surface-container-highest text-primary font-headline font-black text-sm uppercase tracking-widest rounded-full hover:bg-secondary hover:text-on-secondary transition-all duration-500 shadow-lg hover:shadow-secondary/20"

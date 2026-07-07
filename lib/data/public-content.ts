@@ -9,6 +9,42 @@ type PublishedPostOptions = {
   limit?: number;
 };
 
+function normalizeSearchValue(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function stripHtml(value: string | null | undefined) {
+  return (value || "").replace(/<[^>]*>/g, " ");
+}
+
+function postMatchesSearch(
+  post: Awaited<ReturnType<typeof prisma.post.findMany>>[number],
+  search: string,
+) {
+  const query = normalizeSearchValue(search);
+  if (!query) return true;
+
+  const haystack = normalizeSearchValue([
+    post.title,
+    post.titleEn,
+    post.category,
+    ...post.blocks.flatMap((block) => [
+      stripHtml(block.content),
+      stripHtml(block.contentEn),
+      block.title,
+      block.titleEn,
+      block.caption,
+      block.captionEn,
+    ]),
+  ].filter(Boolean).join(" "));
+
+  return haystack.includes(query);
+}
+
 export async function getPublishedPosts(options?: PublishedPostOptions) {
   "use cache";
   cacheTag("posts");
@@ -18,22 +54,22 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
     status: "Published",
   };
 
-  if (options?.search) {
-    where.OR = [
-      { title: { contains: options.search, mode: "insensitive" } },
-      { titleEn: { contains: options.search, mode: "insensitive" } },
-    ];
-  }
-
   if (options?.category) {
     where.category = options.category;
   }
 
-  return prisma.post.findMany({
+  const posts = await prisma.post.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    take: options?.limit,
   });
+
+  const filteredPosts = options?.search
+    ? posts.filter((post) => postMatchesSearch(post, options.search || ""))
+    : posts;
+
+  return typeof options?.limit === "number"
+    ? filteredPosts.slice(0, options.limit)
+    : filteredPosts;
 }
 
 export async function getPublishedPostBySlug(slug: string) {

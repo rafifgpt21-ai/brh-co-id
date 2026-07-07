@@ -7,7 +7,7 @@ import { deleteUser } from '@/lib/actions/user-actions';
 import { UserForm } from './UserForm';
 import { Role } from "@prisma/client";
 
-type User = {
+export type AdminUserRow = {
   id: string;
   name: string | null;
   username: string | null;
@@ -17,12 +17,12 @@ type User = {
   createdAt: Date;
 };
 
-export function UserTable({ initialUsers }: { initialUsers: User[] }) {
+export function UserTable({ initialUsers }: { initialUsers: AdminUserRow[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [search, setSearch] = useState('');
   const [isPending, startTransition] = useTransition();
   const [deleteModal, setDeleteModal] = useState<{ id: string, username: string } | null>(null);
-  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<AdminUserRow | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const filteredUsers = users.filter((u) => {

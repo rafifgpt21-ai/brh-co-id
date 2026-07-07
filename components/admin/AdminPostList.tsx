@@ -323,7 +323,7 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
                 </div>
                 <h3 className="text-xl font-bold text-on-surface mb-2">Konfirmasi Hapus</h3>
                 <p className="text-sm text-on-surface-variant font-medium leading-relaxed mb-8">
-                  Apakah Anda yakin ingin menghapus <span className="text-on-surface font-bold italic">"{deleteModal.title}"</span>? Tindakan ini tidak dapat dibatalkan.
+                  Apakah Anda yakin ingin menghapus <span className="text-on-surface font-bold italic">&quot;{deleteModal.title}&quot;</span>? Tindakan ini tidak dapat dibatalkan.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <Button

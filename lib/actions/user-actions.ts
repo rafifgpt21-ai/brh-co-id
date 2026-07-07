@@ -3,7 +3,7 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import type { Role } from "@prisma/client";
+import type { Prisma, Role } from "@prisma/client";
 
 async function getPrisma() {
   const { prisma } = await import("@/lib/prisma");
@@ -43,8 +43,8 @@ export async function getUsers() {
       role: true,
       phone: true,
       createdAt: true,
-    } as any,
-  }) as any;
+    },
+  });
 }
 
 export async function createUser(formData: FormData) {
@@ -76,16 +76,16 @@ export async function createUser(formData: FormData) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    await prisma.user.create({
-      data: {
+    const data: Prisma.UserCreateInput = {
         name,
         username,
         email: email || undefined,
         phone: phone || undefined,
         password: hashedPassword,
         role,
-      } as any,
-    });
+    };
+
+    await prisma.user.create({ data });
 
     revalidatePath("/admin/settings");
     return { success: true };
@@ -107,7 +107,7 @@ export async function updateUser(id: string, formData: FormData) {
   const password = formData.get("password") as string;
   const role = formData.get("role") as Role;
 
-  const data: any = {
+  const data: Prisma.UserUpdateInput = {
     name,
     username,
     email: email || undefined,
@@ -123,7 +123,7 @@ export async function updateUser(id: string, formData: FormData) {
     const prisma = await getPrisma();
     await prisma.user.update({
       where: { id },
-      data: data as any,
+      data,
     });
 
     revalidatePath("/admin/settings");
@@ -168,7 +168,7 @@ export async function getContactsForDropdown(): Promise<{ id: string, name: stri
   const prisma = await getPrisma();
   const result = await prisma.user.findMany({
     where: {
-      phone: { not: null, whitespace: { not: "" } },
+      phone: { not: null },
       role: { in: ["ADMIN", "SUPER_ADMIN"] },
     },
     select: {
@@ -179,7 +179,7 @@ export async function getContactsForDropdown(): Promise<{ id: string, name: stri
     orderBy: {
       name: "asc",
     },
-  } as any);
+  });
 
-  return result as any;
+  return result.filter((user) => user.phone?.trim());
 }

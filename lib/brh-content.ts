@@ -87,6 +87,7 @@ export const journals: JournalArticle[] = [
   { year: "2025", title: "Sufi social work dalam konteks Indonesia modern: Tinjauan tematik atas kerangka teoretis dan praktik (1990-2024)", reference: "SHARE Social Work Journal, 15(1), 1-12.", url: "https://jurnal.unpad.ac.id/share/article/view/63635/26197" },
   { year: "2025", title: "Resurgence of Sufi Islam in Indonesia: From the periphery to the center", reference: "Jurnal Ilmu Ushuludin, 12(1).", url: "https://doi.org/10.15408/iu.v12i1.46798" },
   { year: "2025", title: "Sufism in Indonesia and its impact on the revival of Islamic social da'wah", reference: "Dakwah: Jurnal Dakwah dan Kemasyarakatan, 29(1).", url: "https://doi.org/10.15408/dk5zq828" },
+  { year: "2026", title: "From spiritual crisis to ecological ethics: Ecosufism, religious authority, and environmental governance in Indonesia", reference: "Teosofi: Jurnal Tasawuf dan Pemikiran Islam, 16(1), 166-195. https://doi.org/10.15642/teosofi.2026.16.1.114-143", url: "https://jurnalfuf.uinsa.ac.id/index.php/teosofi/article/view/3924" },
 ];
 
 export const researchAgenda: LocalizedText = {

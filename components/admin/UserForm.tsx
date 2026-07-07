@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/Button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { createUser, updateUser } from '@/lib/actions/user-actions';
 import { Role } from "@prisma/client";
 interface UserFormProps {

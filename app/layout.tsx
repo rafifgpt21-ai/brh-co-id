@@ -19,8 +19,36 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: "BRH Insight",
+  title: {
+    default: "BRH Insight",
+    template: "%s | BRH Insight",
+  },
   description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+  applicationName: "BRH Insight",
+  authors: [{ name: "Budi Rahman Hakim" }],
+  creator: "BRH Insight",
+  publisher: "BRH Insight",
+  alternates: {
+    canonical: appUrl,
+  },
+  openGraph: {
+    title: "BRH Insight",
+    description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+    url: appUrl,
+    siteName: "BRH Insight",
+    type: "website",
+    images: [{ url: "/opengraph-image", alt: "BRH Insight" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BRH Insight",
+    description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+    images: ["/opengraph-image"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: "/icon.png",
   },

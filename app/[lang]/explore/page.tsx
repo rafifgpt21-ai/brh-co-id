@@ -4,10 +4,27 @@ import { hasLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { localizePost } from "@/lib/i18n/posts";
 import { notFound } from "next/navigation";
+import { createPageMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 
 import { Suspense } from "react";
 
 import KatalogSkeleton from "@/components/katalog/KatalogSkeleton";
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang: rawLang } = await params;
+  if (!hasLocale(rawLang)) return { title: "Explore | BRH Insight" };
+
+  const lang: Locale = rawLang;
+  const dict = await getDictionary(lang);
+
+  return createPageMetadata({
+    title: dict.explore.metadataTitle,
+    description: dict.explore.metadataDescription,
+    path: `/${lang}/explore`,
+    locale: lang,
+  });
+}
 
 export const unstable_instant = {
   prefetch: "runtime",

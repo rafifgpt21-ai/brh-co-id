@@ -76,7 +76,7 @@ interface BlockItemProps {
   contacts?: { id: string, name: string | null, phone: string | null }[];
 }
 
-export const BlockItem = memo(({
+export const BlockItem = memo(function BlockItem({
   block,
   index,
   isFirst,
@@ -90,9 +90,8 @@ export const BlockItem = memo(({
   onCancelDelete,
   onMove,
   onFileSelect,
-  saveStatus,
   contacts = []
-}: BlockItemProps) => {
+}: BlockItemProps) {
 
   const getEmbedUrl = (url?: string | null) => {
     if (!url) return "";

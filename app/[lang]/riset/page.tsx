@@ -3,12 +3,15 @@
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import LanguageTabs from "@/components/common/LanguageTabs";
+import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import {
   languages,
   researchAgenda,
   researchAreas,
   type LanguageCode,
 } from "@/lib/brh-content";
+
+type ActiveLanguage = Extract<LanguageCode, "id" | "en">;
 
 const pageLabels: Record<
   LanguageCode,
@@ -108,13 +111,51 @@ const ResearchContent = ({ language }: { language: LanguageCode }) => {
           ))}
         </div>
       </section>
+
+      <section>
+        <div className="rounded-lg border border-outline-variant/45 bg-surface-container-lowest p-6 shadow-sm md:p-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.85fr)_auto] lg:items-center">
+            <div>
+              <span className="font-label text-[10px] font-black uppercase tracking-[0.24em] text-secondary">
+                {language === "id" ? "Output Riset" : "Research Output"}
+              </span>
+              <h2 className="mt-3 font-headline text-2xl font-black tracking-tight text-primary md:text-3xl">
+                {language === "id"
+                  ? "Dari agenda pemikiran menuju publikasi terbaca"
+                  : "From research agenda to readable publications"}
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-on-surface/72 md:text-base">
+                {language === "id"
+                  ? "Ruang riset ini menjadi pintu masuk untuk memahami tema besar BRH, sementara publikasi dan katalog menyimpan keluaran akademik, buku, artikel, dan arsip terkait."
+                  : "This research space introduces BRH's core themes, while publications and the catalog preserve related academic output, books, articles, and archives."}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <OptimisticLink
+                href={`/${language}/publikasi`}
+                className="tap-target inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-black text-on-primary transition hover:bg-tertiary"
+              >
+                {language === "id" ? "Lihat Publikasi" : "View Publications"}
+                <span className="material-symbols-outlined text-[18px]">east</span>
+              </OptimisticLink>
+              <OptimisticLink
+                href={`/${language}/explore?category=Jurnal`}
+                className="tap-target inline-flex items-center justify-center gap-2 rounded-full border border-outline-variant/50 bg-surface px-5 text-sm font-black text-primary transition hover:border-secondary hover:bg-secondary/10"
+              >
+                {language === "id" ? "Jelajahi Jurnal" : "Explore Journals"}
+                <span className="material-symbols-outlined text-[18px]">travel_explore</span>
+              </OptimisticLink>
+            </div>
+          </div>
+        </div>
+      </section>
     </motion.div>
   );
 };
 
 export default function RisetPage() {
   const params = useParams<{ lang?: string }>();
-  const defaultLanguage: LanguageCode = params.lang === "en" ? "en" : "id";
+  const defaultLanguage: ActiveLanguage = params.lang === "en" ? "en" : "id";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -123,8 +164,9 @@ export default function RisetPage() {
         <div className="relative z-10 mx-auto max-w-7xl">
           <LanguageTabs languages={languages} defaultLanguage={defaultLanguage}>
             {(language) => {
-              const isArabic = language === "ar";
-              const labels = pageLabels[language];
+              const activeLanguage: ActiveLanguage = language === "en" ? "en" : "id";
+              const isArabic = false;
+              const labels = pageLabels[activeLanguage];
 
               return (
                 <div className="space-y-16">
@@ -146,7 +188,7 @@ export default function RisetPage() {
                     </p>
                   </motion.header>
 
-                  <ResearchContent language={language} />
+                  <ResearchContent language={activeLanguage} />
                 </div>
               );
             }}

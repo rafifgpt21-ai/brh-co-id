@@ -113,6 +113,7 @@ export const dictionary = {
     emptyTitle: "Eksplorasi Tak Ditemukan",
     emptyDescription:
       "Kami tidak dapat menemukan karya yang sesuai. Coba gunakan kata kunci intelektual lainnya atau atur ulang kategori.",
+    suggestedKeywords: ["tasawuf", "neosufisme", "kesejahteraan sosial", "pendidikan karakter"],
     resetAll: "Reset Semua Filter",
   },
   biography: {

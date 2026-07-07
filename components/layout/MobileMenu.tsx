@@ -111,7 +111,7 @@ export const MobileMenu = ({ isAdmin, lang, dict, drawerControls }: MobileMenuPr
               Platform
               </p>
               <p className="text-sm font-headline font-semibold text-tertiary">
-                BRH
+                BRH Insight
               </p>
             </div>
             <div className="text-xs text-slate-500 font-medium leading-relaxed">

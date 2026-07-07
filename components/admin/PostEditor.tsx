@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { BlockItem } from './BlockItem';
 import { savePost } from '@/lib/actions/post';
 import { uploadFiles } from '@/lib/uploadthing';
@@ -10,7 +9,7 @@ import { deletePost } from '@/lib/actions/post';
 import { getContactsForDropdown } from '@/lib/actions/user-actions';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type Block = {
+export type EditorBlock = {
   id: string;
   type: 'text' | 'image' | 'video' | 'pdf' | 'link' | 'contact';
   content: string;
@@ -22,6 +21,21 @@ type Block = {
   captionEn?: string;
   isLocked?: boolean;
 };
+
+type PostEditorInitialData = {
+  id?: string;
+  title?: string;
+  titleEn?: string | null;
+  category?: string;
+  status?: "Published" | "Draft";
+  thumbnail?: string | null;
+  blocks?: EditorBlock[];
+  timestamp?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+};
+
+type UploadEndpoint = "imageUploader" | "pdfUploader";
 
 const CATEGORIES = ['Buku', 'Jurnal', 'Artikel', 'Opini'];
 
@@ -59,7 +73,7 @@ const AutoResizingTextarea = ({
   );
 };
 
-export const PostEditor = ({ initialData }: { initialData?: any }) => {
+export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialData }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   
@@ -68,7 +82,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
   const [titleEn, setTitleEn] = useState(initialData?.titleEn || '');
   const [category, setCategory] = useState(initialData?.category || 'Buku');
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail || '');
-  const [blocks, setBlocks] = useState<Block[]>(() =>
+  const [blocks, setBlocks] = useState<EditorBlock[]>(() =>
     initialData?.blocks ? JSON.parse(JSON.stringify(initialData.blocks)) : []
   );
 
@@ -95,16 +109,20 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
   // Autosave & Recovery States
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
-  const [autosavedData, setAutosavedData] = useState<any>(null);
+  const [autosavedData, setAutosavedData] = useState<Partial<PostEditorInitialData> | null>(null);
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const [contacts, setContacts] = useState<{ id: string, name: string | null, phone: string | null }[]>([]);
+  const getCurrentSaveStatus = useCallback((): "Published" | "Draft" => {
+    if (!initialData?.id) return "Draft";
+    return initialData.status === "Draft" ? "Draft" : "Published";
+  }, [initialData?.id, initialData?.status]);
 
   useEffect(() => {
     async function loadContacts() {
       try {
         const list = await getContactsForDropdown();
-        setContacts(list as any);
+        setContacts(list);
       } catch (err) {
         console.error("Failed to load contacts for dropdown:", err);
       }
@@ -118,7 +136,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     category !== (initialData?.category || 'Buku') ||
     thumbnail !== (initialData?.thumbnail || '') ||
     Object.keys(stagedFiles).length > 0 ||
-    JSON.stringify(blocks.map(b => ({ ...b, id: b.id }))) !== JSON.stringify((initialData?.blocks || []).map((b: any) => ({ ...b, id: b.id })));
+    JSON.stringify(blocks.map(b => ({ ...b, id: b.id }))) !== JSON.stringify((initialData?.blocks || []).map((b) => ({ ...b, id: b.id })));
 
   // 1. Unsaved changes warning
   useEffect(() => {
@@ -212,7 +230,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        handleSave(initialData?.id ? (initialData.status || 'Published') : 'Draft');
+        handleSave(getCurrentSaveStatus());
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
         e.preventDefault();
@@ -280,8 +298,8 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     };
   }, [previews]);
 
-  const addBlock = (type: Block['type']) => {
-    const newBlock: Block = {
+  const addBlock = (type: EditorBlock['type']) => {
+    const newBlock: EditorBlock = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type,
       content: '',
@@ -303,7 +321,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     });
   }, []);
 
-  const updateBlock = useCallback((id: string, data: Partial<Block>) => {
+  const updateBlock = useCallback((id: string, data: Partial<EditorBlock>) => {
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, ...data } : b))
     );
@@ -378,13 +396,13 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
       const filesToUpload = Object.entries(stagedFiles);
       if (filesToUpload.length > 0) {
-        const endpointsMapping = filesToUpload.map(([key, file]) => {
+        const endpointsMapping = filesToUpload.map(([key]) => {
           if (key === 'thumbnail') return 'imageUploader';
           const block = blocks.find(b => b.id === key);
           return block?.type === 'pdf' ? 'pdfUploader' : 'imageUploader' as const;
         });
 
-        const byEndpoint: Record<string, { keys: string[], files: File[] }> = {
+        const byEndpoint: Record<UploadEndpoint, { keys: string[], files: File[] }> = {
           imageUploader: { keys: [], files: [] },
           pdfUploader: { keys: [], files: [] }
         };
@@ -397,7 +415,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
         for (const [endpoint, data] of Object.entries(byEndpoint)) {
           if (data.files.length > 0) {
-            const res = await uploadFiles(endpoint as any, {
+            const res = await uploadFiles(endpoint as UploadEndpoint, {
               files: data.files,
             });
 
@@ -452,7 +470,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
         alert(result.error || 'Gagal menyimpan');
         setSaveStatus('Idle');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Upload/Save error:", error);
       setSaveStatus('Error');
     } finally {
@@ -462,11 +480,12 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
   const handleDelete = async () => {
     if (!initialData?.id) return;
+    const postId = initialData.id;
 
     startTransition(async () => {
-      const result = await deletePost(initialData.id);
+      const result = await deletePost(postId);
       if (result.success) {
-        localStorage.removeItem(`brh_autosave_post_${initialData.id}`);
+        localStorage.removeItem(`brh_autosave_post_${postId}`);
         router.push('/admin');
         router.refresh();
       } else {
@@ -478,10 +497,10 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
   const handleRestoreDraft = () => {
     if (autosavedData) {
-      setTitle(autosavedData.title);
+      setTitle(autosavedData.title || '');
       setTitleEn(autosavedData.titleEn || '');
-      setCategory(autosavedData.category);
-      setBlocks(autosavedData.blocks);
+      setCategory(autosavedData.category || 'Buku');
+      setBlocks(autosavedData.blocks || []);
     }
     setShowRecoveryBanner(false);
   };
@@ -509,7 +528,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
     return rawText.slice(0, 155) + (rawText.length > 155 ? '...' : '');
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
@@ -547,8 +566,8 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
       return () => document.removeEventListener('mousedown', handleOutsideClick);
     }, [isOpen]);
 
-    const handleInsert = (type: Block['type']) => {
-      const newBlock: Block = {
+    const handleInsert = (type: EditorBlock['type']) => {
+      const newBlock: EditorBlock = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type,
         content: '',
@@ -739,7 +758,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
               {initialData?.id ? (
                 <>
                   <button
-                    onClick={() => { handleSave(initialData.status); setIsSaveMenuOpen(false); }}
+                    onClick={() => { handleSave(getCurrentSaveStatus()); setIsSaveMenuOpen(false); }}
                     disabled={isSavingInProgress}
                     className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-secondary text-on-secondary shadow-lg active:scale-95 transition-all text-center"
                   >
@@ -927,7 +946,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                 <div>
                   <h4 className="font-headline font-bold text-primary text-sm">Draf Cadangan Ditemukan!</h4>
                   <p className="text-xs text-on-surface-variant/80 mt-1 leading-relaxed">
-                    Kami mendeteksi perubahan lokal yang belum tersimpan dari sesi sebelumnya ({new Date(autosavedData?.timestamp).toLocaleTimeString('id-ID')}).
+                    Kami mendeteksi perubahan lokal yang belum tersimpan dari sesi sebelumnya ({new Date(autosavedData?.timestamp || Date.now()).toLocaleTimeString('id-ID')}).
                   </p>
                 </div>
               </div>
@@ -1403,7 +1422,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
                     <span className="truncate">{title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}</span>
                   </div>
                   <h3 className="text-sm font-medium text-[#1a0dab] hover:underline cursor-pointer leading-tight mt-1 truncate">
-                    {title || 'Judul Postingan Baru'} | BRH Platform
+                    {title || 'Judul Postingan Baru'} | BRH Insight
                   </h3>
                   <p className="text-[10px] text-slate-600 leading-normal mt-1 text-wrap line-clamp-3">
                     {getSEODescription()}
@@ -1585,7 +1604,7 @@ export const PostEditor = ({ initialData }: { initialData?: any }) => {
 
               <div className="flex flex-col gap-2 w-full">
                 <button
-                  onClick={() => handleSave(initialData?.id ? (initialData.status || 'Published') : 'Draft')}
+                  onClick={() => handleSave(getCurrentSaveStatus())}
                   disabled={isPending}
                   className="w-full h-12 rounded-2xl bg-secondary text-white font-bold text-sm shadow-lg hover:bg-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >

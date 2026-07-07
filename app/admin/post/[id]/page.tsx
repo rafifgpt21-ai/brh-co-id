@@ -1,4 +1,4 @@
-import { PostEditor } from "@/components/admin/PostEditor";
+import { PostEditor, type EditorBlock } from "@/components/admin/PostEditor";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getPostById } from "@/lib/actions/post";
@@ -6,6 +6,16 @@ import { Suspense } from "react";
 
 function PostEditorFallback() {
   return <div className="min-h-[70vh] animate-pulse rounded-2xl bg-surface-container-low" />;
+}
+
+const editorBlockTypes = new Set<EditorBlock["type"]>(["text", "image", "video", "pdf", "link", "contact"]);
+
+function normalizeEditorBlockType(type: string): EditorBlock["type"] {
+  return editorBlockTypes.has(type as EditorBlock["type"]) ? type as EditorBlock["type"] : "text";
+}
+
+function normalizePostStatus(status: string): "Published" | "Draft" {
+  return status === "Published" ? "Published" : "Draft";
 }
 
 async function EditPostContent({ params }: { params: Promise<{ id: string }> }) {
@@ -30,13 +40,15 @@ async function EditPostContent({ params }: { params: Promise<{ id: string }> }) 
       initialData={{
         id: post.id,
         title: post.title,
-        titleEn: (post as any).titleEn || '',
+        titleEn: post.titleEn || '',
         category: post.category,
-        status: post.status,
+        status: normalizePostStatus(post.status),
         thumbnail: post.thumbnail,
-        blocks: post.blocks.map((b: any) => ({
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        blocks: post.blocks.map((b) => ({
           id: b.id,
-          type: b.type,
+          type: normalizeEditorBlockType(b.type),
           content: b.content,
           contentEn: b.contentEn || '',
           url: b.url || '',

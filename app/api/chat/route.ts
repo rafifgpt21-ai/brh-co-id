@@ -230,7 +230,9 @@ export async function POST(request: NextRequest) {
 
     if (!chunks.length) {
       return NextResponse.json({
-        answer: "Maaf, informasi tersebut belum tersedia di website BRH. Silakan coba pertanyaan lain yang berkaitan dengan artikel, biografi, atau riset BRH.",
+        answer: locale === "id"
+          ? "Maaf, informasi tersebut belum tersedia di arsip BRH. Silakan coba pertanyaan lain yang berkaitan dengan artikel, biografi, publikasi, atau riset BRH."
+          : "Sorry, that information is not available in the BRH archive yet. Try another question related to BRH articles, biography, publications, or research.",
         sources: [],
         requestId,
       }, { headers: { "x-chat-request-id": requestId } });

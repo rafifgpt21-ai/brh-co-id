@@ -60,7 +60,16 @@ function slugify(text: string) {
     .replace(/--+/g, '-')
 }
 
-function createTextBlocks(theme: string): any[] {
+type SeedBlock = {
+  id: string;
+  type: string;
+  content: string;
+  url?: string;
+  caption?: string;
+  title?: string;
+};
+
+function createTextBlocks(theme: string): SeedBlock[] {
   return [
     {
       id: randomUUID(),
@@ -75,7 +84,7 @@ function createTextBlocks(theme: string): any[] {
   ]
 }
 
-function getRandomBlock(theme: string): any {
+function getRandomBlock(theme: string): SeedBlock {
   const types = ['image', 'video', 'pdf', 'link', 'text']
   const type = types[Math.floor(Math.random() * types.length)]
 
@@ -142,7 +151,7 @@ async function main() {
       postBlocks.push(getRandomBlock(theme))
     }
 
-    const post = await prisma.post.create({
+    await prisma.post.create({
       data: {
         title,
         slug,

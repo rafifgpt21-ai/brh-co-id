@@ -12,9 +12,23 @@ import { localizePost } from "@/lib/i18n/posts";
 type PostBlock = {
   type: string;
   content?: string | null;
+  contentEn?: string | null;
   title?: string | null;
+  titleEn?: string | null;
   caption?: string | null;
+  captionEn?: string | null;
   url?: string | null;
+};
+
+type KnowledgePost = {
+  id: string;
+  title: string;
+  titleEn?: string | null;
+  slug: string;
+  slugEn?: string | null;
+  category: string;
+  thumbnail?: string | null;
+  blocks: PostBlock[];
 };
 
 type IndexResult = {
@@ -26,17 +40,9 @@ type IndexResult = {
 const EMBEDDING_BATCH_SIZE = 32;
 const QUICK_POST_TITLE_LIMIT = 72;
 
-function postToKnowledgeSource(post: {
-  id: string;
-  title: string;
-  slug: string;
-  slugEn?: string | null;
-  category: string;
-  thumbnail?: string | null;
-  blocks: unknown;
-}, locale: Locale): KnowledgeSource {
-  const localizedPost = localizePost(post as any, locale);
-  const blocks = Array.isArray(localizedPost.blocks) ? (localizedPost.blocks as PostBlock[]) : [];
+function postToKnowledgeSource(post: KnowledgePost, locale: Locale): KnowledgeSource {
+  const localizedPost = localizePost(post, locale);
+  const blocks = Array.isArray(localizedPost.blocks) ? localizedPost.blocks : [];
   const content = blocks
     .filter((block) => block.type === "text" && block.content)
     .map((block) => htmlToText(block.content || ""))
@@ -149,8 +155,8 @@ export async function indexPublishedPost(postId: string) {
     return { sourceId: postId, chunks: 0 };
   }
 
-  const idResult = await replaceSourceChunks(postToKnowledgeSource(post as any, "id"));
-  const enResult = await replaceSourceChunks(postToKnowledgeSource(post as any, "en"));
+  const idResult = await replaceSourceChunks(postToKnowledgeSource(post, "id"));
+  const enResult = await replaceSourceChunks(postToKnowledgeSource(post, "en"));
   return { sourceId: postId, locale: "en" as const, chunks: idResult.chunks + enResult.chunks };
 }
 
@@ -193,8 +199,8 @@ export async function indexAllKnowledge() {
 
   const results: IndexResult[] = [];
   for (const post of posts) {
-    results.push(await replaceSourceChunks(postToKnowledgeSource(post as any, "id")));
-    results.push(await replaceSourceChunks(postToKnowledgeSource(post as any, "en")));
+    results.push(await replaceSourceChunks(postToKnowledgeSource(post, "id")));
+    results.push(await replaceSourceChunks(postToKnowledgeSource(post, "en")));
   }
 
   for (const quickPost of quickPosts) {

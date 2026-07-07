@@ -113,6 +113,7 @@ export const dictionary = {
     emptyTitle: "No Results Found",
     emptyDescription:
       "We could not find works matching your search. Try another keyword or reset the category.",
+    suggestedKeywords: ["sufism", "neosufism", "social welfare", "character education"],
     resetAll: "Reset All Filters",
   },
   biography: {

@@ -3,7 +3,13 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 
-export async function loginAction(prevState: any, formData: FormData) {
+export type LoginActionState = {
+  success?: boolean;
+  error?: string;
+  type?: string;
+} | null;
+
+export async function loginAction(_prevState: LoginActionState, formData: FormData): Promise<LoginActionState> {
   try {
     await signIn("credentials", formData);
     return { success: true };
