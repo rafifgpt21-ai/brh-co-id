@@ -1,6 +1,6 @@
 export const dictionary = {
   metadata: {
-    title: "BRH Intellectual Web Platform",
+    title: "BRH Insight",
     description: "Sowing Ideas, Moving Change",
   },
   nav: {
@@ -72,7 +72,7 @@ export const dictionary = {
     viewAll: "View All Notes",
     allTitle: "All BRH Notes",
     allIntro:
-      "A collection of short reflections, quotes, and recent thought updates from BRH Intellectual.",
+      "A collection of short reflections, quotes, and recent thought updates from BRH Insight.",
     backHome: "Back to Home",
     draftBadge: "Draft",
     edit: "Edit",
@@ -90,9 +90,9 @@ export const dictionary = {
     trending: "Trending:",
   },
   explore: {
-    metadataTitle: "Explore Works | BRH Intellectual",
+    metadataTitle: "Explore Works | BRH Insight",
     metadataDescription:
-      "Browse BRH Intellectual's collection of ideas, research, and critical essays.",
+      "Browse BRH Insight collection of ideas, research, and critical essays.",
     eyebrow: "Intellectual Exploration",
     title: "Works Catalog",
     intro:

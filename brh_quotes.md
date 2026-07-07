@@ -1,6 +1,6 @@
 # 20 Intellectual & Spiritual Quotes
 
-A curated collection of profound reflections inspired by **Dr. Budi Rahman Hakim (BRH)**, the philosophy of the **BRH Intellectual Platform**, and the integration of Sufi wisdom with contemporary social progress.
+A curated collection of profound reflections inspired by **Dr. Budi Rahman Hakim (BRH)**, the philosophy of **BRH Insight**, and the integration of Sufi wisdom with contemporary social progress.
 
 ---
 

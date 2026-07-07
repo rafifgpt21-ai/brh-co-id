@@ -18,7 +18,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: "BRH Intellectual Web Platform",
+  title: "BRH Insight",
   description: "Menyemai Pemikiran, Menggerakkan Perubahan",
   icons: {
     icon: "/icon.png",

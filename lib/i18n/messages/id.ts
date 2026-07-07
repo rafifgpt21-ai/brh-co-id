@@ -1,6 +1,6 @@
 export const dictionary = {
   metadata: {
-    title: "BRH Intellectual Web Platform",
+    title: "BRH Insight",
     description: "Menyemai Pemikiran, Menggerakkan Perubahan",
   },
   nav: {
@@ -72,7 +72,7 @@ export const dictionary = {
     viewAll: "Lihat Semua Catatan",
     allTitle: "Semua Catatan BRH",
     allIntro:
-      "Kumpulan refleksi singkat, quote, dan update pemikiran terbaru dari BRH Intellectual.",
+      "Kumpulan refleksi singkat, quote, dan update pemikiran terbaru dari BRH Insight.",
     backHome: "Kembali ke Beranda",
     draftBadge: "Draft",
     edit: "Edit",
@@ -90,9 +90,9 @@ export const dictionary = {
     trending: "Trending:",
   },
   explore: {
-    metadataTitle: "Explore Karya | BRH Intellectual",
+    metadataTitle: "Explore Karya | BRH Insight",
     metadataDescription:
-      "Telusuri kumpulan pemikiran, riset, dan opini terbaik di BRH Intellectual.",
+      "Telusuri kumpulan pemikiran, riset, dan opini terbaik di BRH Insight.",
     eyebrow: "Eksplorasi Intelektual",
     title: "Katalog Karya",
     intro:

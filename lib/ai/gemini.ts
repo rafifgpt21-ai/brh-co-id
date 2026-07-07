@@ -122,7 +122,7 @@ export async function generateGroundedAnswer(params: {
             parts: [
               {
                 text: [
-                  "Anda adalah chatbot resmi BRH Intellectual Web Platform.",
+                  "Anda adalah chatbot resmi BRH Insight.",
                   "Jawab hanya berdasarkan konteks yang diberikan.",
                   "Jika konteks tidak cukup, katakan bahwa informasi tersebut belum tersedia di website BRH.",
                   "Jangan mengarang detail, tanggal, kutipan, atau sumber.",

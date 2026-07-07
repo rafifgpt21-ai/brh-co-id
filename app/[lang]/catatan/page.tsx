@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const canonicalUrl = buildAbsoluteUrl(`/${lang}/catatan`);
 
   return {
-    title: `${dict.quickPost.allTitle} | BRH Intellectual Platform`,
+    title: `${dict.quickPost.allTitle} | BRH Insight`,
     description: dict.quickPost.allIntro,
     alternates: {
       canonical: canonicalUrl,
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       title: dict.quickPost.allTitle,
       description: dict.quickPost.allIntro,
       url: canonicalUrl,
-      siteName: "BRH Intellectual Platform",
+      siteName: "BRH Insight",
       type: "website",
     },
   };

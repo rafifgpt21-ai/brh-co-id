@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const canonicalUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}`);
 
   return {
-    title: `${localizedPost.title} | BRH Intellectual Platform`,
+    title: `${localizedPost.title} | BRH Insight`,
     description,
     alternates: {
       canonical: canonicalUrl,
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       title: localizedPost.title,
       description,
       url: canonicalUrl,
-      siteName: "BRH Intellectual Platform",
+      siteName: "BRH Insight",
       type: "article",
       publishedTime: new Date(post.createdAt).toISOString(),
       images: post.thumbnail ? [{ url: post.thumbnail, alt: localizedPost.title }] : [],

@@ -10,7 +10,7 @@ export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
       <div className="w-full px-6 md:px-12 lg:px-24 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex flex-col gap-4 items-center md:items-start">
           <div className="font-headline font-black text-background text-2xl tracking-tighter">
-            BRH Intellectual
+            BRH Insight
           </div>
           <p className="text-background/70 font-body text-sm max-w-xs text-center md:text-left">
             {dict.footer.description}
@@ -25,7 +25,7 @@ export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
       </div>
       <div className="w-full px-6 md:px-12 lg:px-24 mt-16 pt-8 border-t border-background/10 text-center">
         <p className="font-label text-[10px] uppercase tracking-[0.2em] text-background/40">
-          &copy; <Suspense fallback={<span>2026</span>}><CurrentYear /></Suspense> BRH Intellectual Platform. {dict.footer.copyright}
+          &copy; <Suspense fallback={<span>2026</span>}><CurrentYear /></Suspense> BRH Insight. {dict.footer.copyright}
         </p>
       </div>
     </footer>

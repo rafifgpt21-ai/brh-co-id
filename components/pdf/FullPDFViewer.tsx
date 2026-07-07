@@ -19,7 +19,7 @@ const WatermarkOverlay = () => (
   <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden opacity-15 select-none flex flex-wrap justify-center items-center gap-20 p-10">
     {Array.from({ length: 12 }).map((_, i) => (
       <div key={i} className="text-4xl font-bold -rotate-45 whitespace-nowrap">
-        BRH INTELLECTUAL PLATFORM
+        BRH INSIGHT
       </div>
     ))}
   </div>

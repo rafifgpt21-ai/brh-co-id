@@ -52,7 +52,7 @@ function HeaderFallback() {
     <nav className="fixed top-0 z-50 w-full border-b border-outline-variant/20 bg-background/86 backdrop-blur-xl transition-colors duration-200">
       <div className="flex h-14 w-full items-center justify-between px-5 md:px-8 lg:px-12 xl:px-24">
         <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
-          <OptimisticLink href={`/${lang}`}>BRH Intellectual</OptimisticLink>
+          <OptimisticLink href={`/${lang}`}>BRH Insight</OptimisticLink>
         </div>
         <div className="hidden items-center gap-10 font-headline font-medium tracking-tight lg:flex">
           {links.map((link) => (
@@ -82,7 +82,7 @@ function FooterFallback() {
       <div className="flex w-full flex-col items-center justify-between gap-8 px-6 md:flex-row md:px-12 lg:px-24">
         <div className="flex flex-col items-center gap-4 md:items-start">
           <div className="font-headline text-2xl font-black tracking-tighter text-background">
-            BRH Intellectual
+            BRH Insight
           </div>
           <div className="h-4 w-64 max-w-full rounded-full bg-background/10" />
         </div>
