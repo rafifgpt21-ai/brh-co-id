@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { getPublicBaseUrl } from "@/lib/share-url";
 import "./globals.css";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const appUrl = getPublicBaseUrl();
 
 const inter = Inter({
   subsets: ["latin"],
