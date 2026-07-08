@@ -654,7 +654,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
       {/* ════════════════════════════════════════
           Mobile / Intermediate — Fixed top bar
           ════════════════════════════════════════ */}
-      <div className="lg:hidden fixed top-[80px] inset-x-0 z-30">
+      <div className="lg:hidden fixed top-14 inset-x-0 z-30">
         <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-outline-variant/15 shadow-sm">
           {/* Back */}
           <button
@@ -930,7 +930,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
       </AnimatePresence>
 
       {/* ── Main editor workspace ── */}
-      <main className="min-h-screen px-4 sm:px-8 xl:px-14 pb-32 lg:pr-80 xl:pr-88 pt-[60px] lg:pt-8">
+      <main className="min-h-screen px-4 sm:px-8 xl:px-14 pb-32 lg:pr-80 xl:pr-88 pt-9 lg:pt-8">
         
         {/* Local Storage Recovery Notification Banner */}
         <AnimatePresence>
