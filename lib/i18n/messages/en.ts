@@ -1,6 +1,6 @@
 export const dictionary = {
   metadata: {
-    title: "BRH Insight",
+    title: "The Official Website of BRH",
     description: "Sowing Ideas, Moving Change",
   },
   nav: {
@@ -25,7 +25,7 @@ export const dictionary = {
     heroTitleA: "Sowing Ideas,",
     heroTitleB: "Moving",
     heroTitleC: "Change",
-    heroLabel: "INTELLECTUAL EXPRESSION",
+    heroLabel: "The BRH Nexus",
     mobileExplore: "Explore All Works",
     archiveEyebrow: "INTELLECTUAL ARCHIVE",
     archiveTitleA: "Latest",

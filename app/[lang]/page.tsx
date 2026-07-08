@@ -39,7 +39,7 @@ const ScrollReveal = dynamic(() => import('@/components/home/ScrollReveal'), {
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang: rawLang } = await params;
-  if (!hasLocale(rawLang)) return { title: "BRH Insight" };
+  if (!hasLocale(rawLang)) return { title: { absolute: "The Official Website of BRH" } };
 
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
@@ -49,6 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     description: dict.metadata.description,
     path: `/${lang}`,
     locale: lang,
+    absoluteTitle: true,
   });
 }
 

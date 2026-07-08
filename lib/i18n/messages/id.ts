@@ -1,6 +1,6 @@
 export const dictionary = {
   metadata: {
-    title: "BRH Insight",
+    title: "The Official Website of BRH",
     description: "Menyemai Pemikiran, Menggerakkan Perubahan",
   },
   nav: {
@@ -25,7 +25,7 @@ export const dictionary = {
     heroTitleA: "Menyemai Pemikiran,",
     heroTitleB: "Menggerakkan",
     heroTitleC: "Perubahan",
-    heroLabel: "EKSPRESI INTELEKTUAL",
+    heroLabel: "The BRH Nexus",
     mobileExplore: "Jelajahi Semua Karya",
     archiveEyebrow: "ARSIP INTELEKTUAL",
     archiveTitleA: "Karya &",

@@ -4,6 +4,7 @@ import { getPublicBaseUrl } from "@/lib/share-url";
 import "./globals.css";
 
 const appUrl = getPublicBaseUrl();
+const siteTitle = "The Official Website of BRH";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,28 +21,28 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "BRH Insight",
-    template: "%s | BRH Insight",
+    default: siteTitle,
+    template: `%s | ${siteTitle}`,
   },
   description: "Menyemai Pemikiran, Menggerakkan Perubahan",
-  applicationName: "BRH Insight",
+  applicationName: siteTitle,
   authors: [{ name: "Budi Rahman Hakim" }],
-  creator: "BRH Insight",
-  publisher: "BRH Insight",
+  creator: siteTitle,
+  publisher: siteTitle,
   alternates: {
     canonical: appUrl,
   },
   openGraph: {
-    title: "BRH Insight",
+    title: siteTitle,
     description: "Menyemai Pemikiran, Menggerakkan Perubahan",
     url: appUrl,
-    siteName: "BRH Insight",
+    siteName: siteTitle,
     type: "website",
-    images: [{ url: "/opengraph-image", alt: "BRH Insight" }],
+    images: [{ url: "/opengraph-image", alt: siteTitle }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BRH Insight",
+    title: siteTitle,
     description: "Menyemai Pemikiran, Menggerakkan Perubahan",
     images: ["/opengraph-image"],
   },

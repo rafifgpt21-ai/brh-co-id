@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { buildAbsoluteUrl } from "@/lib/share-url";
 import { locales, type Locale } from "@/lib/i18n/config";
 
-const SITE_NAME = "BRH Insight";
+const SITE_NAME = "The Official Website of BRH";
 
 type PageMetadataOptions = {
   title: string;
@@ -10,6 +10,7 @@ type PageMetadataOptions = {
   path: string;
   locale: Locale;
   image?: string | null;
+  absoluteTitle?: boolean;
 };
 
 export function createPageMetadata({
@@ -18,6 +19,7 @@ export function createPageMetadata({
   path,
   locale,
   image,
+  absoluteTitle,
 }: PageMetadataOptions): Metadata {
   const canonical = buildAbsoluteUrl(path);
   const localizedPath = path.replace(/^\/(en|id)(?=\/|$)/, "");
@@ -29,7 +31,7 @@ export function createPageMetadata({
   );
 
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description,
     alternates: {
       canonical,
