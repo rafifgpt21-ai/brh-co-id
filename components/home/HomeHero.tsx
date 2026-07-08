@@ -167,9 +167,7 @@ export default function HomeHero({
       <div className="mx-auto grid max-w-7xl gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.62fr)] lg:items-end lg:gap-10">
         <div className="min-w-0">
           <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-black uppercase tracking-[0.2em] text-secondary sm:mb-7 sm:text-[11px] sm:tracking-[0.24em] md:mb-8">
-            <span>BRH Insight</span>
-            <span className="hidden h-px w-10 bg-outline/45 sm:block" />
-            <span className="hidden sm:inline">{home.heroLabel}</span>
+            <span>{home.heroLabel}</span>
           </div>
 
           <h1 className="max-w-5xl text-pretty font-headline text-[2.05rem] font-black leading-[1.04] tracking-tight text-primary xs:text-4xl sm:text-5xl md:text-6xl lg:text-[4.45rem]">
