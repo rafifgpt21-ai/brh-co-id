@@ -8,8 +8,10 @@ type CoverMapping = Record<string, string>;
 const coverFiles: Record<string, string> = {
   "actualization-of-neo-sufism": "neo sufism.jpeg",
   "akhlaq-tasawuf": "akhlaq tasawuf (2).jpeg",
+  "kenapa-ber-thoriqoh": "Kenapa ber toriqoh.png",
   "pengantar-ilmu-tasawuf": "Pengantar Ilmu Tasawuf (2).jpeg",
   "resurgensi-islam-sufi": "RESURGENSI ISLAM SUFI Spiritualitas, Modernitas, dan Masa Depan Peradaban.jpeg",
+  "rethinking-social-work-indonesia": "rethink social work.jpg",
   "selayang-pandang-tasawuf-tarekat-sufi": "Selayang Pandang Sejarah Tasawuf & Tarekat Sufi (2).jpeg",
   sufinomic: "sufinomics (2).jpeg",
 };
@@ -32,6 +34,7 @@ async function readMapping(): Promise<CoverMapping> {
 async function main() {
   const utapi = new UTApi();
   const mapping = await readMapping();
+  const shouldReplace = process.env.REPLACE_MATERIAL_BOOK_COVERS === "1";
   const uploadVersion = Date.now();
   const existingFiles = await utapi.listFiles({ limit: 500 });
 
@@ -43,22 +46,30 @@ async function main() {
       .filter((file) => file.customId?.startsWith(customIdPrefix))
       .map((file) => file.key);
 
-    try {
-      const keysToDelete = [...new Set([...existingKeys, ...(mappedKey ? [mappedKey] : [])])];
-      const deleteByKey = keysToDelete.length > 0 ? await utapi.deleteFiles(keysToDelete) : { deletedCount: 0 };
-      const deletedCount = deleteByKey.deletedCount;
+    if (mapping[slug] && !shouldReplace) {
+      console.log(`Using existing UploadThing URL for ${slug}`);
+      continue;
+    }
 
-      console.log(`Deleted old UploadThing cover for ${slug}: ${deletedCount}`);
-    } catch (error) {
-      console.warn(`Could not delete previous UploadThing cover for ${slug}; continuing with upload.`);
-      console.warn(error);
+    if (shouldReplace) {
+      try {
+        const keysToDelete = [...new Set([...existingKeys, ...(mappedKey ? [mappedKey] : [])])];
+        const deleteByKey = keysToDelete.length > 0 ? await utapi.deleteFiles(keysToDelete) : { deletedCount: 0 };
+        const deletedCount = deleteByKey.deletedCount;
+
+        console.log(`Deleted old UploadThing cover for ${slug}: ${deletedCount}`);
+      } catch (error) {
+        console.warn(`Could not delete previous UploadThing cover for ${slug}; continuing with upload.`);
+        console.warn(error);
+      }
     }
 
     const filePath = path.join(process.cwd(), "material", "book-cover", fileName);
     const bytes = await readFile(filePath);
+    const fileType = fileName.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
     const file = new UTFile([bytes], fileName, {
       customId,
-      type: "image/jpeg",
+      type: fileType,
     });
     const result = await utapi.uploadFiles(file, {
       acl: "public-read",

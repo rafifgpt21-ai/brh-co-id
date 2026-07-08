@@ -479,5 +479,153 @@ export const featuredBooks: FeaturedBook[] = [
       },
     },
   },
+  {
+    year: "2015",
+    slug: "kenapa-ber-thoriqoh",
+    slugEn: "why-follow-a-sufi-path",
+    title: {
+      id: "Kenapa Ber-Thoriqoh?",
+      en: "Why Follow a Sufi Path?",
+    },
+    subtitle: {
+      id: "Jalan Tol Menuju Alloh",
+      en: "An Expressway Toward Allah",
+    },
+    author: "KH B. Rahman Hakim",
+    cover: getCoverUrl("kenapa-ber-thoriqoh"),
+    category: {
+      id: "Tasawuf / Tarekat / Spiritualitas Islam",
+      en: "Sufism / Sufi Orders / Islamic Spirituality",
+    },
+    publisher: "Pesantren Internasional Jagat 'Arsy",
+    preface: {
+      id: "Syaikh Muhammad Abdul Ghaos Saefullah Maslul Al-Qodiri An Naqsyabandi RA",
+      en: "Syaikh Muhammad Abdul Ghaos Saefullah Maslul Al-Qodiri An Naqsyabandi RA",
+    },
+    prolog: {
+      id: "Prof. Dr. KH Abdul Hadi",
+      en: "Prof. Dr. KH Abdul Hadi",
+    },
+    summary: {
+      id: "Buku ini menjawab dahaga spiritual manusia modern yang sering mengalami kekeringan batin di tengah kemegahan material. KH B. Rahman Hakim menghadirkan thoriqoh sebagai jalan praktis, terukur, dan terbimbing untuk membersihkan hati, menghidupkan zikir, dan menemukan kembali arah pulang menuju Allah.",
+      en: "This book responds to the spiritual thirst of modern people who often experience inner dryness amid material abundance. KH B. Rahman Hakim presents the Sufi path as a practical, disciplined, and guided way to purify the heart, enliven remembrance, and rediscover the path back to Allah.",
+    },
+    highlights: {
+      id: [
+        "Metafora thoriqoh sebagai jalan tol spiritual menuju Allah.",
+        "Hubungan syariat, thoriqoh, dan hakikat sebagai pilar keberagamaan yang utuh.",
+        "Pentingnya zikir, tazkiyatun nafs, sanad, dan bimbingan mursyid.",
+        "Dekonstruksi stigma bahwa tarekat anti-kemajuan atau menjauh dari kehidupan sosial.",
+      ],
+      en: [
+        "The metaphor of the Sufi path as a spiritual expressway toward Allah.",
+        "The relationship between sharia, tariqa, and haqiqa as an integrated religious path.",
+        "The importance of dhikr, tazkiyatun nafs, spiritual lineage, and a guiding mursyid.",
+        "A response to misconceptions that Sufi orders are anti-progress or socially withdrawn.",
+      ],
+    },
+    audience: {
+      id: [
+        "Pembaca yang sedang mencari kedalaman spiritual dan ketenangan batin.",
+        "Santri, salik, dan jamaah tarekat yang ingin memahami dasar laku thoriqoh.",
+        "Pendidik dan pembimbing ruhani yang ingin membumikan tasawuf dalam kehidupan modern.",
+      ],
+      en: [
+        "Readers seeking spiritual depth and inner tranquility.",
+        "Santri, seekers, and Sufi community members who want to understand the path of tariqa.",
+        "Educators and spiritual mentors who want to ground Sufism in modern life.",
+      ],
+    },
+    quotes: [
+      {
+        text: {
+          id: "Thoriqoh adalah jalur bebas hambatan bagi salik yang ingin mempercepat perjalanan ruhaninya.",
+          en: "The Sufi path is an express lane for seekers who wish to accelerate their spiritual journey.",
+        },
+        author: "KH B. Rahman Hakim",
+      },
+    ],
+    referenceLink: {
+      url: "https://scholar.google.com/scholar?q=Kenapa+Ber-Thoriqoh+Jalan+Tol+Menuju+Alloh+B+Rahman+Hakim",
+      title: {
+        id: "DOI / Link Referensi Buku",
+        en: "DOI / Book Reference Link",
+      },
+      caption: {
+        id: "DOI buku belum tercantum di dokumen sumber; tautan ini mengarah ke rekam bibliografis/penelusuran judul.",
+        en: "The book DOI is not listed in the source document; this link points to a bibliographic record/title lookup.",
+      },
+    },
+  },
+  {
+    year: "2010",
+    slug: "rethinking-social-work-indonesia",
+    slugEn: "rethinking-social-work-indonesia",
+    title: {
+      id: "Rethinking Social Work Indonesia",
+      en: "Rethinking Social Work Indonesia",
+    },
+    subtitle: {
+      id: "Suatu Jelajah Kritis",
+      en: "A Critical Exploration",
+    },
+    author: "Budi Rahman Hakim dan Tantan Hermansyah",
+    cover: getCoverUrl("rethinking-social-work-indonesia"),
+    category: {
+      id: "Kesejahteraan Sosial / Pekerjaan Sosial / Kebijakan Sosial",
+      en: "Social Welfare / Social Work / Social Policy",
+    },
+    publisher: "RMBooks",
+    summary: {
+      id: "Buku ini mengajak pembaca memikirkan kembali arah pekerjaan sosial di Indonesia melalui telaah kritis atas sejarah, karakteristik, polarisasi, dan tren kesejahteraan sosial. Budi Rahman Hakim dan Tantan Hermansyah menekankan bahwa praktik social work di Indonesia perlu berakar pada realitas lokal, nilai komunal, religiositas, dan pengalaman sosial masyarakat sendiri.",
+      en: "This book invites readers to rethink the direction of social work in Indonesia through a critical examination of its history, characteristics, polarization, and welfare trends. Budi Rahman Hakim and Tantan Hermansyah argue that Indonesian social work must be rooted in local realities, communal values, religiosity, and the lived social experience of its communities.",
+    },
+    highlights: {
+      id: [
+        "Kritik terhadap adopsi mentah teori pekerjaan sosial Barat.",
+        "Pembacaan historis tentang profesi dan praktik pekerjaan sosial di Indonesia.",
+        "Pentingnya indigenous social work berbasis kearifan lokal dan gotong royong.",
+        "Dorongan untuk menyusun guideline lokal yang responsif terhadap krisis struktural.",
+      ],
+      en: [
+        "A critique of uncritical adoption of Western social work theories.",
+        "A historical reading of the profession and practice of social work in Indonesia.",
+        "The importance of indigenous social work rooted in local wisdom and mutual assistance.",
+        "A call to formulate local guidelines responsive to structural crises.",
+      ],
+    },
+    audience: {
+      id: [
+        "Mahasiswa dan dosen kesejahteraan sosial atau pekerjaan sosial.",
+        "Pekerja sosial profesional, relawan, dan aktivis LSM.",
+        "Pembuat kebijakan dan pemerhati pembangunan manusia di Indonesia.",
+      ],
+      en: [
+        "Students and lecturers of social welfare or social work.",
+        "Professional social workers, volunteers, and NGO activists.",
+        "Policy makers and observers of human development in Indonesia.",
+      ],
+    },
+    quotes: [
+      {
+        text: {
+          id: "Membangun kesejahteraan masyarakat Indonesia tidak bisa dilakukan dengan resep instan milik bangsa lain.",
+          en: "Building social welfare in Indonesia cannot rely on instant formulas borrowed from other nations.",
+        },
+        author: "Budi Rahman Hakim dan Tantan Hermansyah",
+      },
+    ],
+    referenceLink: {
+      url: "https://scholar.google.com/scholar?q=Rethinking+Social+Work+Indonesia+Suatu+Jelajah+Kritis+Budi+Rahman+Hakim+Tantan+Hermansyah",
+      title: {
+        id: "DOI / Link Referensi Buku",
+        en: "DOI / Book Reference Link",
+      },
+      caption: {
+        id: "DOI buku belum tercantum di dokumen sumber; tautan ini mengarah ke rekam bibliografis/penelusuran judul.",
+        en: "The book DOI is not listed in the source document; this link points to a bibliographic record/title lookup.",
+      },
+    },
+  },
 ];
 

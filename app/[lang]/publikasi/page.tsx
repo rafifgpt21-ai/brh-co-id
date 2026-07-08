@@ -42,7 +42,7 @@ const pageLabels: Record<
     context: "Latar Intelektual",
     featuredBooks: "Buku Unggulan",
     featuredIntro:
-      "Enam karya terbaru yang merangkum pemikiran BRH tentang tasawuf, pendidikan karakter, neosufisme, ekonomi-politik, dan masa depan peradaban.",
+      "Delapan karya yang merangkum pemikiran BRH tentang tasawuf, tarekat, pendidikan karakter, neosufisme, kesejahteraan sosial, ekonomi-politik, dan masa depan peradaban.",
     bibliography: "Bibliografi Lainnya",
     journals: "Artikel Jurnal",
     viewDocument: "LIHAT DOKUMEN",
@@ -58,7 +58,7 @@ const pageLabels: Record<
     context: "Intellectual Context",
     featuredBooks: "Featured Books",
     featuredIntro:
-      "Six recent works presenting BRH's thought on Sufism, character education, Neo-Sufism, political economy, and the future of civilization.",
+      "Eight works presenting BRH's thought on Sufism, Sufi orders, character education, Neo-Sufism, social welfare, political economy, and the future of civilization.",
     bibliography: "Additional Bibliography",
     journals: "Journal Articles",
     viewDocument: "VIEW DOCUMENT",

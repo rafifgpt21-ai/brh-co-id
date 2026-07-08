@@ -44,11 +44,11 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
       className="surface-lift-hover group flex h-full min-h-[120px] flex-row overflow-hidden rounded-lg border border-outline-variant/25 bg-surface-container-lowest md:min-h-0"
     >
       {/* Thumbnail (Left) */}
-      <div className="relative order-1 aspect-square w-28 shrink-0 overflow-hidden bg-surface-container xs:w-36 md:w-40 lg:w-48 xl:w-52">
+      <div className="relative order-1 aspect-square w-28 shrink-0 self-start overflow-hidden bg-surface-container xs:w-36 md:w-40 lg:w-48 xl:w-52">
         {thumbnailSrc ? (
           <>
             <Image
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              className="h-full w-full object-contain p-2.5 transition-transform duration-700 ease-out md:p-3"
               alt={post.title}
               src={thumbnailSrc}
               fill
@@ -65,16 +65,16 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
       </div>
 
       {/* Info Area (Right) */}
-      <div className="flex-1 p-3.5 md:p-6 lg:p-8 flex flex-col justify-between order-2 min-w-0">
+      <div className="flex-1 p-3.5 md:p-6 flex flex-col justify-between order-2 min-w-0">
         <div>
           <span className="text-secondary font-label text-[9px] md:text-[11px] font-bold tracking-[0.2em] uppercase mb-1 md:mb-3 block">
             {getCategoryLabel(post.category, labels.categories)}
           </span>
-          <h3 className="mb-1 line-clamp-3 font-headline text-[13px] font-black leading-snug text-primary transition-colors duration-200 group-hover:text-tertiary xs:text-sm md:mb-3 md:line-clamp-2 md:text-lg lg:line-clamp-3 lg:text-xl">
+          <h3 className="mb-1 line-clamp-3 font-headline text-[13px] font-black leading-snug text-primary transition-colors duration-200 group-hover:text-tertiary xs:text-sm md:mb-3 md:line-clamp-2 md:text-lg lg:text-xl">
             {post.title}
           </h3>
           {snippet && (
-            <p className="text-on-surface-variant text-[10px] md:text-sm line-clamp-2 md:line-clamp-3 mb-2 md:mb-4 opacity-70 font-body block">
+            <p className="text-on-surface-variant text-[10px] md:text-sm line-clamp-2 mb-2 md:mb-4 opacity-70 font-body block">
               {snippet}
             </p>
           )}
