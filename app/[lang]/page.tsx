@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { auth } from '@/auth';
 import { connection } from 'next/server';
-import { getLatestPublishedQuickPostByType, getPublishedPosts } from '@/lib/data/public-content';
+import { getHomeFeaturedPosts, getLatestPublishedQuickPostByType, getPublishedPosts } from '@/lib/data/public-content';
 import { getQuickPosts } from '@/lib/actions/quick-post';
 import HomeHero from '@/components/home/HomeHero';
 import { QuickPostFeed } from '@/components/home/QuickPostFeed';
@@ -187,8 +187,7 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
 }
 
 async function HomeArchiveSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
-  const allPosts = await getPublishedPosts();
-  const latestPosts = allPosts.slice(0, 5).map((post) => localizePost(post, lang) as LocalizedHomePost);
+  const latestPosts = (await getHomeFeaturedPosts(5)).map((post) => localizePost(post, lang) as LocalizedHomePost);
 
   return (
     <section id="arsip" className="w-full border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-20">

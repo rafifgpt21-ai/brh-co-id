@@ -9,6 +9,8 @@ type PublishedPostOptions = {
   limit?: number;
 };
 
+const HOME_SITE_SETTING_KEY = "home";
+
 function normalizeSearchValue(value: string) {
   return value
     .normalize("NFKD")
@@ -70,6 +72,49 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
   return typeof options?.limit === "number"
     ? filteredPosts.slice(0, options.limit)
     : filteredPosts;
+}
+
+export async function getHomeFeaturedPosts(limit = 5) {
+  "use cache";
+  cacheTag("posts");
+  cacheLife("minutes");
+
+  const setting = await prisma.siteSetting.findUnique({
+    where: { key: HOME_SITE_SETTING_KEY },
+    select: { homeFeaturedPostIds: true },
+  });
+  const manualPostIds = Array.from(new Set(setting?.homeFeaturedPostIds || [])).slice(0, limit);
+
+  const manualPosts = manualPostIds.length > 0
+    ? await prisma.post.findMany({
+        where: {
+          id: { in: manualPostIds },
+          status: "Published",
+        },
+      })
+    : [];
+
+  const manualPostById = new Map(manualPosts.map((post) => [post.id, post]));
+  const orderedManualPosts = manualPostIds
+    .map((id) => manualPostById.get(id))
+    .filter((post): post is NonNullable<typeof post> => Boolean(post));
+  const selectedPostIds = new Set(orderedManualPosts.map((post) => post.id));
+  const remainingLimit = Math.max(limit - orderedManualPosts.length, 0);
+
+  if (remainingLimit === 0) {
+    return orderedManualPosts;
+  }
+
+  const fallbackPosts = await prisma.post.findMany({
+    where: {
+      status: "Published",
+      ...(selectedPostIds.size > 0 ? { id: { notIn: Array.from(selectedPostIds) } } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: remainingLimit,
+  });
+
+  return [...orderedManualPosts, ...fallbackPosts];
 }
 
 export async function getPublishedPostBySlug(slug: string) {

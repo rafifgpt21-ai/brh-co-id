@@ -60,6 +60,10 @@ const postFormSchema = z.object({
   blocks: z.array(blockSchema),
 });
 
+const HOME_SITE_SETTING_KEY = "home";
+
+const homeFeaturedPostIdsSchema = z.array(z.string().min(1)).max(5, "Maksimal 5 karya untuk beranda");
+
 async function getPrisma() {
   const { prisma } = await import("@/lib/prisma");
   return prisma;
@@ -68,6 +72,17 @@ async function getPrisma() {
 async function getSession() {
   const { auth } = await import("@/auth");
   return auth();
+}
+
+function isAdminSession(session: Awaited<ReturnType<typeof getSession>>) {
+  return session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
+}
+
+function refreshHomePaths() {
+  revalidatePath("/");
+  revalidatePath("/id");
+  revalidatePath("/en");
+  updateTag("posts");
 }
 
 async function refreshPostKnowledgeIndex(postId: string) {
@@ -82,7 +97,7 @@ async function refreshPostKnowledgeIndex(postId: string) {
 // CREATE or UPDATE a post
 export async function savePost(data: PostFormData) {
   const session = await getSession();
-  if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
+  if (!isAdminSession(session)) {
     return { success: false, error: "Unauthorized" };
   }
 
@@ -161,10 +176,7 @@ export async function savePost(data: PostFormData) {
       revalidatePath(`/post/${post.slug}`);
       revalidatePath(`/id/post/${post.slug}`);
       revalidatePath(`/en/post/${post.slugEn || post.slug}`);
-      revalidatePath("/");
-      revalidatePath("/id");
-      revalidatePath("/en");
-      updateTag("posts");
+      refreshHomePaths();
       updateTag(`post-${post.id}`);
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
@@ -219,10 +231,7 @@ export async function savePost(data: PostFormData) {
         },
       });
       revalidatePath("/admin");
-      revalidatePath("/");
-      revalidatePath("/id");
-      revalidatePath("/en");
-      updateTag("posts");
+      refreshHomePaths();
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     }
@@ -235,7 +244,7 @@ export async function savePost(data: PostFormData) {
 // DELETE a post
 export async function deletePost(id: string) {
   const session = await getSession();
-  if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "SUPER_ADMIN")) {
+  if (!isAdminSession(session)) {
     return { success: false, error: "Unauthorized" };
   }
 
@@ -270,8 +279,7 @@ export async function deletePost(id: string) {
     await removePostFromKnowledgeIndex(id);
     
     revalidatePath("/admin");
-    revalidatePath("/");
-    updateTag("posts");
+    refreshHomePaths();
     updateTag(`post-${id}`);
     
     return { success: true };
@@ -280,6 +288,78 @@ export async function deletePost(id: string) {
     const message = error instanceof Error ? error.message : "Kesalahan tidak dikenal";
     return { success: false, error: `Gagal menghapus postingan: ${message}` };
   }
+}
+
+export async function getHomeFeaturedPostIdsForAdmin() {
+  const session = await getSession();
+  if (!isAdminSession(session)) {
+    return [];
+  }
+
+  try {
+    const prisma = await getPrisma();
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: HOME_SITE_SETTING_KEY },
+      select: { homeFeaturedPostIds: true },
+    });
+
+    return setting?.homeFeaturedPostIds || [];
+  } catch (error) {
+    console.error("Error fetching home featured posts setting:", error);
+    return [];
+  }
+}
+
+export async function saveHomeFeaturedPostIds(postIds: string[]) {
+  const session = await getSession();
+  if (!isAdminSession(session)) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  const uniquePostIds = Array.from(new Set(postIds));
+  const parsedPostIds = homeFeaturedPostIdsSchema.safeParse(uniquePostIds);
+  if (!parsedPostIds.success) {
+    return { success: false, error: parsedPostIds.error.issues[0].message };
+  }
+
+  try {
+    const prisma = await getPrisma();
+    const publishedPosts = await prisma.post.findMany({
+      where: {
+        id: { in: parsedPostIds.data },
+        status: "Published",
+      },
+      select: { id: true },
+    });
+    const publishedPostIds = new Set(publishedPosts.map((post) => post.id));
+
+    if (parsedPostIds.data.some((id) => !publishedPostIds.has(id))) {
+      return { success: false, error: "Hanya karya Published yang bisa ditampilkan di beranda" };
+    }
+
+    await prisma.siteSetting.upsert({
+      where: { key: HOME_SITE_SETTING_KEY },
+      create: {
+        key: HOME_SITE_SETTING_KEY,
+        homeFeaturedPostIds: parsedPostIds.data,
+      },
+      update: {
+        homeFeaturedPostIds: parsedPostIds.data,
+      },
+    });
+
+    revalidatePath("/admin");
+    refreshHomePaths();
+
+    return { success: true, homeFeaturedPostIds: parsedPostIds.data };
+  } catch (error) {
+    console.error("Error saving home featured posts setting:", error);
+    return { success: false, error: "Gagal menyimpan pilihan beranda" };
+  }
+}
+
+export async function resetHomeFeaturedPostIds() {
+  return saveHomeFeaturedPostIds([]);
 }
 
 export async function getPosts(options?: {

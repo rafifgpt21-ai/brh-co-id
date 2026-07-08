@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getPosts } from "@/lib/actions/post";
+import { getHomeFeaturedPostIdsForAdmin, getPosts } from "@/lib/actions/post";
 import { AdminPostList } from "@/components/admin/AdminPostList";
 import { Suspense } from "react";
 
@@ -19,7 +19,10 @@ async function AdminDashboardContent() {
     redirect("/");
   }
 
-  const posts = await getPosts();
+  const [posts, homeFeaturedPostIds] = await Promise.all([
+    getPosts(),
+    getHomeFeaturedPostIdsForAdmin(),
+  ]);
 
   // Serialize dates for the client component
   const serializedPosts = posts.map((p) => ({
@@ -32,7 +35,7 @@ async function AdminDashboardContent() {
     updatedAt: p.updatedAt,
   }));
 
-  return <AdminPostList initialPosts={serializedPosts} />;
+  return <AdminPostList initialPosts={serializedPosts} initialHomeFeaturedPostIds={homeFeaturedPostIds} />;
 }
 
 export default function AdminDashboard() {

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { deletePost } from '@/lib/actions/post';
+import { deletePost, resetHomeFeaturedPostIds, saveHomeFeaturedPostIds } from '@/lib/actions/post';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Post = {
@@ -16,10 +16,18 @@ type Post = {
   updatedAt: Date;
 };
 
-export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
+export function AdminPostList({
+  initialPosts,
+  initialHomeFeaturedPostIds,
+}: {
+  initialPosts: Post[];
+  initialHomeFeaturedPostIds: string[];
+}) {
   const [posts, setPosts] = useState(initialPosts);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'Published' | 'Draft'>('all');
+  const [homeFeaturedPostIds, setHomeFeaturedPostIds] = useState(initialHomeFeaturedPostIds);
+  const [featuredStatus, setFeaturedStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [deleteModal, setDeleteModal] = useState<{ id: string, title: string } | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Post; direction: 'asc' | 'desc' } | null>({
@@ -57,6 +65,17 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
     return matchSearch && matchStatus;
   });
 
+  const publishedPosts = [...posts]
+    .filter((post) => post.status === 'Published')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const featuredPostMap = new Map(posts.map((post) => [post.id, post]));
+  const visibleHomeFeaturedPostIds = homeFeaturedPostIds.filter((id) => featuredPostMap.get(id)?.status === 'Published');
+  const selectedFeaturedPosts = visibleHomeFeaturedPostIds
+    .map((id) => featuredPostMap.get(id))
+    .filter((post): post is Post => Boolean(post));
+  const availableFeaturedPosts = publishedPosts.filter((post) => !visibleHomeFeaturedPostIds.includes(post.id));
+  const canAddFeaturedPost = selectedFeaturedPosts.length < 5 && availableFeaturedPosts.length > 0;
+
   const handleDelete = (id: string, title: string) => {
     setDeleteModal({ id, title });
   };
@@ -70,8 +89,64 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
       const result = await deletePost(id);
       if (result.success || result.error === 'Post tidak ditemukan') {
         setPosts(posts.filter((p) => p.id !== id));
+        setHomeFeaturedPostIds((currentIds) => currentIds.filter((postId) => postId !== id));
       } else {
         alert(result.error || 'Gagal menghapus');
+      }
+    });
+  };
+
+  const addFeaturedPost = (id: string) => {
+    if (!id) return;
+    setFeaturedStatus(null);
+    setHomeFeaturedPostIds((currentIds) => {
+      const validCurrentIds = currentIds.filter((postId) => featuredPostMap.get(postId)?.status === 'Published');
+      if (validCurrentIds.includes(id) || validCurrentIds.length >= 5) return validCurrentIds;
+      return [...validCurrentIds, id];
+    });
+  };
+
+  const removeFeaturedPost = (id: string) => {
+    setFeaturedStatus(null);
+    setHomeFeaturedPostIds((currentIds) => currentIds.filter((postId) => postId !== id));
+  };
+
+  const moveFeaturedPost = (id: string, direction: 'up' | 'down') => {
+    setFeaturedStatus(null);
+    setHomeFeaturedPostIds((currentIds) => {
+      const validCurrentIds = currentIds.filter((postId) => featuredPostMap.get(postId)?.status === 'Published');
+      const index = validCurrentIds.indexOf(id);
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || targetIndex < 0 || targetIndex >= validCurrentIds.length) return validCurrentIds;
+
+      const nextIds = [...validCurrentIds];
+      [nextIds[index], nextIds[targetIndex]] = [nextIds[targetIndex], nextIds[index]];
+      return nextIds;
+    });
+  };
+
+  const saveFeaturedPosts = () => {
+    setFeaturedStatus(null);
+    startTransition(async () => {
+      const result = await saveHomeFeaturedPostIds(visibleHomeFeaturedPostIds);
+      if (result.success) {
+        setHomeFeaturedPostIds(result.homeFeaturedPostIds || []);
+        setFeaturedStatus({ type: 'success', message: 'Pilihan beranda disimpan.' });
+      } else {
+        setFeaturedStatus({ type: 'error', message: result.error || 'Gagal menyimpan pilihan beranda.' });
+      }
+    });
+  };
+
+  const resetFeaturedPosts = () => {
+    setFeaturedStatus(null);
+    startTransition(async () => {
+      const result = await resetHomeFeaturedPostIds();
+      if (result.success) {
+        setHomeFeaturedPostIds([]);
+        setFeaturedStatus({ type: 'success', message: 'Beranda kembali memakai 5 karya terbaru.' });
+      } else {
+        setFeaturedStatus({ type: 'error', message: result.error || 'Gagal mereset pilihan beranda.' });
       }
     });
   };
@@ -132,6 +207,116 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
             </Button>
           </Link>
         </div>
+      </div>
+
+      <div className="mb-5 rounded-3xl border border-outline-variant/30 bg-surface-container-lowest p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-on-primary">
+                <span className="material-symbols-outlined text-[22px]">home</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-on-surface">Pilihan Beranda</h2>
+                <p className="text-sm font-medium text-on-surface-variant/70">
+                  Pilih sampai 5 karya. Slot kosong otomatis diisi karya Published terbaru.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select
+              value=""
+              onChange={(event) => addFeaturedPost(event.target.value)}
+              disabled={!canAddFeaturedPost || isPending}
+              className="h-11 min-w-0 rounded-full border border-outline-variant/40 bg-surface px-4 text-sm font-bold text-on-surface outline-none transition focus:border-on-surface/50 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-72"
+            >
+              <option value="">
+                {selectedFeaturedPosts.length >= 5 ? 'Maksimal 5 karya' : 'Tambah karya ke beranda'}
+              </option>
+              {availableFeaturedPosts.map((post) => (
+                <option key={post.id} value={post.id}>
+                  {post.title}
+                </option>
+              ))}
+            </select>
+            <Button
+              onClick={saveFeaturedPosts}
+              disabled={isPending}
+              className="h-11 rounded-full! bg-primary px-5 text-sm font-black text-on-primary hover:bg-primary/90 disabled:opacity-60"
+            >
+              Simpan
+            </Button>
+            <Button
+              onClick={resetFeaturedPosts}
+              disabled={isPending}
+              variant="outline"
+              className="h-11 rounded-full! border-outline-variant/40 px-5 text-sm font-black text-on-surface-variant hover:bg-surface-container-high disabled:opacity-60"
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, index) => {
+            const post = selectedFeaturedPosts[index];
+
+            return (
+              <div
+                key={post?.id || index}
+                className="flex min-h-20 items-center gap-3 rounded-2xl border border-outline-variant/25 bg-surface px-4 py-3"
+              >
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${post ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant/50'}`}>
+                  {index + 1}
+                </div>
+                {post ? (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-black leading-snug text-on-surface">{post.title}</p>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-secondary">{post.category}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <button
+                        onClick={() => moveFeaturedPost(post.id, 'up')}
+                        disabled={index === 0 || isPending}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30"
+                        title="Naikkan urutan"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+                      </button>
+                      <button
+                        onClick={() => moveFeaturedPost(post.id, 'down')}
+                        disabled={index === selectedFeaturedPosts.length - 1 || isPending}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30"
+                        title="Turunkan urutan"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+                      </button>
+                      <button
+                        onClick={() => removeFeaturedPost(post.id)}
+                        disabled={isPending}
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-error-container hover:text-error disabled:opacity-30"
+                        title="Hapus dari beranda"
+                      >
+                        <span className="material-symbols-outlined text-[17px]">close</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm font-bold text-on-surface-variant/45">Otomatis terbaru</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {featuredStatus && (
+          <p className={`mt-4 text-sm font-bold ${featuredStatus.type === 'success' ? 'text-green-700' : 'text-error'}`}>
+            {featuredStatus.message}
+          </p>
+        )}
       </div>
 
       {/* Floating Action Button (Mobile Only) */}
@@ -216,6 +401,12 @@ export function AdminPostList({ initialPosts }: { initialPosts: Post[] }) {
                       {post.title}
                     </h3>
                   </Link>
+                  {visibleHomeFeaturedPostIds.includes(post.id) && post.status === 'Published' && (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
+                      <span className="material-symbols-outlined text-[14px]">home</span>
+                      Beranda #{visibleHomeFeaturedPostIds.indexOf(post.id) + 1}
+                    </span>
+                  )}
                   {/* Mobile meta */}
                   <div className="flex lg:hidden flex-wrap items-center gap-2 mt-1.5 text-xs text-on-surface-variant/80 font-medium">
                     <span className="bg-surface-container-low px-2 py-0.5 rounded-md">{post.category}</span>
