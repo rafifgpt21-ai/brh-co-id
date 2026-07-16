@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
+import { formatFileSize, type ImageCompressionResult } from '@/lib/image-compression';
 
 const TiptapEditor = dynamic(() => import('./TiptapEditor').then(mod => mod.TiptapEditor), {
   ssr: false,
@@ -66,6 +67,8 @@ interface BlockItemProps {
   isDeleting: boolean;
   preview?: string;
   stagedFile?: File;
+  compressionInfo?: ImageCompressionResult;
+  isCompressing?: boolean;
   onUpdate: (id: string, data: Partial<Block>) => void;
   onRemove: (id: string) => void;
   onConfirmRemove: (id: string) => void;
@@ -84,6 +87,8 @@ export const BlockItem = memo(function BlockItem({
   isDeleting,
   preview,
   stagedFile,
+  compressionInfo,
+  isCompressing = false,
   onUpdate,
   onRemove,
   onConfirmRemove,
@@ -234,7 +239,12 @@ export const BlockItem = memo(function BlockItem({
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
 
-          {block.url || preview ? (
+          {isCompressing ? (
+            <div className="rounded-2xl border-2 border-dashed border-secondary/30 bg-secondary/5 p-10 text-center">
+              <span className="material-symbols-outlined animate-spin text-3xl text-secondary">progress_activity</span>
+              <p className="mt-3 text-xs font-bold text-secondary">Mengompresi gambar...</p>
+            </div>
+          ) : block.url || preview ? (
             <div className="relative group/media rounded-2xl overflow-hidden border border-outline-variant/20 shadow-xs bg-surface-container-low">
               {block.type === 'image' ? (
                 <div className="relative aspect-video flex items-center justify-center bg-surface-container-low/50">
@@ -266,6 +276,12 @@ export const BlockItem = memo(function BlockItem({
                   </button>
                 </div>
               </div>
+              {compressionInfo && (
+                <p className="px-4 py-2 text-[10px] font-bold text-on-surface-variant/70">
+                  {formatFileSize(compressionInfo.originalBytes)} → {formatFileSize(compressionInfo.finalBytes)}
+                  {compressionInfo.savedPercent > 0 ? ` · hemat ${compressionInfo.savedPercent}%` : ' · sudah optimal'}
+                </p>
+              )}
             </div>
           ) : (
             <div className="border-2 border-dashed border-outline-variant/40 bg-primary-container/5 hover:bg-primary-container/10 transition-colors rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center text-center">
@@ -277,7 +293,7 @@ export const BlockItem = memo(function BlockItem({
               <p className="text-primary font-headline font-bold mb-1">
                 Unggah {block.type === 'image' ? 'Gambar' : 'Dokumen PDF'}
               </p>
-              <p className="text-on-surface-variant/70 text-xs mb-4">Maks: {block.type === 'image' ? '4MB' : '16MB'}</p>
+              <p className="text-on-surface-variant/70 text-xs mb-4">Maks: {block.type === 'image' ? 'sumber 20MB, hasil 1MB' : '16MB'}</p>
               <button
                 type="button"
                 onClick={() => onFileSelect(block.id)}
@@ -502,6 +518,8 @@ export const BlockItem = memo(function BlockItem({
     prev.isDeleting === next.isDeleting &&
     prev.preview === next.preview &&
     prev.stagedFile === next.stagedFile &&
+    prev.compressionInfo === next.compressionInfo &&
+    prev.isCompressing === next.isCompressing &&
     prev.isFirst === next.isFirst &&
     prev.isLast === next.isLast &&
     prev.saveStatus === next.saveStatus &&

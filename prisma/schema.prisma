@@ -94,11 +94,16 @@ model Post {
 }
 
 model QuickPost {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type      String   // 'NORMAL' | 'QUOTE'
-  content   String
-  imageUrl  String?
-  status    String   @default("Draft") // 'Published' | 'Draft'
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  type              String   // 'NORMAL' | 'AGENDA' | 'QUOTE'
+  content           String
+  imageUrl          String?
+  startsAt          DateTime?
+  endsAt            DateTime?
+  locationLabel     String?
+  locationLatitude  Float?
+  locationLongitude Float?
+  status            String   @default("Draft") // 'Published' | 'Draft'
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

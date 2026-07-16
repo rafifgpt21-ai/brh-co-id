@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import { deleteIfUnreferenced } from '@/lib/uploadthing-server'
 
 const prisma = new PrismaClient()
 
@@ -26,6 +27,11 @@ const quoteContents = [
 async function main() {
   console.log('Seeding BRH quote posts...')
 
+  const existing = await prisma.quickPost.findMany({
+    where: { content: { in: quoteContents } },
+    select: { imageUrl: true },
+  })
+
   const removed = await prisma.quickPost.deleteMany({
     where: {
       content: {
@@ -45,6 +51,16 @@ async function main() {
       })),
     ],
   })
+
+  const previousImages = existing.flatMap((post) => post.imageUrl ? [post.imageUrl] : [])
+  if (previousImages.length > 0) {
+    try {
+      await deleteIfUnreferenced(previousImages, 'quick-post-seed-replacement')
+    } catch (error) {
+      console.warn('Seed selesai, tetapi cleanup gambar lama gagal. Jalankan npm run storage:audit.')
+      console.warn(error)
+    }
+  }
 
   console.log(`Removed existing quote posts: ${removed.count}`)
   console.log(`Created quote posts: ${created.count}`)

@@ -167,6 +167,7 @@ export function ChatWidget({
             </div>
             <QuickPostComposer
               labels={quickPostLabels}
+              lang={lang}
               hideHeader
               onSubmitStart={(status) => {
                 setActivePanel(null);

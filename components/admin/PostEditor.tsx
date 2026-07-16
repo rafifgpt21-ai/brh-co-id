@@ -8,6 +8,9 @@ import { uploadFiles } from '@/lib/uploadthing';
 import { deletePost } from '@/lib/actions/post';
 import { getContactsForDropdown } from '@/lib/actions/user-actions';
 import { motion, AnimatePresence } from 'framer-motion';
+import { compressImage, formatFileSize, type ImageCompressionResult } from '@/lib/image-compression';
+import { createUploadReceipt, type UploadReceipt } from '@/lib/uploadthing-types';
+import { rollbackUploadedFiles } from '@/lib/actions/uploadthing';
 
 export type EditorBlock = {
   id: string;
@@ -104,6 +107,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
   // Staged Upload States
   const [stagedFiles, setStagedFiles] = useState<Record<string, File>>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [compressionInfo, setCompressionInfo] = useState<Record<string, ImageCompressionResult>>({});
+  const [compressingIds, setCompressingIds] = useState<Set<string>>(new Set());
+  const compressionTokensRef = useRef<Record<string, symbol>>({});
   const [saveStatus, setSaveStatus] = useState<'Idle' | 'Uploading' | 'Saving' | 'Success' | 'Error'>('Idle');
   const [isSavingInProgress, setIsSavingInProgress] = useState(false);
 
@@ -254,29 +260,87 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
     fileInputRef.current?.click();
   };
 
+  const stageCompressedImage = useCallback(async (
+    key: string,
+    file: File,
+    profile: 'thumbnail' | 'content',
+  ) => {
+    const token = Symbol(key);
+    compressionTokensRef.current[key] = token;
+    setCompressingIds((current) => new Set(current).add(key));
+    try {
+      const result = await compressImage(file, profile);
+      if (compressionTokensRef.current[key] !== token) return;
+
+      setPreviews((current) => {
+        if (current[key]) URL.revokeObjectURL(current[key]);
+        return { ...current, [key]: URL.createObjectURL(result.file) };
+      });
+      setStagedFiles((current) => ({ ...current, [key]: result.file }));
+      setCompressionInfo((current) => ({ ...current, [key]: result }));
+    } catch (error) {
+      if (compressionTokensRef.current[key] === token) {
+        alert(error instanceof Error ? error.message : 'Gagal mengompresi gambar');
+      }
+    } finally {
+      if (compressionTokensRef.current[key] === token) {
+        delete compressionTokensRef.current[key];
+        setCompressingIds((current) => {
+          const next = new Set(current);
+          next.delete(key);
+          return next;
+        });
+      }
+    }
+  }, []);
+
+  const cancelCompression = useCallback((key: string) => {
+    compressionTokensRef.current[key] = Symbol(`cancelled-${key}`);
+    setCompressingIds((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
+    setCompressionInfo((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
   const onThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (previews.thumbnail) URL.revokeObjectURL(previews.thumbnail);
-      setStagedFiles(prev => ({ ...prev, thumbnail: file }));
-      const objectUrl = URL.createObjectURL(file);
-      setPreviews(prev => ({ ...prev, thumbnail: objectUrl }));
+      void stageCompressedImage('thumbnail', file, 'thumbnail');
     }
+    e.target.value = '';
   };
 
   const onBlockFileChange = useCallback((blockId: string, file: File) => {
+    const block = blocks.find((item) => item.id === blockId);
+    if (block?.type === 'image') {
+      void stageCompressedImage(blockId, file, 'content');
+      return;
+    }
     setPreviews(prev => {
       if (prev[blockId]) URL.revokeObjectURL(prev[blockId]);
       const objectUrl = URL.createObjectURL(file);
       return { ...prev, [blockId]: objectUrl };
     });
     setStagedFiles(prev => ({ ...prev, [blockId]: file }));
-  }, []);
+    setCompressionInfo((current) => {
+      const next = { ...current };
+      delete next[blockId];
+      return next;
+    });
+  }, [blocks, stageCompressedImage]);
 
   const onBlockFileSelect = useCallback((blockId: string) => {
     const block = blocks.find(b => b.id === blockId);
     if (blockFileInputRef.current) {
-      blockFileInputRef.current.accept = block?.type === 'image' ? 'image/*' : 'application/pdf';
+      blockFileInputRef.current.accept = block?.type === 'image'
+        ? 'image/jpeg,image/png,image/webp,image/avif'
+        : 'application/pdf';
     }
     setActiveBlockTarget(blockId);
     blockFileInputRef.current?.click();
@@ -337,6 +401,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         : (!block.url && !block.title && !block.caption && !stagedFiles[id]);
 
       if (isEmpty) {
+        cancelCompression(id);
         if (stagedFiles[id]) {
           setStagedFiles(s => {
             const next = { ...s };
@@ -358,9 +423,10 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
       setBlockToDelete(id);
       return prev;
     });
-  }, [stagedFiles, previews]);
+  }, [cancelCompression, stagedFiles, previews]);
 
   const confirmRemoveBlock = useCallback((id: string) => {
+    cancelCompression(id);
     setBlocks((prev) => prev.filter((b) => b.id !== id));
     setBlockToDelete(null);
     
@@ -371,6 +437,11 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         return next;
       });
     }
+    setCompressionInfo((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
     if (previews[id]) {
       URL.revokeObjectURL(previews[id]);
       setPreviews(p => {
@@ -379,16 +450,21 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         return next;
       });
     }
-  }, [stagedFiles, previews]);
+  }, [cancelCompression, stagedFiles, previews]);
 
   const handleSave = async (status: 'Published' | 'Draft') => {
     if (!title.trim()) {
       alert('Judul tidak boleh kosong!');
       return;
     }
+    if (compressingIds.size > 0) {
+      alert('Tunggu sampai proses kompresi gambar selesai.');
+      return;
+    }
 
     setIsSavingInProgress(true);
     setSaveStatus('Uploading');
+    const uploadedReceipts: UploadReceipt[] = [];
 
     try {
       let finalThumbnail = thumbnail;
@@ -422,6 +498,10 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
             res.forEach((uploadedFile, i) => {
               const key = data.keys[i];
               const newUrl = uploadedFile.ufsUrl || uploadedFile.url;
+              uploadedReceipts.push(createUploadReceipt(
+                uploadedFile,
+                endpoint === 'pdfUploader' ? 'pdf' : 'image',
+              ));
               if (key === 'thumbnail') {
                 finalThumbnail = newUrl;
               } else {
@@ -453,6 +533,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
           captionEn: b.captionEn || '',
           isLocked: b.isLocked ?? false,
         })),
+        newUploads: uploadedReceipts,
       });
 
       if (result.success) {
@@ -466,12 +547,20 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
           router.refresh();
         }, 1000);
       } else {
+        if (uploadedReceipts.length > 0) await rollbackUploadedFiles(uploadedReceipts);
         setSaveStatus('Error');
         alert(result.error || 'Gagal menyimpan');
         setSaveStatus('Idle');
       }
     } catch (error) {
       console.error("Upload/Save error:", error);
+      if (uploadedReceipts.length > 0) {
+        try {
+          await rollbackUploadedFiles(uploadedReceipts);
+        } catch (cleanupError) {
+          console.error('Upload rollback failed:', cleanupError);
+        }
+      }
       setSaveStatus('Error');
     } finally {
       setIsSavingInProgress(false);
@@ -636,7 +725,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         type="file"
         ref={fileInputRef}
         onChange={onThumbnailChange}
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/avif"
         className="hidden"
       />
       <input
@@ -889,7 +978,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                       <button
                         type="button"
                         onClick={handleThumbnailClick}
-                        disabled={saveStatus !== 'Idle'}
+                        disabled={saveStatus !== 'Idle' || compressingIds.has('thumbnail')}
                         className="flex-1 h-11 px-4 rounded-xl bg-secondary text-on-secondary text-[10px] font-extrabold transition-all hover:bg-primary shadow-xs flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
                       >
                         <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
@@ -900,6 +989,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                           type="button"
                           onClick={() => {
                             if (confirm('Hapus thumbnail?')) {
+                              cancelCompression('thumbnail');
                               if (stagedFiles.thumbnail) {
                                 const newStaged = { ...stagedFiles };
                                 delete newStaged.thumbnail;
@@ -921,6 +1011,13 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                       )}
                     </div>
                     <p className="text-[8px] font-medium text-on-surface-variant/50 leading-tight uppercase tracking-wider">Rasio 1:1 disarankan.</p>
+                    {compressingIds.has('thumbnail') && <p className="text-[9px] font-bold text-secondary">Mengompresi gambar...</p>}
+                    {compressionInfo.thumbnail && (
+                      <p className="text-[9px] font-bold text-on-surface-variant/70">
+                        {formatFileSize(compressionInfo.thumbnail.originalBytes)} → {formatFileSize(compressionInfo.thumbnail.finalBytes)}
+                        {compressionInfo.thumbnail.savedPercent > 0 ? ` (hemat ${compressionInfo.thumbnail.savedPercent}%)` : ''}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1168,6 +1265,8 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                   isDeleting={blockToDelete === block.id}
                   preview={previews[block.id]}
                   stagedFile={stagedFiles[block.id]}
+                  compressionInfo={compressionInfo[block.id]}
+                  isCompressing={compressingIds.has(block.id)}
                   onUpdate={updateBlock}
                   onRemove={removeBlock}
                   onConfirmRemove={confirmRemoveBlock}
@@ -1350,7 +1449,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                       <button
                         type="button"
                         onClick={handleThumbnailClick}
-                        disabled={saveStatus !== 'Idle'}
+                        disabled={saveStatus !== 'Idle' || compressingIds.has('thumbnail')}
                         className="w-full h-9 px-3 rounded-xl bg-secondary text-on-secondary text-[9px] font-black uppercase tracking-wider transition-all hover:bg-primary flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-70 cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
@@ -1361,6 +1460,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                           type="button"
                           onClick={() => {
                             if (confirm('Hapus thumbnail?')) {
+                              cancelCompression('thumbnail');
                               if (stagedFiles.thumbnail) {
                                 const newStaged = { ...stagedFiles };
                                 delete newStaged.thumbnail;

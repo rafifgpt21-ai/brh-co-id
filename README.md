@@ -54,6 +54,11 @@ BRH is a premium, high-performance platform dedicated to archiving and discussin
 3. Configure environment variables:
    Create a `.env` file in the root and add your configuration (see `.env.example` if available or contact the team for a template).
 
+   Agenda BRH address autocomplete requires a server-side Geoapify key:
+   ```bash
+   GEOAPIFY_API_KEY=your_geoapify_api_key
+   ```
+
 4. Sync Database Schema:
    ```bash
    npx prisma db push

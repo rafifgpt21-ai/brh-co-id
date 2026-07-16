@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { auth } from '@/auth';
 import { connection } from 'next/server';
 import { getHomeFeaturedPosts, getLatestPublishedQuickPostByType, getPublishedPosts } from '@/lib/data/public-content';
-import { getQuickPosts } from '@/lib/actions/quick-post';
+import { getQuickPostsByType } from '@/lib/actions/quick-post';
 import HomeHero from '@/components/home/HomeHero';
 import { QuickPostFeed } from '@/components/home/QuickPostFeed';
 import { formatLocalizedDate, hasLocale, type Locale } from '@/lib/i18n/config';
@@ -16,6 +16,7 @@ import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 import { SectionSkeleton } from '@/components/ui/SectionSkeleton';
 import { createPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
+import { STATIC_UPLOADTHING_ASSETS } from '@/lib/uploadthing-protected-files';
 
 export const unstable_instant = {
   prefetch: "runtime",
@@ -95,16 +96,25 @@ function getPostSnippet(post: LocalizedHomePost) {
 
 function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>) {
   return {
-    eyebrow: dict.quickPost.eyebrow,
-    title: dict.quickPost.title,
-    emptyTitle: dict.quickPost.emptyTitle,
+    addImage: dict.quickPost.addImage,
+    changeImage: dict.quickPost.changeImage,
+    removeImage: dict.quickPost.removeImage,
     emptyDescription: dict.quickPost.emptyDescription,
+    agendaRequired: dict.quickPost.agendaRequired,
     normal: dict.quickPost.normal,
+    agenda: dict.quickPost.agenda,
     quote: dict.quickPost.quote,
+    emptyNormal: dict.quickPost.emptyNormal,
+    emptyAgenda: dict.quickPost.emptyAgenda,
+    emptyQuote: dict.quickPost.emptyQuote,
     readMore: dict.quickPost.readMore,
     showLess: dict.quickPost.showLess,
     viewAll: dict.quickPost.viewAll,
+    viewAllNormal: dict.quickPost.viewAllNormal,
+    viewAllAgenda: dict.quickPost.viewAllAgenda,
+    viewAllQuote: dict.quickPost.viewAllQuote,
     draftBadge: dict.quickPost.draftBadge,
+    completedBadge: dict.quickPost.completedBadge,
     publish: dict.quickPost.publish,
     edit: dict.quickPost.edit,
     save: dict.quickPost.save,
@@ -115,6 +125,16 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     shareToWhatsapp: dict.quickPost.shareToWhatsapp,
     copyLink: dict.quickPost.copyLink,
     linkCopied: dict.quickPost.linkCopied,
+    agendaDate: dict.quickPost.agendaDate,
+    agendaStartTime: dict.quickPost.agendaStartTime,
+    agendaEndTime: dict.quickPost.agendaEndTime,
+    agendaTimeZone: dict.quickPost.agendaTimeZone,
+    agendaLocation: dict.quickPost.agendaLocation,
+    agendaLocationPlaceholder: dict.quickPost.agendaLocationPlaceholder,
+    addressSearching: dict.quickPost.addressSearching,
+    addressNoResults: dict.quickPost.addressNoResults,
+    addressSearchError: dict.quickPost.addressSearchError,
+    addressPoweredBy: dict.quickPost.addressPoweredBy,
   };
 }
 
@@ -122,7 +142,7 @@ async function getHeroPanelItems(lang: Locale, dict: Awaited<ReturnType<typeof g
   const [latestQuote, latestInsight, latestPosts] = await Promise.all([
     getLatestPublishedQuickPostByType("QUOTE"),
     getLatestPublishedQuickPostByType("NORMAL"),
-    getPublishedPosts({ limit: 1 }),
+    getPublishedPosts({ excludeCategory: "Buku", limit: 1 }),
   ]);
 
   const items: HeroPanelItem[] = [];
@@ -168,7 +188,11 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
   await connection();
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  const quickPosts = await getQuickPosts({ includeDrafts: isAdmin, limit: 4 });
+  const quickPosts = await getQuickPostsByType({
+    includeDrafts: isAdmin,
+    limitPerType: 1,
+    upcomingAgendaOnly: true,
+  });
   const quickPostFeedLabels = getQuickPostFeedLabels(dict);
 
   return (
@@ -179,7 +203,11 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
           isAdmin={isAdmin}
           lang={lang}
           labels={quickPostFeedLabels}
-          hrefAll={`/${lang}/catatan`}
+          archiveHrefs={{
+            NORMAL: `/${lang}/catatan/pandangan`,
+            AGENDA: `/${lang}/catatan/agenda`,
+            QUOTE: `/${lang}/catatan/kutipan`,
+          }}
           variant="preview"
         />
       </div>
@@ -289,7 +317,7 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
           <ScrollReveal>
               <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container shadow-[0_14px_45px_rgba(41,47,54,0.08)]">
               <Image
-                src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
+                src={STATIC_UPLOADTHING_ASSETS.biographyPortrait}
                 alt="Budi Rahman Hakim (BRH)"
                 fill
                 sizes="(max-width: 1024px) 100vw, 320px"

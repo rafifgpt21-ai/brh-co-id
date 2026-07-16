@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import { deleteIfUnreferenced } from '@/lib/uploadthing-server'
 
 const prisma = new PrismaClient()
 const CONFIRM_FLAG = '--confirm'
@@ -41,6 +42,18 @@ async function main() {
   console.log('')
   console.log('Confirmation accepted. Deleting content knowledge chunks, posts, and quick posts...')
 
+  const [postsWithFiles, quickPostsWithFiles] = await Promise.all([
+    prisma.post.findMany({ select: { thumbnail: true, blocks: true } }),
+    prisma.quickPost.findMany({ select: { imageUrl: true } }),
+  ])
+  const fileCandidates = [
+    ...postsWithFiles.flatMap((post) => [
+      ...(post.thumbnail ? [post.thumbnail] : []),
+      ...(post.blocks as Array<{ url?: string | null }>).flatMap((block) => block.url ? [block.url] : []),
+    ]),
+    ...quickPostsWithFiles.flatMap((post) => post.imageUrl ? [post.imageUrl] : []),
+  ]
+
   const knowledgeChunks = await prisma.knowledgeChunk.deleteMany({
     where: {
       sourceType: {
@@ -52,6 +65,15 @@ async function main() {
     prisma.post.deleteMany({}),
     prisma.quickPost.deleteMany({}),
   ])
+
+  try {
+    const cleanup = await deleteIfUnreferenced(fileCandidates, 'content-reset')
+    console.log(`Deleted UploadThing files: ${cleanup.deleted}`)
+    if (cleanup.failed > 0) console.warn(`UploadThing files pending audit: ${cleanup.failed}`)
+  } catch (error) {
+    console.warn('Content records were reset, but UploadThing cleanup failed. Run npm run storage:audit.')
+    console.warn(error)
+  }
 
   console.log(`Deleted content knowledge chunks: ${knowledgeChunks.count}`)
   console.log(`Deleted posts: ${posts.count}`)

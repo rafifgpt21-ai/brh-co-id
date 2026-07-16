@@ -1,53 +1,39 @@
 import { auth } from "@/auth";
 import { QuickPostFeed } from "@/components/home/QuickPostFeed";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
-import { getQuickPostsByType } from "@/lib/actions/quick-post";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getQuickPostsByType, type QuickPostType } from "@/lib/actions/quick-post";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
-import { buildAbsoluteUrl } from "@/lib/share-url";
-import { connection } from "next/server";
-import { notFound } from "next/navigation";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { createPageMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
-export const unstable_instant = {
-  prefetch: "runtime",
-  samples: [
-    {
-      params: { lang: "en" },
-      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
-      cookies: [],
-    },
-    {
-      params: { lang: "id" },
-      headers: [["x-forwarded-proto", null], ["x-forwarded-host", null], ["host", null]],
-      cookies: [],
-    },
-  ],
-};
+const archiveTypes = {
+  pandangan: "NORMAL",
+  agenda: "AGENDA",
+  kutipan: "QUOTE",
+} as const satisfies Record<string, QuickPostType>;
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
-  const { lang: rawLang } = await params;
-  if (!hasLocale(rawLang)) return { title: "Notes Not Found" };
+type ArchiveSlug = keyof typeof archiveTypes;
+type ArchivePageParams = Promise<{ lang: string; type: string }>;
 
-  const lang: Locale = rawLang;
-  const dict = await getDictionary(lang);
-  const canonicalUrl = buildAbsoluteUrl(`/${lang}/catatan`);
+function isArchiveSlug(value: string): value is ArchiveSlug {
+  return value in archiveTypes;
+}
 
-  return {
-    title: `${dict.quickPost.allTitle} | BRH Insight`,
-    description: dict.quickPost.allIntro,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      title: dict.quickPost.allTitle,
-      description: dict.quickPost.allIntro,
-      url: canonicalUrl,
-      siteName: "BRH Insight",
-      type: "website",
-    },
-  };
+function getArchiveCopy(
+  slug: ArchiveSlug,
+  dict: Awaited<ReturnType<typeof getDictionary>>,
+) {
+  if (slug === "pandangan") {
+    return { title: dict.quickPost.normal, intro: dict.quickPost.normalIntro };
+  }
+  if (slug === "agenda") {
+    return { title: dict.quickPost.agenda, intro: dict.quickPost.agendaIntro };
+  }
+  return { title: dict.quickPost.quote, intro: dict.quickPost.quoteIntro };
 }
 
 function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>) {
@@ -94,9 +80,35 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
   };
 }
 
-async function CatatanFeed({ dict, lang }: { dict: Awaited<ReturnType<typeof getDictionary>>; lang: Locale }) {
-  await connection();
+export function generateStaticParams() {
+  return Object.keys(archiveTypes).map((type) => ({ type }));
+}
 
+export async function generateMetadata({ params }: { params: ArchivePageParams }): Promise<Metadata> {
+  const { lang: rawLang, type: rawType } = await params;
+  if (!hasLocale(rawLang) || !isArchiveSlug(rawType)) return {};
+
+  const dict = await getDictionary(rawLang);
+  const copy = getArchiveCopy(rawType, dict);
+  return createPageMetadata({
+    title: `${copy.title} | BRH Insight`,
+    description: copy.intro,
+    path: `/${rawLang}/catatan/${rawType}`,
+    locale: rawLang,
+    absoluteTitle: true,
+  });
+}
+
+async function ArchiveFeed({
+  lang,
+  type,
+  dict,
+}: {
+  lang: Locale;
+  type: QuickPostType;
+  dict: Awaited<ReturnType<typeof getDictionary>>;
+}) {
+  await connection();
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
   const quickPosts = await getQuickPostsByType({ includeDrafts: isAdmin, limitPerType: 60 });
@@ -107,57 +119,51 @@ async function CatatanFeed({ dict, lang }: { dict: Awaited<ReturnType<typeof get
       isAdmin={isAdmin}
       lang={lang}
       labels={getQuickPostFeedLabels(dict)}
+      visibleTypes={[type]}
       variant="full"
     />
   );
 }
 
-function CatatanFeedFallback() {
-  return (
-    <section id="notes" className="grid grid-cols-1 gap-6 lg:grid-cols-3" aria-label="Loading notes">
-      <div className="min-h-80 animate-pulse rounded-[1.75rem] border border-outline-variant/25 bg-surface-container-low" />
-      <div className="hidden min-h-80 animate-pulse rounded-[1.75rem] border border-outline-variant/25 bg-surface-container-low lg:block" />
-      <div className="hidden min-h-80 animate-pulse rounded-[1.75rem] border border-outline-variant/25 bg-surface-container-low lg:block" />
-    </section>
-  );
+function ArchiveFeedFallback() {
+  return <div className="mx-auto min-h-96 max-w-3xl animate-pulse rounded-[1.75rem] border border-outline-variant/25 bg-surface-container-low" />;
 }
 
-export default async function CatatanPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang: rawLang } = await params;
-  if (!hasLocale(rawLang)) notFound();
+export default async function QuickPostArchivePage({ params }: { params: ArchivePageParams }) {
+  const { lang: rawLang, type: rawType } = await params;
+  if (!hasLocale(rawLang) || !isArchiveSlug(rawType)) notFound();
 
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
+  const copy = getArchiveCopy(rawType, dict);
 
   return (
     <main className="min-h-screen bg-surface px-4 pb-24 pt-8 sm:px-6 sm:pt-12 md:px-12 lg:px-24 lg:pt-16">
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 border-b border-outline-variant/30 pb-6 sm:mb-10 sm:pb-8">
           <OptimisticLink
-            href={`/${lang}`}
+            href={`/${lang}/catatan`}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-outline-variant/30 bg-surface-container-lowest px-4 text-[11px] font-black uppercase tracking-wider text-on-surface-variant transition hover:border-secondary/40 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
           >
             <span className="material-symbols-outlined text-[17px]">west</span>
-            {dict.quickPost.backHome}
+            {dict.quickPost.backToAll}
           </OptimisticLink>
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(320px,0.45fr)] lg:items-end">
-            <div>
-              <span className="font-label text-[10px] font-black uppercase tracking-[0.28em] text-secondary sm:text-xs">
-                {dict.quickPost.eyebrow}
-              </span>
-              <h1 className="mt-3 max-w-3xl font-headline text-4xl font-black leading-tight tracking-tight text-primary sm:text-5xl md:text-6xl">
-                {dict.quickPost.allTitle}
-              </h1>
-            </div>
-            <p className="max-w-xl text-sm leading-relaxed text-on-surface-variant/72 sm:text-base lg:justify-self-end">
-              {dict.quickPost.allIntro}
+          <div className="mt-8 max-w-3xl">
+            <span className="font-label text-[10px] font-black uppercase tracking-[0.28em] text-secondary sm:text-xs">
+              {dict.quickPost.eyebrow}
+            </span>
+            <h1 className="mt-3 font-headline text-4xl font-black leading-tight tracking-tight text-primary sm:text-5xl md:text-6xl">
+              {copy.title}
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-on-surface-variant/72 sm:text-base">
+              {copy.intro}
             </p>
           </div>
         </header>
 
-        <Suspense fallback={<CatatanFeedFallback />}>
-          <CatatanFeed dict={dict} lang={lang} />
+        <Suspense fallback={<ArchiveFeedFallback />}>
+          <ArchiveFeed lang={lang} type={archiveTypes[rawType]} dict={dict} />
         </Suspense>
       </div>
     </main>

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 type PublishedPostOptions = {
   search?: string;
   category?: string;
+  excludeCategory?: string;
   limit?: number;
 };
 
@@ -58,6 +59,8 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
 
   if (options?.category) {
     where.category = options.category;
+  } else if (options?.excludeCategory) {
+    where.category = { not: options.excludeCategory };
   }
 
   const posts = await prisma.post.findMany({
@@ -166,7 +169,7 @@ export async function getPublishedQuickPosts(limit = 12) {
   });
 }
 
-export async function getLatestPublishedQuickPostByType(type: "NORMAL" | "QUOTE") {
+export async function getLatestPublishedQuickPostByType(type: "NORMAL" | "AGENDA" | "QUOTE") {
   "use cache";
   cacheTag("quick-posts");
   cacheLife("minutes");

@@ -1,7 +1,13 @@
 "use server";
 
 import { revalidatePath, updateTag, cacheTag, cacheLife } from "next/cache";
-import { deleteFilesFromStorage } from "@/lib/uploadthing-server";
+import {
+  deleteFilesFromStorage,
+  receiptsMatchUrls,
+  rollbackNewUploads,
+  validateUploadReceipts,
+} from "@/lib/uploadthing-server";
+import type { UploadReceipt } from "@/lib/uploadthing-types";
 import { z } from "zod";
 
 // Helper: generate slug from title
@@ -22,6 +28,7 @@ export type PostFormData = {
   thumbnail?: string;
   status: "Published" | "Draft";
   blocks: PostBlock[];
+  newUploads?: UploadReceipt[];
 };
 
 type PostBlock = {
@@ -101,12 +108,32 @@ export async function savePost(data: PostFormData) {
     return { success: false, error: "Unauthorized" };
   }
 
+  const newUploads = validateUploadReceipts(data.newUploads);
+  if (!newUploads) {
+    return { success: false, error: "Receipt upload tidak valid" };
+  }
+
+  const failWithRollback = async (error: string) => {
+    if (newUploads.length > 0) {
+      try {
+        await rollbackNewUploads(newUploads, "post-save-failed");
+      } catch (cleanupError) {
+        console.error("Error rolling back failed post upload:", cleanupError);
+      }
+    }
+    return { success: false as const, error };
+  };
+
   const parsedData = postFormSchema.safeParse(data);
   if (!parsedData.success) {
-    return { success: false, error: "Validasi data gagal: " + parsedData.error.issues[0].message };
+    return failWithRollback("Validasi data gagal: " + parsedData.error.issues[0].message);
   }
 
   const validData = parsedData.data;
+  const submittedUrls = [validData.thumbnail, ...validData.blocks.map((block) => block.url)];
+  if (!receiptsMatchUrls(newUploads, submittedUrls)) {
+    return failWithRollback("Receipt upload tidak sesuai dengan file postingan");
+  }
 
   try {
     const prisma = await getPrisma();
@@ -117,7 +144,7 @@ export async function savePost(data: PostFormData) {
       // UPDATE existing post
       // 1. Fetch old post to compare files
       const oldPost = await prisma.post.findUnique({ where: { id: validData.id } });
-      if (!oldPost) return { success: false, error: "Post tidak ditemukan" };
+      if (!oldPost) return failWithRollback("Post tidak ditemukan");
 
       const filesToDelete: string[] = [];
 
@@ -169,7 +196,11 @@ export async function savePost(data: PostFormData) {
 
       // 3. Clean up deleted files
       if (filesToDelete.length > 0) {
-        await deleteFilesFromStorage(filesToDelete);
+        try {
+          await deleteFilesFromStorage(filesToDelete);
+        } catch (cleanupError) {
+          console.error("Error cleaning replaced post files:", cleanupError);
+        }
       }
 
       revalidatePath("/admin");
@@ -204,7 +235,7 @@ export async function savePost(data: PostFormData) {
       }
 
       if (!isUnique) {
-        return { success: false, error: "Gagal membuat slug unik setelah beberapa percobaan" };
+        return failWithRollback("Gagal membuat slug unik setelah beberapa percobaan");
       }
 
       const post = await prisma.post.create({
@@ -237,7 +268,7 @@ export async function savePost(data: PostFormData) {
     }
   } catch (error: unknown) {
     console.error("Error saving post:", error);
-    return { success: false, error: "Gagal menyimpan postingan" };
+    return failWithRollback("Gagal menyimpan postingan");
   }
 }
 
@@ -265,18 +296,21 @@ export async function deletePost(id: string) {
       });
     }
 
+    await prisma.post.delete({ where: { id } });
+
     if (filesToDelete.length > 0) {
       try {
         await deleteFilesFromStorage(filesToDelete);
       } catch (fileError) {
-        console.error("Error deleting files during post deletion:", fileError);
-        // We continue deleting the post record even if file deletion fails
+        console.error("Error deleting files after post deletion:", fileError);
       }
     }
-
-    await prisma.post.delete({ where: { id } });
-    const { removePostFromKnowledgeIndex } = await import("@/lib/chatbot/indexing");
-    await removePostFromKnowledgeIndex(id);
+    try {
+      const { removePostFromKnowledgeIndex } = await import("@/lib/chatbot/indexing");
+      await removePostFromKnowledgeIndex(id);
+    } catch (indexError) {
+      console.error("Error removing deleted post from knowledge index:", indexError);
+    }
     
     revalidatePath("/admin");
     refreshHomePaths();

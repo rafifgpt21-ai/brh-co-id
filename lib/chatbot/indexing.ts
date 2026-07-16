@@ -73,10 +73,41 @@ function quickPostToKnowledgeSource(quickPost: {
   type: string;
   content: string;
   imageUrl?: string | null;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  locationLabel?: string | null;
 }, locale: Locale): KnowledgeSource {
   const content = htmlToText(quickPost.content);
   const isQuote = quickPost.type === "QUOTE";
-  const label = isQuote ? (locale === "en" ? "BRH Quote" : "Kutipan BRH") : "BRH Notes";
+  const isAgenda = quickPost.type === "AGENDA";
+  const label = isQuote
+    ? (locale === "en" ? "BRH Quote" : "Kutipan BRH")
+    : isAgenda
+      ? (locale === "en" ? "BRH Agenda" : "Agenda BRH")
+      : (locale === "en" ? "BRH Perspective" : "Pandangan BRH");
+  const agendaDetails: string[] = [];
+
+  if (isAgenda && quickPost.startsAt) {
+    const dateFormatter = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "id-ID", {
+      dateStyle: "full",
+      timeZone: "Asia/Jakarta",
+    });
+    const timeFormatter = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Jakarta",
+    });
+    agendaDetails.push(`${locale === "en" ? "Date" : "Tanggal"}: ${dateFormatter.format(quickPost.startsAt)}`);
+    agendaDetails.push(
+      `${locale === "en" ? "Time" : "Waktu"}: ${timeFormatter.format(quickPost.startsAt)}`
+      + (quickPost.endsAt ? `–${timeFormatter.format(quickPost.endsAt)}` : "")
+      + " WIB",
+    );
+    if (quickPost.locationLabel) {
+      agendaDetails.push(`${locale === "en" ? "Address" : "Alamat"}: ${quickPost.locationLabel}`);
+    }
+  }
 
   return {
     sourceType: "quick_post",
@@ -84,9 +115,13 @@ function quickPostToKnowledgeSource(quickPost: {
     locale,
     title: `${label}: ${truncateTitle(content)}`,
     url: `/${locale}/catatan#quick-post-${quickPost.id}`,
-    category: isQuote ? (locale === "en" ? "Quote" : "Kutipan") : "BRH Notes",
-    thumbnail: isQuote ? null : quickPost.imageUrl,
-    content: [label, content].join("\n"),
+    category: isQuote
+      ? (locale === "en" ? "Quote" : "Kutipan")
+      : isAgenda
+        ? (locale === "en" ? "Agenda" : "Agenda")
+        : (locale === "en" ? "Perspective" : "Pandangan"),
+    thumbnail: quickPost.type === "NORMAL" ? quickPost.imageUrl : null,
+    content: [label, content, ...agendaDetails].join("\n"),
   };
 }
 

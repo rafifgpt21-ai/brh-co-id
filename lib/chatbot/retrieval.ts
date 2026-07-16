@@ -240,7 +240,7 @@ async function keywordFallbackSearch(query: string, limit: number, locale: Local
     return [];
   }
 
-  const quickPostIntent = /\b(quick\s*post|brh\s*notes|catatan|note|notes|quote|kutipan)\b/i.test(query);
+  const quickPostIntent = /\b(quick\s*post|brh\s*notes|catatan|pandangan|perspective|agenda|event|acara|note|notes|quote|kutipan)\b/i.test(query);
   const normalizedQuery = terms.join(" ");
   const phraseCandidates = Array.from(query.matchAll(/\b[\p{L}\p{N}]+(?:\s+[\p{L}\p{N}]+){1,3}\b/gu))
     .map((match) => match[0].toLowerCase())

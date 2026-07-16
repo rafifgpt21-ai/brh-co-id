@@ -10,6 +10,7 @@ import {
   languages,
   type LanguageCode,
 } from "@/lib/brh-content";
+import { STATIC_UPLOADTHING_ASSETS } from "@/lib/uploadthing-protected-files";
 
 const expertise = [
   "Spiritualitas & Tasawuf",
@@ -146,7 +147,7 @@ export default function BiografiPage() {
             <div className="absolute -inset-4 rounded-full bg-secondary/10 blur-2xl transition-all duration-700 group-hover:bg-secondary/20" />
             <div className="relative h-64 w-64 overflow-hidden rounded-full border-8 border-white shadow-2xl md:h-80 md:w-80">
               <Image
-                src="https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p2jj5eDVxAgZRPYzqB35sNO14E8GcidS0MeDF"
+                src={STATIC_UPLOADTHING_ASSETS.biographyPortrait}
                 alt="Budi Rahman Hakim"
                 fill
                 priority

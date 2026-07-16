@@ -9,6 +9,7 @@
     "lint": "eslint",
     "seed": "npx tsx scripts/seed-admin.ts",
     "upload:material-book-covers": "npx tsx scripts/upload-material-book-covers.ts",
+    "storage:audit": "npx tsx scripts/audit-uploadthing-storage.ts",
     "seed:posts": "npx tsx scripts/seed-posts.ts",
     "seed:material-books": "npx tsx scripts/seed-material-book-posts.ts",
     "seed:quick-posts": "npx tsx scripts/seed-quick-posts.ts",
