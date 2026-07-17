@@ -337,8 +337,8 @@ export function QuickPostFeed({
 
   return (
     <section id="notes" className="w-full">
-      {visibleTypes.length > 1 && <div className="mb-5 flex items-center justify-between gap-3 lg:hidden" role="tablist" aria-label="Quickpost categories">
-        <div className="grid min-w-0 flex-1 grid-cols-3 rounded-full bg-surface-container p-1">
+      {visibleTypes.length > 1 && <div className={`${isPreview ? "mb-3" : "mb-5"} flex items-center justify-between gap-3 lg:hidden`} role="tablist" aria-label="Quickpost categories">
+        <div className="grid min-w-0 flex-1 grid-cols-3 rounded-full border border-outline-variant/30 bg-surface-container-low/55 p-1">
           {visibleTypes.map((type) => (
             <button
               key={type}
@@ -347,7 +347,7 @@ export function QuickPostFeed({
               aria-selected={activeType === type}
               aria-controls={`quick-post-column-${type.toLowerCase()}`}
               onClick={() => setActiveType(type)}
-              className={`min-w-0 truncate rounded-full px-2 py-2.5 text-[10px] font-black uppercase tracking-wide transition sm:text-xs ${activeType === type ? "bg-primary text-on-primary shadow-sm" : "text-on-surface-variant"}`}
+              className={`min-w-0 truncate rounded-full px-2 py-2.5 text-[10px] font-bold uppercase tracking-wide transition sm:text-xs ${activeType === type ? "bg-primary text-on-primary" : "text-on-surface-variant/70 hover:text-primary"}`}
             >
               {columnLabels[type]}
             </button>
@@ -355,34 +355,34 @@ export function QuickPostFeed({
         </div>
       </div>}
 
-      <div className={`grid grid-cols-1 gap-6 ${visibleTypes.length === 1 ? "mx-auto max-w-3xl" : "lg:grid-cols-3"} ${isPreview ? "lg:items-stretch" : "lg:items-start"}`}>
+      <div className={`grid grid-cols-1 ${isPreview ? "gap-3 lg:gap-5" : "gap-5"} ${visibleTypes.length === 1 ? "mx-auto max-w-3xl" : "lg:grid-cols-3"} ${isPreview ? "lg:items-stretch" : "lg:items-start"}`}>
         {visibleTypes.map((type) => {
           const posts = isPreview ? quickPosts[type].slice(0, 1) : quickPosts[type];
           return (
-            <div key={type} className={`${activeType === type || visibleTypes.length === 1 ? "flex" : "hidden"} min-w-0 flex-col gap-4 lg:flex`}>
+            <div key={type} className={`${activeType === type || visibleTypes.length === 1 ? "flex" : "hidden"} min-w-0 flex-col ${isPreview ? "gap-2.5 lg:gap-4" : "gap-4"} lg:flex`}>
               <section
                 data-quick-post-column={type}
                 id={`quick-post-column-${type.toLowerCase()}`}
                 role="tabpanel"
                 aria-label={columnLabels[type]}
-                className={`min-w-0 overflow-hidden rounded-[1.75rem] border border-outline-variant/25 bg-surface-container-lowest shadow-sm ${isPreview ? "flex flex-1 flex-col" : "block"}`}
+                className={`min-w-0 overflow-hidden border border-outline-variant/30 bg-surface-container-lowest transition duration-200 ${isPreview ? "flex flex-1 flex-col rounded-xl hover:-translate-y-px hover:border-outline-variant/60 lg:min-h-[clamp(320px,46svh,420px)]" : "block rounded-[1.75rem] shadow-sm"}`}
               >
-              <header className="flex items-center gap-3 border-b border-outline-variant/20 bg-surface-container-low px-5 py-5">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-secondary/10 text-secondary">
-                  <span className="material-symbols-outlined text-[21px]">{columnIcons[type]}</span>
+              <header className={`flex items-center border-b border-outline-variant/20 ${isPreview ? "gap-2.5 bg-surface-container-low/40 px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5" : "gap-3 bg-surface-container-low px-5 py-5"}`}>
+                <span className={isPreview ? "inline-flex text-secondary/75" : "grid h-10 w-10 place-items-center rounded-full bg-secondary/10 text-secondary"}>
+                  <span className={`material-symbols-outlined ${isPreview ? "text-[20px]" : "text-[21px]"}`}>{columnIcons[type]}</span>
                 </span>
-                <h2 className="font-headline text-xl font-black tracking-tight text-primary sm:text-2xl">
+                <h2 className={`font-headline tracking-tight text-primary ${isPreview ? "text-lg font-bold sm:text-xl lg:text-[1.35rem]" : "text-xl font-black sm:text-2xl"}`}>
                   {columnLabels[type]}
                 </h2>
               </header>
 
-              <div className={`px-5 py-2 sm:px-6 ${isPreview ? "flex flex-1 flex-col" : ""}`}>
+              <div className={`${isPreview ? "flex flex-1 flex-col px-4 py-1 sm:px-6 sm:py-2 lg:px-7 lg:py-3" : "px-5 py-2 sm:px-6"}`}>
                 {posts.length === 0 ? (
-                  <div className={`grid min-h-56 place-items-center py-10 text-center ${isPreview ? "flex-1" : ""}`}>
+                  <div className={`grid place-items-center text-center ${isPreview ? "min-h-36 flex-1 py-5 sm:min-h-44 sm:py-7" : "min-h-56 py-10"}`}>
                     <div>
-                      <span className="material-symbols-outlined text-3xl text-secondary/40">{columnIcons[type]}</span>
-                      <h3 className="mt-3 font-headline text-lg font-black text-primary">{emptyLabels[type]}</h3>
-                      <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-on-surface-variant/65">{labels.emptyDescription}</p>
+                      <span className={`material-symbols-outlined text-secondary/30 ${isPreview ? "text-2xl" : "text-3xl"}`}>{columnIcons[type]}</span>
+                      <h3 className={`font-headline text-primary ${isPreview ? "mt-2.5 text-base font-bold" : "mt-3 text-lg font-black"}`}>{emptyLabels[type]}</h3>
+                      <p className={`mx-auto mt-2 max-w-xs text-xs leading-relaxed text-on-surface-variant/55 ${isPreview ? "max-w-[17rem]" : ""}`}>{labels.emptyDescription}</p>
                     </div>
                   </div>
                 ) : posts.map((post) => {
@@ -397,7 +397,7 @@ export function QuickPostFeed({
                   const shareUrl = buildAbsoluteUrl(`/${lang}/catatan#quick-post-${post.id}`);
 
                   return (
-                    <article key={post.id} id={`quick-post-${post.id}`} className="group relative scroll-mt-24 border-b border-outline-variant/20 py-6 last:border-b-0">
+                    <article key={post.id} id={`quick-post-${post.id}`} className={`group relative scroll-mt-24 border-b border-outline-variant/20 last:border-b-0 ${isPreview ? "py-4 lg:py-5" : "py-6"}`}>
                       {isAdmin && (
                         <div className={`absolute right-0 top-4 z-10 flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest/95 p-1 shadow-lg transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 ${isPending ? "pointer-events-none opacity-60" : ""}`}>
                           <button type="button" onClick={() => startEdit(post)} className="grid h-8 w-8 place-items-center rounded-full text-secondary hover:bg-secondary/10" aria-label={labels.edit} title={labels.edit}>
@@ -410,19 +410,19 @@ export function QuickPostFeed({
                       )}
 
                       {post.imageUrl && type === "NORMAL" && (
-                        <div className="relative mb-5 aspect-16/10 overflow-hidden rounded-2xl bg-surface-container">
-                          <Image src={post.imageUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-cover transition duration-700 group-hover:scale-[1.03]" />
+                        <div className={`relative overflow-hidden bg-surface-container ${isPreview ? "mb-3 h-18 w-18 rounded-lg sm:mb-4 sm:h-24 sm:w-24 lg:h-28 lg:w-full lg:rounded-xl" : "mb-5 aspect-16/10 rounded-2xl"}`}>
+                          <Image src={post.imageUrl} alt="" fill sizes={isPreview ? "(max-width: 640px) 72px, (max-width: 1024px) 96px, 33vw" : "(max-width: 1024px) 100vw, 33vw"} className="object-cover transition duration-700 group-hover:scale-[1.03]" />
                         </div>
                       )}
 
-                      <div className="mb-4 flex flex-wrap items-center gap-2 pr-16">
+                      <div className={`${isPreview ? "mb-3" : "mb-4"} flex flex-wrap items-center gap-2 pr-16`}>
                         {post.status === "Draft" && isAdmin && <span className="rounded-full bg-surface-container px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-on-surface-variant">{labels.draftBadge}</span>}
                         {isCompleted && <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-primary">{labels.completedBadge}</span>}
                         {!isAgenda && <span className="text-[11px] font-bold text-on-surface-variant/55">{formatLocalizedDate(post.createdAt, lang)}</span>}
                       </div>
 
                       {isAgenda && post.startsAt ? (
-                        <div className="mb-5 rounded-2xl bg-secondary/8 p-4 text-primary">
+                        <div className={`${isPreview ? "mb-3 rounded-xl p-3 sm:mb-5 sm:rounded-2xl sm:p-4" : "mb-5 rounded-2xl p-4"} bg-secondary/8 text-primary`}>
                           <p className="flex items-start gap-2 text-sm font-black leading-snug">
                             <span className="material-symbols-outlined text-[19px] text-secondary">calendar_month</span>
                             <span>{formatAgendaDate(post.startsAt, lang)}</span>
@@ -432,27 +432,27 @@ export function QuickPostFeed({
                             <span>{formatAgendaTime(post.startsAt, lang)}{post.endsAt ? `–${formatAgendaTime(post.endsAt, lang)}` : ""} WIB</span>
                           </p>
                           {post.locationLabel && (
-                            <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-on-surface-variant">
+                            <p className={`mt-2 flex items-start gap-2 text-xs leading-relaxed text-on-surface-variant ${isPreview ? "line-clamp-1 sm:line-clamp-2" : ""}`}>
                               <span className="material-symbols-outlined mt-0.5 text-[18px] text-secondary">location_on</span>
                               <span>{post.locationLabel}</span>
                             </p>
                           )}
 
-                          <button type="button" onClick={() => toggleExpanded(post.id)} className="mt-4 block w-full border-t border-secondary/15 pt-4 text-left">
-                            <p className="whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base">{visibleContent}</p>
+                          <button type="button" onClick={() => toggleExpanded(post.id)} className={`${isPreview ? "mt-3 pt-3" : "mt-4 pt-4"} block w-full border-t border-secondary/15 text-left`}>
+                            <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base ${isPreview && !isExpanded ? "line-clamp-3" : ""}`}>{visibleContent}</p>
                           </button>
                         </div>
                       ) : (
                         <button type="button" onClick={() => toggleExpanded(post.id)} className="block w-full text-left">
                           {isQuote ? (
-                          <p className="text-pretty font-headline text-xl font-black italic leading-tight tracking-tight text-primary sm:text-2xl">&ldquo;{visibleContent}&rdquo;</p>
+                          <p className={`text-pretty font-headline italic tracking-[-0.02em] text-primary ${isPreview ? `text-lg font-semibold leading-[1.42] sm:text-xl ${isExpanded ? "" : "line-clamp-6"}` : "text-xl font-black leading-tight sm:text-2xl"}`}>&ldquo;{visibleContent}&rdquo;</p>
                           ) : (
-                            <p className="whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base">{visibleContent}</p>
+                            <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base ${isPreview && !isExpanded ? "line-clamp-4" : ""}`}>{visibleContent}</p>
                           )}
                         </button>
                       )}
 
-                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                      <div className={`${isPreview ? "mt-4" : "mt-5"} flex flex-wrap items-center justify-between gap-3`}>
                         {isLong ? (
                           <button type="button" onClick={() => toggleExpanded(post.id)} className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-secondary">
                             {isExpanded ? labels.showLess : labels.readMore}
@@ -475,7 +475,7 @@ export function QuickPostFeed({
               </section>
 
               {isPreview && archiveHrefs?.[type] && (
-                <OptimisticLink href={archiveHrefs[type]} className="mx-auto inline-flex h-11 items-center justify-center gap-2 rounded-full border border-primary/15 bg-surface-container-lowest px-5 text-[10px] font-black uppercase tracking-wider text-primary shadow-sm transition hover:border-primary/30 hover:bg-primary hover:text-on-primary active:scale-[0.98]">
+                <OptimisticLink href={archiveHrefs[type]} className="mx-auto inline-flex h-11 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent px-5 text-[10px] font-bold uppercase tracking-wider text-primary transition duration-200 hover:-translate-y-px hover:border-outline-variant/50 hover:text-tertiary active:translate-y-0 active:scale-[0.98]">
                   {viewAllLabels[type]}
                   <span className="material-symbols-outlined text-[18px]">east</span>
                 </OptimisticLink>

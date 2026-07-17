@@ -162,36 +162,32 @@ export default function HomeHero({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ opacity: 1 }}
-      className="relative border-b border-outline-variant/30 bg-surface px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 md:px-12 md:pb-12 md:pt-10 lg:px-24 lg:pb-16"
+      className="relative border-b border-outline-variant/20 bg-surface px-4 pb-5 pt-5 [@media(max-height:700px)]:py-3 sm:px-6 sm:pb-8 sm:pt-8 md:px-12 lg:flex lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:py-12 xl:px-16 2xl:px-24"
     >
-      <div className="mx-auto grid max-w-7xl gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.62fr)] lg:items-end lg:gap-10">
+      <div className="mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.62fr)] lg:items-center lg:gap-12 xl:gap-16 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.68fr)] 2xl:gap-20">
         <div className="min-w-0">
-          <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-black uppercase tracking-[0.2em] text-secondary sm:mb-7 sm:text-[11px] sm:tracking-[0.24em] md:mb-8">
-            <span>{home.heroLabel}</span>
-          </div>
-
-          <h1 className="max-w-5xl text-pretty font-headline text-[2.05rem] font-black leading-[1.04] tracking-tight text-primary xs:text-4xl sm:text-5xl md:text-6xl lg:text-[4.45rem]">
-            {home.heroTitleA}{" "}
-            <span className="text-tertiary">{home.heroTitleB}</span>{" "}
-            <span className="italic text-secondary">{home.heroTitleC}</span>
+          <h1 className="max-w-4xl text-pretty font-headline text-[2.05rem] font-extrabold leading-[1.09] tracking-[-0.035em] text-tertiary xs:text-4xl sm:text-5xl md:text-[3.45rem] lg:text-[4rem] xl:text-[4.15rem]">
+            <span className="block text-primary">{home.heroTitleA}</span>
+            <span className="block xl:inline">{home.heroTitleB}</span>
+            <span className="block font-bold italic text-secondary xl:ml-4 xl:inline">{home.heroTitleC}</span>
           </h1>
 
-          <div className="mt-6 max-w-2xl sm:mt-8">
+          <div className="mt-5 max-w-2xl sm:mt-7 lg:mt-10">
             <HeroSearch lang={lang} labels={search} />
           </div>
 
-          <div className="mt-6 grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:mt-7 sm:flex sm:flex-row sm:gap-3">
+          <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2.5 sm:mt-5 sm:flex sm:flex-row sm:gap-3 lg:mt-6">
             <Link
               href={`/${lang}/explore`}
-              className="tap-target inline-flex min-w-0 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98] sm:px-6"
+              className="tap-target inline-flex min-w-0 items-center justify-center gap-2 rounded-full bg-primary px-4 text-[13px] font-bold text-on-primary shadow-[0_6px_16px_rgba(164,31,19,0.12)] transition duration-200 hover:-translate-y-px hover:bg-tertiary active:translate-y-0 active:scale-[0.98] sm:px-6 sm:text-sm"
             >
               <span className="material-symbols-outlined text-[19px]">travel_explore</span>
               <span className="truncate">{home.mobileExplore}</span>
             </Link>
             <button
               type="button"
-              onClick={scrollToLatest('#arsip')}
-              className="tap-target inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-outline-variant/60 bg-surface px-4 text-sm font-black text-primary transition hover:border-secondary hover:bg-surface-container-low active:scale-[0.98] sm:px-6"
+              onClick={scrollToLatest('#notes')}
+              className="tap-target inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent px-3 text-[13px] font-bold text-tertiary transition duration-200 hover:-translate-y-px hover:border-outline-variant/55 hover:text-primary active:translate-y-0 active:scale-[0.98] sm:px-5 sm:text-sm"
             >
               <span className="material-symbols-outlined text-[19px]">south</span>
               <span className="hidden sm:inline">{home.archiveTitleA} {home.archiveTitleB}</span>
@@ -201,13 +197,13 @@ export default function HomeHero({
         </div>
 
         <aside
-          className="border-l-0 border-outline-variant/40 pt-1 sm:pt-2 lg:border-l lg:pl-10"
+          className="hidden border-l border-outline-variant/25 pl-10 xl:pl-12 lg:block"
           onMouseEnter={() => setIsPanelPaused(true)}
           onMouseLeave={() => setIsPanelPaused(false)}
           onFocus={() => setIsPanelPaused(true)}
           onBlur={() => setIsPanelPaused(false)}
         >
-          <div className="flex h-[320px] flex-col overflow-hidden rounded-lg border border-outline-variant/35 bg-surface-container-lowest/70 p-4 shadow-[0_18px_55px_rgba(41,47,54,0.06)] sm:h-[320px] sm:p-5 md:h-[340px] lg:h-[360px]">
+          <div className="flex h-[292px] flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low/45 p-4 sm:h-[300px] sm:p-5 md:h-[312px] lg:h-[324px]">
             {panelDisplay && heroPanelItem ? (
               <>
                 <div className="relative min-h-0 flex-1">
@@ -296,7 +292,7 @@ export default function HomeHero({
                             {panelDisplay.tone === "quote" ? (
                               <figure className="flex min-h-0 flex-1 flex-col justify-center">
                                 <blockquote
-                                  className="line-clamp-6 text-pretty font-headline font-black italic leading-[1.16] text-tertiary transition group-hover:text-primary"
+                                  className="line-clamp-6 text-pretty font-headline font-semibold italic leading-[1.34] tracking-[-0.015em] text-tertiary transition group-hover:text-primary"
                                   style={{ fontSize: getQuoteFontSize(panelDisplay.headline) }}
                                 >
                                   {panelDisplay.headline}
@@ -306,7 +302,7 @@ export default function HomeHero({
                                 </figcaption>
                               </figure>
                             ) : (
-                              <p className="line-clamp-5 text-pretty font-body text-lg font-semibold leading-relaxed text-on-surface transition group-hover:text-primary sm:text-xl">
+                              <p className="line-clamp-5 text-pretty font-body text-base font-medium leading-relaxed text-on-surface transition group-hover:text-primary sm:text-lg">
                                 {panelDisplay.headline}
                               </p>
                             )}

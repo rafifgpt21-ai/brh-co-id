@@ -196,8 +196,8 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
   const quickPostFeedLabels = getQuickPostFeedLabels(dict);
 
   return (
-    <section className="w-full px-4 py-7 sm:px-6 sm:py-9 md:px-12 lg:px-24 lg:py-12">
-      <div className="mx-auto max-w-7xl">
+    <section className="flex w-full px-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-3 sm:px-6 sm:pb-8 sm:pt-5 md:px-12 lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:py-10 xl:px-16 2xl:px-24">
+      <div className="mx-auto w-full max-w-[1600px]">
         <QuickPostFeed
           quickPosts={quickPosts}
           isAdmin={isAdmin}
@@ -366,7 +366,13 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
 function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
   return (
     <>
-      <Suspense fallback={<section className="w-full px-4 py-8 sm:px-6 sm:py-12 md:px-12 lg:px-24 lg:py-20"><SectionSkeleton variant="compact" /></section>}>
+      <Suspense fallback={
+        <section className="flex w-full px-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-3 sm:px-6 sm:pb-8 sm:pt-5 md:px-12 lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:py-10 xl:px-16 2xl:px-24">
+          <div className="mx-auto w-full max-w-[1600px]">
+            <SectionSkeleton variant="compact" />
+          </div>
+        </section>
+      }>
         <HomeQuickPostsSection lang={lang} dict={dict} />
       </Suspense>
       <Suspense fallback={<section className="w-full border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-20"><SectionSkeleton variant="cards" /></section>}>

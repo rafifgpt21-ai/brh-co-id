@@ -52,7 +52,7 @@ export const dictionary = {
   },
   quickPost: {
     composeTitle: "Post Baru",
-    normal: "Pandangan BRH",
+    normal: "Perspektif BRH",
     agenda: "Agenda BRH",
     quote: "Kutipan BRH",
     placeholderNormal: "Tulis pandangan singkat untuk beranda...",
@@ -68,7 +68,7 @@ export const dictionary = {
     success: "Postingan tersimpan.",
     saveError: "Gagal menyimpan postingan",
     eyebrow: "Ruang BRH",
-    title: "Pandangan BRH",
+    title: "Perspektif BRH",
     emptyTitle: "Belum Ada Postingan",
     emptyNormal: "Belum Ada Pandangan",
     emptyAgenda: "Belum Ada Agenda Mendatang",
