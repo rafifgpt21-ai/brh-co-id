@@ -31,6 +31,7 @@ async function AdminDashboardContent() {
     slug: p.slug,
     category: p.category,
     status: p.status,
+    publishedAt: p.publishedAt,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   }));

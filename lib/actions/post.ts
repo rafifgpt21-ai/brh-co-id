@@ -27,6 +27,7 @@ export type PostFormData = {
   category: string;
   thumbnail?: string;
   status: "Published" | "Draft";
+  publishedAt: string;
   blocks: PostBlock[];
   newUploads?: UploadReceipt[];
 };
@@ -64,12 +65,18 @@ const postFormSchema = z.object({
   category: z.string().min(1, "Kategori tidak boleh kosong"),
   thumbnail: z.string().optional(),
   status: z.enum(["Published", "Draft"]),
+  publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal terbit tidak valid"),
   blocks: z.array(blockSchema),
 });
 
 const HOME_SITE_SETTING_KEY = "home";
 
-const homeFeaturedPostIdsSchema = z.array(z.string().min(1)).max(5, "Maksimal 5 karya untuk beranda");
+const homeFeaturedPostIdsSchema = z.array(z.string().min(1)).length(5, "Pilih tepat 5 karya untuk Highlight");
+
+function parsePublicationDate(value: string) {
+  const date = new Date(`${value}T12:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 async function getPrisma() {
   const { prisma } = await import("@/lib/prisma");
@@ -139,6 +146,8 @@ export async function savePost(data: PostFormData) {
     const prisma = await getPrisma();
     const slug = generateSlug(validData.title);
     const slugEn = validData.titleEn?.trim() ? generateSlug(validData.titleEn) : null;
+    const publishedAt = parsePublicationDate(validData.publishedAt);
+    if (!publishedAt) return failWithRollback("Tanggal terbit tidak valid");
 
     if (validData.id) {
       // UPDATE existing post
@@ -179,6 +188,7 @@ export async function savePost(data: PostFormData) {
           category: validData.category,
           thumbnail: validData.thumbnail || null,
           status: validData.status,
+          publishedAt,
           blocks: validData.blocks.map((b) => ({
             id: b.id,
             type: b.type,
@@ -247,6 +257,7 @@ export async function savePost(data: PostFormData) {
           category: validData.category,
           thumbnail: validData.thumbnail || null,
           status: validData.status,
+          publishedAt,
           blocks: validData.blocks.map((b) => ({
             id: b.id,
             type: b.type,
@@ -393,7 +404,25 @@ export async function saveHomeFeaturedPostIds(postIds: string[]) {
 }
 
 export async function resetHomeFeaturedPostIds() {
-  return saveHomeFeaturedPostIds([]);
+  const session = await getSession();
+  if (!isAdminSession(session)) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    const prisma = await getPrisma();
+    await prisma.siteSetting.upsert({
+      where: { key: HOME_SITE_SETTING_KEY },
+      create: { key: HOME_SITE_SETTING_KEY, homeFeaturedPostIds: [] },
+      update: { homeFeaturedPostIds: [] },
+    });
+    revalidatePath("/admin");
+    refreshHomePaths();
+    return { success: true, homeFeaturedPostIds: [] };
+  } catch (error) {
+    console.error("Error resetting home featured posts setting:", error);
+    return { success: false, error: "Gagal mereset pilihan Highlight" };
+  }
 }
 
 export async function getPosts(options?: {
@@ -439,10 +468,12 @@ async function getPostsInternal(options?: {
       where.category = options.category;
     }
 
-    return await prisma.post.findMany({
+    const posts = await prisma.post.findMany({
       where,
-      orderBy: { createdAt: "desc" },
     });
+    return posts.sort((a, b) =>
+      (b.publishedAt || b.createdAt).getTime() - (a.publishedAt || a.createdAt).getTime()
+    );
   } catch (error: unknown) {
     console.error("Error fetching posts:", error);
     return [];

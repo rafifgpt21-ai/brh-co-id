@@ -82,7 +82,7 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
         
         <div className="flex items-center justify-between mt-auto pt-2 md:pt-4 border-t border-outline-variant/10">
           <p className="text-on-surface-variant/60 text-[9px] md:text-xs font-semibold tracking-tighter">
-            {formatLocalizedDate(post.createdAt, lang, {
+            {formatLocalizedDate(post.publishedAt || post.createdAt, lang, {
               day: 'numeric',
               month: 'short',
               year: 'numeric',

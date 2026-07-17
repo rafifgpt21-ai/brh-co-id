@@ -44,6 +44,7 @@ async function EditPostContent({ params }: { params: Promise<{ id: string }> }) 
         category: post.category,
         status: normalizePostStatus(post.status),
         thumbnail: post.thumbnail,
+        publishedAt: post.publishedAt,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
         blocks: post.blocks.map((b) => ({

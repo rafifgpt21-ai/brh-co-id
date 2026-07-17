@@ -24,6 +24,12 @@ function stripHtml(value: string | null | undefined) {
   return (value || "").replace(/<[^>]*>/g, " ");
 }
 
+function sortByPublicationDate<T extends { publishedAt: Date | null; createdAt: Date }>(posts: T[]) {
+  return posts.sort((a, b) =>
+    (b.publishedAt || b.createdAt).getTime() - (a.publishedAt || a.createdAt).getTime()
+  );
+}
+
 function postMatchesSearch(
   post: Awaited<ReturnType<typeof prisma.post.findMany>>[number],
   search: string,
@@ -68,9 +74,9 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
     orderBy: { createdAt: "desc" },
   });
 
-  const filteredPosts = options?.search
+  const filteredPosts = sortByPublicationDate(options?.search
     ? posts.filter((post) => postMatchesSearch(post, options.search || ""))
-    : posts;
+    : posts);
 
   return typeof options?.limit === "number"
     ? filteredPosts.slice(0, options.limit)
@@ -101,23 +107,7 @@ export async function getHomeFeaturedPosts(limit = 5) {
   const orderedManualPosts = manualPostIds
     .map((id) => manualPostById.get(id))
     .filter((post): post is NonNullable<typeof post> => Boolean(post));
-  const selectedPostIds = new Set(orderedManualPosts.map((post) => post.id));
-  const remainingLimit = Math.max(limit - orderedManualPosts.length, 0);
-
-  if (remainingLimit === 0) {
-    return orderedManualPosts;
-  }
-
-  const fallbackPosts = await prisma.post.findMany({
-    where: {
-      status: "Published",
-      ...(selectedPostIds.size > 0 ? { id: { notIn: Array.from(selectedPostIds) } } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: remainingLimit,
-  });
-
-  return [...orderedManualPosts, ...fallbackPosts];
+  return orderedManualPosts;
 }
 
 export async function getPublishedPostBySlug(slug: string) {
@@ -146,15 +136,14 @@ export async function getRelatedPublishedPosts({
   cacheTag("posts");
   cacheLife("minutes");
 
-  return prisma.post.findMany({
+  const posts = await prisma.post.findMany({
     where: {
       status: "Published",
       category,
       id: { not: excludeId },
     },
-    orderBy: { createdAt: "desc" },
-    take: limit,
   });
+  return sortByPublicationDate(posts).slice(0, limit);
 }
 
 export async function getPublishedQuickPosts(limit = 12) {

@@ -34,6 +34,7 @@ type PostEditorInitialData = {
   thumbnail?: string | null;
   blocks?: EditorBlock[];
   timestamp?: number;
+  publishedAt?: Date | string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
@@ -41,6 +42,12 @@ type PostEditorInitialData = {
 type UploadEndpoint = "imageUploader" | "pdfUploader";
 
 const CATEGORIES = ['Buku', 'Jurnal', 'Artikel', 'Opini'];
+
+function toDateInputValue(value?: Date | string | null) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return new Date().toISOString().slice(0, 10);
+  return date.toISOString().slice(0, 10);
+}
 
 const AutoResizingTextarea = ({ 
   value, 
@@ -84,6 +91,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
   const [title, setTitle] = useState(initialData?.title || '');
   const [titleEn, setTitleEn] = useState(initialData?.titleEn || '');
   const [category, setCategory] = useState(initialData?.category || 'Buku');
+  const [publishedAt, setPublishedAt] = useState(() =>
+    toDateInputValue(initialData?.publishedAt || initialData?.createdAt)
+  );
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail || '');
   const [blocks, setBlocks] = useState<EditorBlock[]>(() =>
     initialData?.blocks ? JSON.parse(JSON.stringify(initialData.blocks)) : []
@@ -140,6 +150,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
     title !== (initialData?.title || '') ||
     titleEn !== (initialData?.titleEn || '') ||
     category !== (initialData?.category || 'Buku') ||
+    publishedAt !== toDateInputValue(initialData?.publishedAt || initialData?.createdAt) ||
     thumbnail !== (initialData?.thumbnail || '') ||
     Object.keys(stagedFiles).length > 0 ||
     JSON.stringify(blocks.map(b => ({ ...b, id: b.id }))) !== JSON.stringify((initialData?.blocks || []).map((b) => ({ ...b, id: b.id })));
@@ -187,6 +198,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         const parsed = JSON.parse(saved);
         const hasEdits = parsed.title !== (initialData?.title || '') ||
                         parsed.category !== (initialData?.category || 'Buku') ||
+                        parsed.publishedAt !== toDateInputValue(initialData?.publishedAt || initialData?.createdAt) ||
                         JSON.stringify(parsed.blocks) !== JSON.stringify(initialData?.blocks || []);
         if (hasEdits) {
           setAutosavedData(parsed);
@@ -211,6 +223,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         title,
         titleEn,
         category,
+        publishedAt,
         blocks: blocks.map(b => ({
           id: b.id,
           type: b.type,
@@ -229,7 +242,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [title, titleEn, category, blocks, isDirty, initialData?.id]);
+  }, [title, titleEn, category, publishedAt, blocks, isDirty, initialData?.id]);
 
   // 4. Keyboard Shortcuts handler (Ctrl+S for save, Ctrl+P for preview toggle)
   useEffect(() => {
@@ -245,7 +258,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [title, titleEn, category, blocks, initialData]);
+  }, [title, titleEn, category, publishedAt, blocks, initialData]);
 
   const handleBack = () => {
     if (isDirty) {
@@ -519,6 +532,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         title,
         titleEn,
         category,
+        publishedAt,
         thumbnail: finalThumbnail,
         status,
         blocks: finalBlocks.map((b) => ({
@@ -589,6 +603,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
       setTitle(autosavedData.title || '');
       setTitleEn(autosavedData.titleEn || '');
       setCategory(autosavedData.category || 'Buku');
+      setPublishedAt(autosavedData.publishedAt
+        ? toDateInputValue(autosavedData.publishedAt)
+        : toDateInputValue(initialData?.publishedAt || initialData?.createdAt));
       setBlocks(autosavedData.blocks || []);
     }
     setShowRecoveryBanner(false);
@@ -965,11 +982,36 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
 
               {/* Thumbnail */}
               <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label htmlFor="mobile-published-at" className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase">
+                    Tanggal Terbit
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setPublishedAt(toDateInputValue())}
+                    className="text-[9px] font-black uppercase tracking-wider text-secondary hover:text-primary"
+                  >
+                    Hari ini
+                  </button>
+                </div>
+                <input
+                  id="mobile-published-at"
+                  type="date"
+                  value={publishedAt}
+                  onChange={(event) => setPublishedAt(event.target.value)}
+                  required
+                  className="w-full rounded-2xl border border-outline-variant/20 bg-surface-container/60 px-4 py-3 text-sm font-bold text-primary outline-none transition focus:border-secondary/50"
+                />
+                <p className="mt-1.5 text-[9px] leading-relaxed text-on-surface-variant/55">Tanggal ini tampil ke publik dan menentukan urutan Latest Update.</p>
+              </div>
+
+              {/* Thumbnail */}
+              <div>
                 <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Thumbnail</label>
                 <div className="flex items-center gap-4">
                   <div className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0 transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 scale-105' : 'border-outline-variant/20 bg-surface-container/50'}`}>
                     {previews.thumbnail || thumbnail
-                      ? <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                      ? <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-contain p-1" />
                       : <span className="material-symbols-outlined text-secondary/30 text-2xl">add_photo_alternate</span>
                     }
                   </div>
@@ -1102,7 +1144,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                 {title || 'Judul Postingan Baru'}
               </h1>
               <div className="flex justify-center items-center gap-4 text-on-surface-variant/70 text-xs font-bold uppercase tracking-wider">
-                <span>{formatDate(initialData?.createdAt || new Date())}</span>
+                <span>{formatDate(`${publishedAt}T12:00:00.000Z`)}</span>
                 <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/40" />
                 <span>{readTime} Menit Baca</span>
               </div>
@@ -1110,7 +1152,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
 
             {thumbnail && (
               <div className="rounded-2xl overflow-hidden border border-outline-variant/15 bg-surface-container-low mb-12 shadow-xs select-none">
-                <img src={previews.thumbnail || thumbnail} alt={title} className="w-full h-auto object-cover max-h-[400px]" />
+                <div className="relative mx-auto aspect-square w-full max-w-[400px] bg-surface-container">
+                  <img src={previews.thumbnail || thumbnail} alt={title} className="h-full w-full object-contain p-2" />
+                </div>
               </div>
             )}
 
@@ -1432,6 +1476,31 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                   </div>
                 </div>
 
+                {/* Publication Date */}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between gap-3">
+                    <label htmlFor="published-at" className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase">
+                      Tanggal Terbit
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setPublishedAt(toDateInputValue())}
+                      className="text-[8px] font-black uppercase tracking-wider text-secondary transition hover:text-primary"
+                    >
+                      Hari ini
+                    </button>
+                  </div>
+                  <input
+                    id="published-at"
+                    type="date"
+                    value={publishedAt}
+                    onChange={(event) => setPublishedAt(event.target.value)}
+                    required
+                    className="w-full rounded-xl border border-outline-variant/20 bg-surface-container/60 px-3.5 py-2.5 text-sm font-bold text-primary outline-none transition focus:border-secondary/50"
+                  />
+                  <p className="mt-1.5 text-[9px] leading-relaxed text-on-surface-variant/55">Dipakai sebagai tanggal publik dan urutan Latest Update.</p>
+                </div>
+
                 {/* Thumbnail */}
                 <div>
                   <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">
@@ -1440,7 +1509,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                   <div className="flex gap-3 items-start">
                     <div className={`shrink-0 w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 bg-surface-container-low' : 'border-outline-variant/20 bg-surface-container/50'}`}>
                       {previews.thumbnail || thumbnail ? (
-                        <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-cover" />
+                        <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-contain p-1" />
                       ) : (
                         <span className="material-symbols-outlined text-secondary/30 text-xl">add_photo_alternate</span>
                       )}

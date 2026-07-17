@@ -26,6 +26,7 @@ type PublicPost = {
   slug: string;
   category: string;
   thumbnail?: string | null;
+  publishedAt?: Date | string | null;
   createdAt: Date | string;
   blocks: PostBlock[];
 };
@@ -155,7 +156,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             >
               <div className="flex items-center gap-2.5">
                 <span className="material-symbols-outlined text-[18px] opacity-70">calendar_today</span>
-                {formatDate(post.createdAt)}
+                {formatDate(post.publishedAt || post.createdAt)}
               </div>
               <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/30" />
               <div className="flex items-center gap-2.5">

@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       url: canonicalUrl,
       siteName: "BRH Insight",
       type: "article",
-      publishedTime: new Date(post.createdAt).toISOString(),
+      publishedTime: new Date(post.publishedAt || post.createdAt).toISOString(),
       images: post.thumbnail ? [{ url: post.thumbnail, alt: localizedPost.title }] : [],
     },
   };

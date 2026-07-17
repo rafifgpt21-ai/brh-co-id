@@ -106,6 +106,43 @@ summary {
   min-width: 44px;
 }
 
+.hero-ambient-layer {
+  contain: paint;
+  overflow: hidden;
+}
+
+.hero-ambient-static {
+  background: radial-gradient(
+    ellipse 52% 48% at 88% 8%,
+    color-mix(in srgb, var(--color-primary) 11%, transparent),
+    transparent 70%
+  );
+}
+
+.hero-ambient-motion {
+  background: radial-gradient(
+    ellipse 48% 44% at 12% 65%,
+    color-mix(in srgb, var(--color-secondary) 15%, transparent),
+    transparent 67%
+  );
+  opacity: 0.86;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@keyframes hero-ambient-drift {
+  to {
+    opacity: 1;
+    transform: translate3d(2.5%, -1.5%, 0) scale(1.035);
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .hero-ambient-motion {
+    animation: hero-ambient-drift 28s ease-in-out infinite alternate;
+    will-change: transform, opacity;
+  }
+}
+
 .surface-lift {
   box-shadow: var(--shadow-soft);
 }

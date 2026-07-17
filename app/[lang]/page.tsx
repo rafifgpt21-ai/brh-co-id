@@ -60,6 +60,7 @@ type LocalizedHomePost = {
   slug: string;
   category: string;
   thumbnail?: string | null;
+  publishedAt?: Date | string | null;
   createdAt: Date | string;
   blocks?: Array<{
     type: string;
@@ -177,7 +178,7 @@ async function getHeroPanelItems(lang: Locale, dict: Awaited<ReturnType<typeof g
       href: `/${lang}/post/${localizedPost.slug}`,
       category: getCategoryLabel(localizedPost.category, dict.explore.categories),
       thumbnail: localizedPost.thumbnail,
-      createdAt: localizedPost.createdAt,
+      createdAt: localizedPost.publishedAt || localizedPost.createdAt,
     });
   }
 
@@ -215,98 +216,129 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
   );
 }
 
-async function HomeArchiveSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
-  const latestPosts = (await getHomeFeaturedPosts(5)).map((post) => localizePost(post, lang) as LocalizedHomePost);
+function PublicationMeta({ post, lang, dict }: { post: LocalizedHomePost; lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 font-label text-[9px] font-black uppercase tracking-[0.15em] text-secondary sm:text-[10px]">
+      <span>{getCategoryLabel(post.category, dict.explore.categories)}</span>
+      <span className="h-px w-5 bg-outline-variant" />
+      <span className="tracking-normal text-on-surface-variant/55">
+        {formatLocalizedDate(post.publishedAt || post.createdAt, lang)}
+      </span>
+    </div>
+  );
+}
+
+function ArchiveSectionHeader({
+  eyebrow,
+  titleA,
+  titleB,
+  lang,
+  dict,
+}: {
+  eyebrow: string;
+  titleA: string;
+  titleB: string;
+  lang: Locale;
+  dict: Awaited<ReturnType<typeof getDictionary>>;
+}) {
+  return (
+    <ScrollReveal className="mb-6 flex flex-col gap-4 border-b border-outline-variant/35 pb-5 sm:mb-8 sm:pb-7 md:flex-row md:items-end md:justify-between">
+      <div>
+        <span className="font-label text-[10px] font-black uppercase tracking-[0.24em] text-secondary sm:text-xs sm:tracking-[0.28em]">{eyebrow}</span>
+        <h2 className="mt-2 max-w-3xl font-headline text-3xl font-black leading-tight tracking-tight text-primary sm:mt-3 md:text-5xl">
+          {titleA} <span className="text-tertiary">{titleB}</span>
+        </h2>
+      </div>
+      <OptimisticLink href={`/${lang}/explore`} className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98]">
+        {dict.home.viewAll}
+        <span className="material-symbols-outlined text-[19px]">grid_view</span>
+      </OptimisticLink>
+    </ScrollReveal>
+  );
+}
+
+function EmptyArchive({ dict }: { dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  return (
+    <ScrollReveal>
+      <div className="border-y border-dashed border-outline-variant/40 py-12 text-center sm:py-16">
+        <span className="material-symbols-outlined text-4xl text-secondary/35 sm:text-5xl">inventory_2</span>
+        <h3 className="mt-4 text-xl font-black tracking-tight text-primary sm:text-2xl">{dict.home.emptyTitle}</h3>
+        <p className="mx-auto mt-2 max-w-sm text-on-surface-variant/65">{dict.home.emptyDescription}</p>
+      </div>
+    </ScrollReveal>
+  );
+}
+
+async function HomeHighlightSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  const highlightedPosts = (await getHomeFeaturedPosts(5)).map((post) => localizePost(post, lang) as LocalizedHomePost);
 
   return (
-    <section id="arsip" className="w-full border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <ScrollReveal className="mb-6 flex flex-col gap-4 border-b border-outline-variant/35 pb-6 sm:mb-8 sm:gap-5 sm:pb-8 md:flex-row md:items-end md:justify-between">
-            <div>
-              <span className="font-label text-[10px] font-black uppercase tracking-[0.24em] text-secondary sm:text-xs sm:tracking-[0.28em]">
-                {dict.home.archiveEyebrow}
-              </span>
-              <h2 className="mt-3 max-w-3xl font-headline text-3xl font-black leading-tight tracking-tight text-primary sm:mt-4 md:text-5xl">
-                {dict.home.archiveTitleA} <span className="text-tertiary">{dict.home.archiveTitleB}</span>
-              </h2>
-            </div>
-            <OptimisticLink
-              href={`/${lang}/explore`}
-              className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98]"
-            >
-              {dict.home.viewAll}
-              <span className="material-symbols-outlined text-[19px]">grid_view</span>
-            </OptimisticLink>
-          </ScrollReveal>
+    <section id="highlight" className="flex min-h-[100svh] w-full items-center border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 md:px-12 lg:min-h-[calc(100svh-3.5rem)] lg:px-16 lg:py-12 xl:px-24">
+      <div className="mx-auto w-full max-w-[1600px]">
+        <ArchiveSectionHeader eyebrow={dict.home.highlightEyebrow} titleA={dict.home.highlightTitleA} titleB={dict.home.highlightTitleB} lang={lang} dict={dict} />
+        {highlightedPosts.length > 0 ? (
+          <div className="-mx-4 grid snap-x snap-mandatory auto-cols-[82vw] grid-flow-col gap-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:auto-cols-[44vw] sm:px-6 lg:mx-0 lg:grid-flow-row lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 xl:gap-5">
+            {highlightedPosts.map((post, index) => (
+              <ScrollReveal key={post.id} delay={index * 0.06} className="snap-start">
+                <OptimisticLink href={`/${lang}/post/${post.slug}`} className="surface-lift-hover group flex h-full flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface">
+                  <div className="relative aspect-square w-full overflow-hidden bg-surface-container">
+                    {post.thumbnail ? (
+                      <Image src={post.thumbnail} alt={post.title} fill sizes="(max-width: 640px) 82vw, (max-width: 1024px) 44vw, 20vw" className="object-contain p-2 transition duration-700 group-hover:scale-[1.03]" priority={index < 2} />
+                    ) : (
+                      <div className="flex h-full items-center justify-center"><span className="material-symbols-outlined text-5xl text-secondary/30">menu_book</span></div>
+                    )}
+                    <span className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-black text-on-primary shadow-sm">{index + 1}</span>
+                  </div>
+                  <div className="flex flex-1 flex-col p-4 xl:p-5">
+                    <PublicationMeta post={post} lang={lang} dict={dict} />
+                    <h3 className="mt-3 line-clamp-3 text-pretty font-headline text-lg font-black leading-tight text-primary transition group-hover:text-tertiary xl:text-xl">{post.title}</h3>
+                    <span className="mt-auto flex items-center gap-2 pt-5 text-[10px] font-black uppercase tracking-widest text-secondary">{dict.home.readMore}<span className="material-symbols-outlined text-[16px] transition group-hover:translate-x-1">east</span></span>
+                  </div>
+                </OptimisticLink>
+              </ScrollReveal>
+            ))}
+          </div>
+        ) : <EmptyArchive dict={dict} />}
+      </div>
+    </section>
+  );
+}
 
-          {latestPosts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
-              {latestPosts.map((post, index) => {
-                const snippet = getPostSnippet(post);
-                const isLead = index === 0;
+async function HomeLatestUpdatesSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
+  const latestPosts = (await getPublishedPosts({ limit: 8 })).map((post) => localizePost(post, lang) as LocalizedHomePost);
 
-                return (
-                  <ScrollReveal key={post.id} delay={index * 0.08} className={isLead ? "lg:col-span-2 lg:row-span-2" : ""}>
-                    <OptimisticLink
-                      href={`/${lang}/post/${post.slug}`}
-                      className={`surface-lift-hover group flex h-full overflow-hidden rounded-lg border border-outline-variant/30 bg-surface ${
-                        isLead ? "flex-col" : "flex-col"
-                      }`}
-                    >
-                      <div className="relative order-2 aspect-square overflow-hidden bg-surface-container md:order-1">
-                        {post.thumbnail ? (
-                          <Image
-                            src={post.thumbnail}
-                            alt={post.title}
-                            fill
-                            sizes={isLead ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 1024px) 100vw, 25vw"}
-                            className="object-contain p-1 transition duration-700 group-hover:scale-[1.03]"
-                            priority={index < 2}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <span className="material-symbols-outlined text-5xl text-secondary/35">menu_book</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className={`${isLead ? "p-4 sm:p-5 md:p-8" : "p-4 sm:p-5"} order-1 flex flex-1 flex-col md:order-2`}>
-                        <div className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-secondary sm:mb-4 sm:text-[11px] sm:tracking-[0.18em]">
-                          <span>{getCategoryLabel(post.category, dict.explore.categories)}</span>
-                          <span className="h-px w-6 bg-outline-variant" />
-                          <span className="tracking-normal text-on-surface-variant/55">
-                            {formatLocalizedDate(post.createdAt, lang)}
-                          </span>
-                        </div>
-                        <h3 className={`${isLead ? "text-2xl md:text-4xl" : "text-xl"} text-pretty font-headline font-black leading-tight text-primary transition group-hover:text-tertiary`}>
-                          {post.title}
-                        </h3>
-                        {snippet && (
-                          <p className={`${isLead ? "text-sm sm:text-base" : "text-sm"} mt-3 line-clamp-3 leading-relaxed text-on-surface-variant/75 sm:mt-4`}>
-                            {snippet}
-                          </p>
-                        )}
-                        <span className="mt-5 inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-secondary sm:mt-6 sm:text-xs">
-                          {dict.home.readMore}
-                          <span className="material-symbols-outlined text-[17px] transition group-hover:translate-x-1">east</span>
-                        </span>
-                      </div>
-                    </OptimisticLink>
-                  </ScrollReveal>
-                );
-              })}
-            </div>
-          ) : (
-            <ScrollReveal>
-              <div className="border-y border-dashed border-outline-variant/40 py-12 text-center sm:py-20">
-                <span className="material-symbols-outlined text-4xl text-secondary/35 sm:text-5xl">inventory_2</span>
-                <h3 className="mt-4 text-xl font-black tracking-tight text-primary sm:mt-5 sm:text-2xl">{dict.home.emptyTitle}</h3>
-                <p className="mx-auto mt-2 max-w-sm text-on-surface-variant/65">{dict.home.emptyDescription}</p>
-              </div>
-            </ScrollReveal>
-          )}
-        </div>
-      </section>
+  return (
+    <section id="arsip" className="flex min-h-[100svh] w-full items-center bg-surface px-4 py-10 sm:px-6 md:px-12 lg:min-h-[calc(100svh-3.5rem)] lg:px-16 lg:py-12 xl:px-24">
+      <div className="mx-auto w-full max-w-[1600px]">
+        <ArchiveSectionHeader eyebrow={dict.home.latestEyebrow} titleA={dict.home.latestTitleA} titleB={dict.home.latestTitleB} lang={lang} dict={dict} />
+        {latestPosts.length > 0 ? (
+          <div className="-mx-4 grid snap-x snap-mandatory auto-cols-[88vw] grid-flow-col grid-rows-2 gap-3 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:auto-cols-[58vw] sm:px-6 lg:mx-0 lg:grid-flow-row lg:grid-cols-4 lg:grid-rows-none lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0">
+            {latestPosts.map((post, index) => {
+              const snippet = getPostSnippet(post);
+              return (
+                <ScrollReveal key={post.id} delay={(index % 4) * 0.04} className="snap-start">
+                  <OptimisticLink href={`/${lang}/post/${post.slug}`} className="surface-lift-hover group grid h-full min-h-36 grid-cols-[8.5rem_minmax(0,1fr)] overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest sm:grid-cols-[9.5rem_minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[42%_minmax(0,1fr)]">
+                    <div className="relative aspect-square w-full self-start overflow-hidden bg-surface-container">
+                      {post.thumbnail ? (
+                        <Image src={post.thumbnail} alt={post.title} fill sizes="(max-width: 640px) 136px, (max-width: 1024px) 152px, 12vw" className="object-contain p-1.5 transition duration-700 group-hover:scale-[1.03]" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center"><span className="material-symbols-outlined text-3xl text-secondary/30">menu_book</span></div>
+                      )}
+                    </div>
+                    <div className="flex min-w-0 flex-col p-3.5 xl:p-4">
+                      <PublicationMeta post={post} lang={lang} dict={dict} />
+                      <h3 className="mt-2 line-clamp-2 text-pretty font-headline text-base font-black leading-tight text-primary transition group-hover:text-tertiary xl:text-lg">{post.title}</h3>
+                      {snippet && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-on-surface-variant/65">{snippet}</p>}
+                      <span className="mt-auto flex items-center gap-1.5 pt-2 text-[9px] font-black uppercase tracking-widest text-secondary">{dict.home.readMore}<span className="material-symbols-outlined text-[15px] transition group-hover:translate-x-1">east</span></span>
+                    </div>
+                  </OptimisticLink>
+                </ScrollReveal>
+              );
+            })}
+          </div>
+        ) : <EmptyArchive dict={dict} />}
+      </div>
+    </section>
   );
 }
 
@@ -375,8 +407,11 @@ function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<Retur
       }>
         <HomeQuickPostsSection lang={lang} dict={dict} />
       </Suspense>
-      <Suspense fallback={<section className="w-full border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-20"><SectionSkeleton variant="cards" /></section>}>
-        <HomeArchiveSection lang={lang} dict={dict} />
+      <Suspense fallback={<section className="flex min-h-[100svh] w-full items-center border-y border-outline-variant/25 bg-surface-container-lowest px-4 py-10 sm:px-6 md:px-12 lg:px-24"><SectionSkeleton variant="cards" /></section>}>
+        <HomeHighlightSection lang={lang} dict={dict} />
+      </Suspense>
+      <Suspense fallback={<section className="flex min-h-[100svh] w-full items-center bg-surface px-4 py-10 sm:px-6 md:px-12 lg:px-24"><SectionSkeleton variant="cards" /></section>}>
+        <HomeLatestUpdatesSection lang={lang} dict={dict} />
       </Suspense>
       <Suspense fallback={<section className="w-full px-4 py-10 sm:px-6 sm:py-14 md:px-12 lg:px-24 lg:py-24"><SectionSkeleton variant="media" /></section>}>
         <HomeBiographySection lang={lang} dict={dict} />

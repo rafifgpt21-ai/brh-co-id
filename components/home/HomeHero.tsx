@@ -162,9 +162,14 @@ export default function HomeHero({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       style={{ opacity: 1 }}
-      className="relative border-b border-outline-variant/20 bg-surface px-4 pb-5 pt-5 [@media(max-height:700px)]:py-3 sm:px-6 sm:pb-8 sm:pt-8 md:px-12 lg:flex lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:py-12 xl:px-16 2xl:px-24"
+      className="relative isolate overflow-hidden bg-surface px-4 pb-5 pt-5 [@media(max-height:700px)]:py-3 sm:px-6 sm:pb-8 sm:pt-8 md:px-12 lg:flex lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:py-12 xl:px-16 2xl:px-24"
     >
-      <div className="mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.62fr)] lg:items-center lg:gap-12 xl:gap-16 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.68fr)] 2xl:gap-20">
+      <div aria-hidden="true" className="hero-ambient-layer pointer-events-none absolute inset-0">
+        <div className="hero-ambient-static absolute inset-0" />
+        <div className="hero-ambient-motion absolute -inset-[8%]" />
+      </div>
+
+      <div className="relative z-[1] mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.62fr)] lg:items-center lg:gap-12 xl:gap-16 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.68fr)] 2xl:gap-20">
         <div className="min-w-0">
           <h1 className="max-w-4xl text-pretty font-headline text-[2.05rem] font-extrabold leading-[1.09] tracking-[-0.035em] text-tertiary xs:text-4xl sm:text-5xl md:text-[3.45rem] lg:text-[4rem] xl:text-[4.15rem]">
             <span className="block text-primary">{home.heroTitleA}</span>

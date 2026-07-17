@@ -12,6 +12,7 @@ type Post = {
   slug: string;
   category: string;
   status: string;
+  publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,8 +48,8 @@ export function AdminPostList({
     if (!sortConfig) return 0;
     const { key, direction } = sortConfig;
     
-    const valA = a[key];
-    const valB = b[key];
+    const valA = a[key] ?? '';
+    const valB = b[key] ?? '';
 
     if (valA < valB) {
       return direction === 'asc' ? -1 : 1;
@@ -67,7 +68,9 @@ export function AdminPostList({
 
   const publishedPosts = [...posts]
     .filter((post) => post.status === 'Published')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .sort((a, b) =>
+      new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime()
+    );
   const featuredPostMap = new Map(posts.map((post) => [post.id, post]));
   const visibleHomeFeaturedPostIds = homeFeaturedPostIds.filter((id) => featuredPostMap.get(id)?.status === 'Published');
   const selectedFeaturedPosts = visibleHomeFeaturedPostIds
@@ -127,11 +130,15 @@ export function AdminPostList({
 
   const saveFeaturedPosts = () => {
     setFeaturedStatus(null);
+    if (visibleHomeFeaturedPostIds.length !== 5) {
+      setFeaturedStatus({ type: 'error', message: 'Lengkapi tepat 5 karya sebelum menyimpan Highlight.' });
+      return;
+    }
     startTransition(async () => {
       const result = await saveHomeFeaturedPostIds(visibleHomeFeaturedPostIds);
       if (result.success) {
         setHomeFeaturedPostIds(result.homeFeaturedPostIds || []);
-        setFeaturedStatus({ type: 'success', message: 'Pilihan beranda disimpan.' });
+        setFeaturedStatus({ type: 'success', message: 'Lima karya Highlight berhasil disimpan.' });
       } else {
         setFeaturedStatus({ type: 'error', message: result.error || 'Gagal menyimpan pilihan beranda.' });
       }
@@ -144,7 +151,7 @@ export function AdminPostList({
       const result = await resetHomeFeaturedPostIds();
       if (result.success) {
         setHomeFeaturedPostIds([]);
-        setFeaturedStatus({ type: 'success', message: 'Beranda kembali memakai 5 karya terbaru.' });
+        setFeaturedStatus({ type: 'success', message: 'Pilihan Highlight dikosongkan.' });
       } else {
         setFeaturedStatus({ type: 'error', message: result.error || 'Gagal mereset pilihan beranda.' });
       }
@@ -169,7 +176,7 @@ export function AdminPostList({
     <div className="w-full pb-24 max-w-[1400px] mx-auto sm:px-6 lg:px-8">
 
       {/* 1. Header & Kontrol */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 py-3 md:py-4 sticky top-20 bg-surface/95 backdrop-blur-md z-20 px-1 md:px-0">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 py-3 md:py-4 bg-surface/95 backdrop-blur-md px-1 md:px-0 lg:sticky lg:top-14 lg:z-40">
 
         {/* Filter Tab */}
         <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
@@ -214,12 +221,12 @@ export function AdminPostList({
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-on-primary">
-                <span className="material-symbols-outlined text-[22px]">home</span>
+                <span className="material-symbols-outlined text-[22px]">star</span>
               </div>
               <div>
-                <h2 className="text-lg font-black text-on-surface">Pilihan Beranda</h2>
+                <h2 className="text-lg font-black text-on-surface">Kelola Highlight</h2>
                 <p className="text-sm font-medium text-on-surface-variant/70">
-                  Pilih sampai 5 karya. Slot kosong otomatis diisi karya Published terbaru.
+                  Pilih tepat 5 karya Published. Urutan di bawah menjadi urutan tampil di beranda.
                 </p>
               </div>
             </div>
@@ -233,7 +240,7 @@ export function AdminPostList({
               className="h-11 min-w-0 rounded-full border border-outline-variant/40 bg-surface px-4 text-sm font-bold text-on-surface outline-none transition focus:border-on-surface/50 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-72"
             >
               <option value="">
-                {selectedFeaturedPosts.length >= 5 ? 'Maksimal 5 karya' : 'Tambah karya ke beranda'}
+                {selectedFeaturedPosts.length >= 5 ? 'Highlight sudah lengkap' : `Tambah karya (${selectedFeaturedPosts.length}/5)`}
               </option>
               {availableFeaturedPosts.map((post) => (
                 <option key={post.id} value={post.id}>
@@ -243,7 +250,7 @@ export function AdminPostList({
             </select>
             <Button
               onClick={saveFeaturedPosts}
-              disabled={isPending}
+              disabled={isPending || selectedFeaturedPosts.length !== 5}
               className="h-11 rounded-full! bg-primary px-5 text-sm font-black text-on-primary hover:bg-primary/90 disabled:opacity-60"
             >
               Simpan
@@ -305,7 +312,7 @@ export function AdminPostList({
                     </div>
                   </>
                 ) : (
-                  <p className="text-sm font-bold text-on-surface-variant/45">Otomatis terbaru</p>
+                  <p className="text-sm font-bold text-on-surface-variant/45">Belum dipilih</p>
                 )}
               </div>
             );
@@ -403,8 +410,8 @@ export function AdminPostList({
                   </Link>
                   {visibleHomeFeaturedPostIds.includes(post.id) && post.status === 'Published' && (
                     <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
-                      <span className="material-symbols-outlined text-[14px]">home</span>
-                      Beranda #{visibleHomeFeaturedPostIds.indexOf(post.id) + 1}
+                      <span className="material-symbols-outlined text-[14px]">star</span>
+                      Highlight #{visibleHomeFeaturedPostIds.indexOf(post.id) + 1}
                     </span>
                   )}
                   {/* Mobile meta */}
