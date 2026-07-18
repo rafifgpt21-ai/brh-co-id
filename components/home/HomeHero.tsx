@@ -191,7 +191,7 @@ export default function HomeHero({
             </Link>
             <button
               type="button"
-              onClick={scrollToLatest('#notes')}
+              onClick={scrollToLatest('#arsip')}
               className="tap-target inline-flex min-w-0 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent px-3 text-[13px] font-bold text-tertiary transition duration-200 hover:-translate-y-px hover:border-outline-variant/55 hover:text-primary active:translate-y-0 active:scale-[0.98] sm:px-5 sm:text-sm"
             >
               <span className="material-symbols-outlined text-[19px]">south</span>
