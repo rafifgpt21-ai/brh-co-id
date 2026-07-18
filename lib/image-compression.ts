@@ -33,28 +33,29 @@ const SUPPORTED_TYPES = new Set([
   "image/webp",
   "image/avif",
 ]);
+const EFFICIENT_PASSTHROUGH_TYPES = new Set(["image/webp", "image/avif"]);
 
 const PROFILES: Record<ImageCompressionProfile, ProfileConfig> = {
   thumbnail: {
-    maxLongestEdge: 1200,
-    minLongestEdge: 640,
-    targetBytes: 180 * 1024,
-    initialQuality: 0.76,
-    minQuality: 0.55,
+    maxLongestEdge: 960,
+    minLongestEdge: 512,
+    targetBytes: 110 * 1024,
+    initialQuality: 0.72,
+    minQuality: 0.48,
   },
   quickPost: {
-    maxLongestEdge: 1600,
-    minLongestEdge: 960,
-    targetBytes: 300 * 1024,
-    initialQuality: 0.74,
-    minQuality: 0.55,
+    maxLongestEdge: 1280,
+    minLongestEdge: 720,
+    targetBytes: 200 * 1024,
+    initialQuality: 0.7,
+    minQuality: 0.48,
   },
   content: {
-    maxLongestEdge: 1920,
-    minLongestEdge: 1200,
-    targetBytes: 450 * 1024,
-    initialQuality: 0.78,
-    minQuality: 0.6,
+    maxLongestEdge: 1600,
+    minLongestEdge: 960,
+    targetBytes: 280 * 1024,
+    initialQuality: 0.74,
+    minQuality: 0.52,
   },
 };
 
@@ -147,6 +148,7 @@ export async function compressImage(
       source.size <= profile.targetBytes
       && originalLongest <= profile.maxLongestEdge
       && source.size <= MAX_UPLOAD_BYTES
+      && EFFICIENT_PASSTHROUGH_TYPES.has(source.type)
     ) {
       return {
         file: source,
