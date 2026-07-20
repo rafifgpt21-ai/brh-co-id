@@ -5,7 +5,7 @@ import PostClient from "@/components/post/PostClient";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { localizePost } from "@/lib/i18n/posts";
-import { buildAbsoluteUrl } from "@/lib/share-url";
+import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
 import { Suspense } from "react";
 import { RouteSkeleton } from "@/components/ui/RouteSkeleton";
 
@@ -52,7 +52,7 @@ export async function generateMetadata({
   const description = firstTextBlock?.content?.replace(/<[^>]*>/g, '').slice(0, 160) || `${dict.home.readMore} ${localizedPost.title}`;
   const canonicalUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}`);
   const updatedAt = new Date(post.updatedAt).toISOString();
-  const shareVersion = new Date(post.updatedAt).getTime();
+  const shareVersion = getSocialPreviewVersion(post.updatedAt);
   const query = await searchParams;
   const shareTarget = query.share === "facebook" || query.share === "whatsapp"
     ? query.share
@@ -60,15 +60,16 @@ export async function generateMetadata({
   const openGraphUrl = shareTarget
     ? `${canonicalUrl}?share=${shareTarget}&v=${shareVersion}`
     : canonicalUrl;
-  const socialImageUrl = buildAbsoluteUrl(
-    `/${lang}/post/${localizedPost.slug}/opengraph-image?v=${shareVersion}`,
-  );
+  const isWhatsappShare = shareTarget === "whatsapp" && Boolean(post.thumbnail);
+  const socialImageUrl = isWhatsappShare
+    ? buildAbsoluteUrl(`/api/share-image/${encodeURIComponent(localizedPost.slug)}.jpg?v=${shareVersion}`)
+    : buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}/opengraph-image?v=${shareVersion}`);
   const socialImage = {
     url: socialImageUrl,
     secureUrl: socialImageUrl,
-    width: 1200,
-    height: 630,
-    type: "image/png",
+    width: isWhatsappShare ? 600 : 1200,
+    height: isWhatsappShare ? 315 : 630,
+    type: isWhatsappShare ? "image/jpeg" : "image/png",
     alt: localizedPost.title,
   };
 

@@ -44,7 +44,10 @@ next-env.d.ts
 
 note.txt
 
-/material
+/material/*
+!/material/buku/
+/material/buku/*
+!/material/buku/*.md
 
 /public/book-cover
 

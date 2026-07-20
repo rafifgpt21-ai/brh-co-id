@@ -9,7 +9,7 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getCategoryLabel } from "@/lib/i18n/posts";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { ShareActions } from "@/components/common/ShareActions";
-import { buildAbsoluteUrl } from "@/lib/share-url";
+import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
 
 type PostBlock = {
   id: string;
@@ -78,7 +78,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
   };
 
   const shareUrl = buildAbsoluteUrl(`/${lang}/post/${post.slug}`);
-  const shareVersion = new Date(post.updatedAt).getTime();
+  const shareVersion = getSocialPreviewVersion(post.updatedAt);
   const facebookShareUrl = `${shareUrl}?share=facebook&v=${shareVersion}`;
   const whatsappShareUrl = `${shareUrl}?share=whatsapp&v=${shareVersion}`;
   const shareLabels = {

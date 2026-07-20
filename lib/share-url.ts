@@ -1,4 +1,5 @@
 export const PUBLIC_SITE_URL = "https://www.brh.co.id";
+const SOCIAL_PREVIEW_REVISION = "3";
 
 export function getPublicBaseUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
@@ -18,6 +19,10 @@ export function buildAbsoluteUrl(path: string) {
   } catch {
     return `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
   }
+}
+
+export function getSocialPreviewVersion(updatedAt: Date | string) {
+  return `${SOCIAL_PREVIEW_REVISION}-${new Date(updatedAt).getTime()}`;
 }
 
 function isLocalNetworkUrl(url: string) {
