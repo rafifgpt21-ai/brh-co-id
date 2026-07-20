@@ -12,6 +12,7 @@ export type ShareLabels = {
 
 type ShareActionsProps = {
   url: string;
+  facebookShareUrl?: string;
   whatsappShareUrl?: string;
   title: string;
   labels: ShareLabels;
@@ -21,6 +22,7 @@ type ShareActionsProps = {
 
 export function ShareActions({
   url,
+  facebookShareUrl,
   whatsappShareUrl,
   title,
   labels,
@@ -30,9 +32,9 @@ export function ShareActions({
   const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const encodedUrl = encodeURIComponent(url);
+  const encodedFacebookUrl = encodeURIComponent(facebookShareUrl || url);
   const shareText = `${title} ${whatsappShareUrl || url}`.trim();
-  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedFacebookUrl}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   useEffect(() => {

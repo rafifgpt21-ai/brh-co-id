@@ -31,7 +31,13 @@ export const unstable_instant = {
   ],
 };
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string; slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string; slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
   const { lang: rawLang, slug } = await params;
   if (!hasLocale(rawLang)) return { title: "Post Not Found" };
   const lang: Locale = rawLang;
@@ -45,7 +51,15 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const firstTextBlock = localizedPost.blocks.find((block) => block.type === 'text');
   const description = firstTextBlock?.content?.replace(/<[^>]*>/g, '').slice(0, 160) || `${dict.home.readMore} ${localizedPost.title}`;
   const canonicalUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}`);
-  const socialImageUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}/opengraph-image`);
+  const updatedAt = new Date(post.updatedAt).toISOString();
+  const shareVersion = new Date(post.updatedAt).getTime();
+  const query = await searchParams;
+  const openGraphUrl = query.share === "facebook"
+    ? `${canonicalUrl}?share=facebook&v=${shareVersion}`
+    : canonicalUrl;
+  const socialImageUrl = buildAbsoluteUrl(
+    `/${lang}/post/${localizedPost.slug}/opengraph-image?v=${shareVersion}`,
+  );
   const socialImage = {
     url: socialImageUrl,
     secureUrl: socialImageUrl,
@@ -64,10 +78,12 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     openGraph: {
       title: localizedPost.title,
       description,
-      url: canonicalUrl,
+      url: openGraphUrl,
       siteName: "BRH Insight",
       type: "article",
       publishedTime: new Date(post.publishedAt || post.createdAt).toISOString(),
+      modifiedTime: updatedAt,
+      locale: lang === "id" ? "id_ID" : "en_US",
       images: [socialImage],
     },
     twitter: {
