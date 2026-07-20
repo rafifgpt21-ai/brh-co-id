@@ -102,6 +102,8 @@ export const dictionary = {
     save: "Save",
     cancel: "Cancel",
     delete: "Delete",
+    deleteConfirmTitle: "Delete quick post?",
+    deleteConfirmDescription: "This quick post will be permanently deleted. This action cannot be undone.",
     share: "Share",
     shareToFacebook: "Share to Facebook",
     shareToWhatsapp: "Share to WhatsApp",

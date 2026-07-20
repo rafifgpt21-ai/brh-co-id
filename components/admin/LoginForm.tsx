@@ -55,7 +55,7 @@ export default function LoginForm() {
                 name="identifier" 
                 id="identifier" 
                 required 
-                placeholder="admin / admin@brh.co.id" 
+                placeholder="username / e-mail"
                 className="h-14 font-body bg-surface-container-lowest border border-outline-variant/30 outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary rounded-2xl pl-12 pr-5 w-full text-on-surface placeholder:text-on-surface-variant/30 shadow-sm transition-all" 
               />
             </div>

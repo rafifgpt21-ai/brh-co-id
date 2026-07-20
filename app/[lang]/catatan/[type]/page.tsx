@@ -64,6 +64,8 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     save: dict.quickPost.save,
     cancel: dict.quickPost.cancel,
     delete: dict.quickPost.delete,
+    deleteConfirmTitle: dict.quickPost.deleteConfirmTitle,
+    deleteConfirmDescription: dict.quickPost.deleteConfirmDescription,
     share: dict.quickPost.share,
     shareToFacebook: dict.quickPost.shareToFacebook,
     shareToWhatsapp: dict.quickPost.shareToWhatsapp,

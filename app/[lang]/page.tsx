@@ -123,6 +123,8 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     save: dict.quickPost.save,
     cancel: dict.quickPost.cancel,
     delete: dict.quickPost.delete,
+    deleteConfirmTitle: dict.quickPost.deleteConfirmTitle,
+    deleteConfirmDescription: dict.quickPost.deleteConfirmDescription,
     share: dict.quickPost.share,
     shareToFacebook: dict.quickPost.shareToFacebook,
     shareToWhatsapp: dict.quickPost.shareToWhatsapp,
@@ -314,12 +316,12 @@ async function HomeLatestUpdatesSection({ lang, dict }: { lang: Locale; dict: Aw
       <div className="mx-auto w-full max-w-[1600px]">
         <ArchiveSectionHeader eyebrow={dict.home.latestEyebrow} titleA={dict.home.latestTitleA} titleB={dict.home.latestTitleB} lang={lang} dict={dict} />
         {latestPosts.length > 0 ? (
-          <div className="-mx-4 grid snap-x snap-mandatory auto-cols-[88vw] grid-flow-col grid-rows-2 gap-3 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:auto-cols-[58vw] sm:px-6 lg:mx-0 lg:grid-flow-row lg:grid-cols-4 lg:grid-rows-none lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0">
+          <div data-latest-updates-list className="grid grid-cols-1 gap-3 sm:-mx-6 sm:snap-x sm:snap-mandatory sm:auto-cols-[58vw] sm:grid-flow-col sm:grid-cols-none sm:grid-rows-2 sm:overflow-x-auto sm:px-6 sm:pb-3 lg:mx-0 lg:grid-flow-row lg:grid-cols-4 lg:grid-rows-none lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0">
             {latestPosts.map((post, index) => {
               const snippet = getPostSnippet(post);
               return (
-                <ScrollReveal key={post.id} delay={(index % 4) * 0.04} className="snap-start">
-                  <OptimisticLink href={`/${lang}/post/${post.slug}`} className="surface-lift-hover group grid h-full min-h-36 grid-cols-[8.5rem_minmax(0,1fr)] overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest sm:grid-cols-[9.5rem_minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[42%_minmax(0,1fr)]">
+                <ScrollReveal key={post.id} delay={(index % 4) * 0.04} className="w-full sm:snap-start">
+                  <OptimisticLink data-latest-update-card href={`/${lang}/post/${post.slug}`} className="surface-lift-hover group grid h-36 w-full grid-cols-[8.5rem_minmax(0,1fr)] overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest sm:h-full sm:min-h-36 sm:grid-cols-[9.5rem_minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[42%_minmax(0,1fr)]">
                     <div className="relative aspect-square w-full self-start overflow-hidden bg-surface-container">
                       {post.thumbnail ? (
                         <Image src={post.thumbnail} alt={post.title} fill sizes="(max-width: 640px) 136px, (max-width: 1024px) 152px, 12vw" className="object-contain p-1.5 transition duration-700 group-hover:scale-[1.03]" />

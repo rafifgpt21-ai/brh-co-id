@@ -102,6 +102,8 @@ export const dictionary = {
     save: "Simpan",
     cancel: "Batal",
     delete: "Hapus",
+    deleteConfirmTitle: "Hapus quick post?",
+    deleteConfirmDescription: "Quick post ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
     share: "Bagikan",
     shareToFacebook: "Bagikan ke Facebook",
     shareToWhatsapp: "Bagikan ke WhatsApp",

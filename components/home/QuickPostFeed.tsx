@@ -55,6 +55,8 @@ type QuickPostFeedLabels = AgendaFieldLabels & {
   save: string;
   cancel: string;
   delete: string;
+  deleteConfirmTitle: string;
+  deleteConfirmDescription: string;
   share: string;
   shareToFacebook: string;
   shareToWhatsapp: string;
@@ -130,11 +132,13 @@ export function QuickPostFeed({
   const router = useRouter();
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editCompressionTokenRef = useRef<symbol | null>(null);
+  const deleteCancelButtonRef = useRef<HTMLButtonElement>(null);
   const quoteTextRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const [activeType, setActiveType] = useState<QuickPostType>(visibleTypes[0] ?? "NORMAL");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [clampedQuotes, setClampedQuotes] = useState<Record<string, boolean>>({});
   const [editingPost, setEditingPost] = useState<QuickPostItem | null>(null);
+  const [deletingPost, setDeletingPost] = useState<QuickPostItem | null>(null);
   const [editType, setEditType] = useState<QuickPostType>("NORMAL");
   const [editContent, setEditContent] = useState("");
   const [editAgendaDate, setEditAgendaDate] = useState("");
@@ -191,6 +195,17 @@ export function QuickPostFeed({
     };
   }, [expanded, isPreview, quickPosts.QUOTE]);
 
+  useEffect(() => {
+    if (!deletingPost) return;
+
+    deleteCancelButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isPending) setDeletingPost(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [deletingPost, isPending]);
+
   const columnLabels: Record<QuickPostType, string> = {
     NORMAL: labels.normal,
     AGENDA: labels.agenda,
@@ -224,10 +239,17 @@ export function QuickPostFeed({
     });
   };
 
-  const removeQuickPost = (id: string) => {
+  const confirmQuickPostDeletion = () => {
+    if (!deletingPost) return;
+    const id = deletingPost.id;
+
     startTransition(async () => {
       const result = await deleteQuickPost(id);
-      if (!result.success) alert(result.error || "Gagal menghapus postingan");
+      if (!result.success) {
+        alert(result.error || "Gagal menghapus postingan");
+        return;
+      }
+      setDeletingPost(null);
       router.refresh();
     });
   };
@@ -449,7 +471,7 @@ export function QuickPostFeed({
                           <button type="button" onClick={() => startEdit(post)} className="grid h-8 w-8 place-items-center rounded-full text-secondary hover:bg-secondary/10" aria-label={labels.edit} title={labels.edit}>
                             <span className="material-symbols-outlined text-[17px]">edit</span>
                           </button>
-                          <button type="button" onClick={() => removeQuickPost(post.id)} className="grid h-8 w-8 place-items-center rounded-full text-error hover:bg-error/10" aria-label={labels.delete} title={labels.delete}>
+                          <button type="button" onClick={() => setDeletingPost(post)} className="grid h-8 w-8 place-items-center rounded-full text-error hover:bg-error/10" aria-label={labels.delete} title={labels.delete}>
                             <span className="material-symbols-outlined text-[17px]">delete</span>
                           </button>
                         </div>
@@ -643,6 +665,61 @@ export function QuickPostFeed({
               <button type="button" onClick={saveEdit} disabled={isPending || isEditCompressing} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary text-xs font-black text-on-primary shadow-lg shadow-primary/15 disabled:opacity-60">
                 <span className="material-symbols-outlined text-[18px]">{isPending ? "sync" : "check"}</span>
                 {labels.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingPost && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/45 p-5 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isPending) setDeletingPost(null);
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="quick-post-delete-title"
+            aria-describedby="quick-post-delete-description"
+            className="w-full max-w-md rounded-[1.75rem] border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-2xl sm:p-7"
+          >
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-error/10 text-error">
+              <span className="material-symbols-outlined text-[30px]">delete</span>
+            </div>
+            <div className="mt-5 text-center">
+              <h3 id="quick-post-delete-title" className="font-headline text-xl font-black text-primary">
+                {labels.deleteConfirmTitle}
+              </h3>
+              <p id="quick-post-delete-description" className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-on-surface-variant">
+                {labels.deleteConfirmDescription}
+              </p>
+            </div>
+            <p className="mt-5 line-clamp-3 rounded-2xl bg-surface-container-low px-4 py-3 text-sm leading-relaxed text-on-surface-variant">
+              {deletingPost.content}
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                ref={deleteCancelButtonRef}
+                type="button"
+                onClick={() => setDeletingPost(null)}
+                disabled={isPending}
+                className="h-12 rounded-full bg-surface-container text-xs font-black text-on-surface-variant transition hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {labels.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={confirmQuickPostDeletion}
+                disabled={isPending}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-error text-xs font-black text-on-error shadow-lg shadow-error/15 transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className={`material-symbols-outlined text-[18px] ${isPending ? "animate-spin" : ""}`}>
+                  {isPending ? "progress_activity" : "delete"}
+                </span>
+                {labels.delete}
               </button>
             </div>
           </div>
