@@ -193,7 +193,7 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
   const quickPosts = await getQuickPostsByType({
     includeDrafts: isAdmin,
-    limitPerType: 1,
+    limitPerType: 3,
     upcomingAgendaOnly: true,
   });
   const quickPostFeedLabels = getQuickPostFeedLabels(dict);

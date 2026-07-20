@@ -362,7 +362,8 @@ export function QuickPostFeed({
 
       <div className={`grid grid-cols-1 ${isPreview ? "gap-5 lg:gap-6 xl:gap-7" : "gap-5"} ${visibleTypes.length === 1 ? "mx-auto max-w-3xl" : "lg:grid-cols-3"} ${isPreview ? "lg:items-stretch" : "lg:items-start"}`}>
         {visibleTypes.map((type) => {
-          const posts = isPreview ? quickPosts[type].slice(0, 1) : quickPosts[type];
+          const previewPostLimit = type === "AGENDA" ? 3 : 1;
+          const posts = isPreview ? quickPosts[type].slice(0, previewPostLimit) : quickPosts[type];
           return (
             <div key={type} className={`${activeType === type || visibleTypes.length === 1 ? "flex" : "hidden"} min-w-0 flex-col ${isPreview ? "gap-3.5 lg:gap-5" : "gap-4"} lg:flex`}>
               <section
@@ -398,15 +399,16 @@ export function QuickPostFeed({
                   const isQuote = type === "QUOTE";
                   const isAgenda = type === "AGENDA";
                   const isExpanded = Boolean(expanded[post.id]);
-                  const previewLimit = isPreview ? 180 : 280;
+                  const previewLimit = isPreview && isAgenda ? 120 : isPreview ? 180 : 280;
                   const isLong = post.content.length > previewLimit;
                   const visibleContent = isExpanded ? post.content : truncate(post.content, previewLimit);
                   const completionTime = post.endsAt || post.startsAt;
                   const isCompleted = isAgenda && completionTime ? new Date(completionTime) < new Date() : false;
                   const shareUrl = buildAbsoluteUrl(`/${lang}/catatan#quick-post-${post.id}`);
+                  const showPostMeta = (post.status === "Draft" && isAdmin) || isCompleted || !isAgenda;
 
                   return (
-                    <article key={post.id} id={`quick-post-${post.id}`} className={`group relative scroll-mt-24 border-b border-outline-variant/20 last:border-b-0 ${isPreview ? "flex h-full flex-1 flex-col pb-1 pt-2" : "py-6"}`}>
+                    <article key={post.id} id={`quick-post-${post.id}`} className={`group relative scroll-mt-24 border-b border-outline-variant/20 last:border-b-0 ${isPreview ? `flex flex-col ${isAgenda ? "min-h-0 py-2" : "h-full flex-1 pb-1 pt-2"}` : "py-6"}`}>
                       {isAdmin && (
                         <div className={`absolute right-0 top-4 z-10 flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest/95 p-1 shadow-lg transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 ${isPending ? "pointer-events-none opacity-60" : ""}`}>
                           <button type="button" onClick={() => startEdit(post)} className="grid h-8 w-8 place-items-center rounded-full text-secondary hover:bg-secondary/10" aria-label={labels.edit} title={labels.edit}>
@@ -425,31 +427,33 @@ export function QuickPostFeed({
                         </div>
                       )}
 
-                      <div className={`${isPreview ? "mb-3" : "mb-4"} flex flex-wrap items-center gap-2 pr-16`}>
-                        {post.status === "Draft" && isAdmin && <span className="rounded-full bg-surface-container px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-on-surface-variant">{labels.draftBadge}</span>}
-                        {isCompleted && <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-primary">{labels.completedBadge}</span>}
-                        {!isAgenda && <span className="text-[11px] font-bold text-on-surface-variant/55">{formatLocalizedDate(post.createdAt, lang)}</span>}
-                      </div>
+                      {showPostMeta && (
+                        <div className={`${isPreview ? "mb-3" : "mb-4"} flex flex-wrap items-center gap-2 pr-16`}>
+                          {post.status === "Draft" && isAdmin && <span className="rounded-full bg-surface-container px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-on-surface-variant">{labels.draftBadge}</span>}
+                          {isCompleted && <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-primary">{labels.completedBadge}</span>}
+                          {!isAgenda && <span className="text-[11px] font-bold text-on-surface-variant/55">{formatLocalizedDate(post.createdAt, lang)}</span>}
+                        </div>
+                      )}
 
                       {isAgenda && post.startsAt ? (
-                        <div className={`${isPreview ? "mb-3 rounded-xl p-3 sm:mb-5 sm:rounded-2xl sm:p-4" : "mb-5 rounded-2xl p-4"} bg-secondary/8 text-primary`}>
+                        <div className={`${isPreview ? "mb-2 rounded-xl p-3 sm:rounded-2xl" : "mb-5 rounded-2xl p-4"} bg-secondary/8 text-primary`}>
                           <p className="flex items-start gap-2 text-sm font-black leading-snug">
                             <span className="material-symbols-outlined text-[19px] text-secondary">calendar_month</span>
                             <span>{formatAgendaDate(post.startsAt, lang)}</span>
                           </p>
-                          <p className="mt-2 flex items-center gap-2 text-xs font-bold text-on-surface-variant">
+                          <p className={`${isPreview ? "mt-1.5" : "mt-2"} flex items-center gap-2 text-xs font-bold text-on-surface-variant`}>
                             <span className="material-symbols-outlined text-[18px] text-secondary">schedule</span>
                             <span>{formatAgendaTime(post.startsAt, lang)}{post.endsAt ? `–${formatAgendaTime(post.endsAt, lang)}` : ""} WIB</span>
                           </p>
                           {post.locationLabel && (
-                            <p className={`mt-2 flex items-start gap-2 text-xs leading-relaxed text-on-surface-variant ${isPreview ? "line-clamp-1 sm:line-clamp-2" : ""}`}>
+                            <p className={`${isPreview ? "mt-1.5 line-clamp-1" : "mt-2"} flex items-start gap-2 text-xs leading-relaxed text-on-surface-variant`}>
                               <span className="material-symbols-outlined mt-0.5 text-[18px] text-secondary">location_on</span>
                               <span>{post.locationLabel}</span>
                             </p>
                           )}
 
-                          <button type="button" onClick={() => toggleExpanded(post.id)} className={`${isPreview ? "mt-3 pt-3" : "mt-4 pt-4"} block w-full border-t border-secondary/15 text-left`}>
-                            <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base ${isPreview && !isExpanded ? "line-clamp-3" : ""}`}>{visibleContent}</p>
+                          <button type="button" onClick={() => toggleExpanded(post.id)} className={`${isPreview ? "mt-2 pt-2" : "mt-4 pt-4"} block w-full border-t border-secondary/15 text-left`}>
+                            <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface ${isPreview ? "sm:text-sm" : "sm:text-base"} ${isPreview && !isExpanded ? "line-clamp-2" : ""}`}>{visibleContent}</p>
                           </button>
                         </div>
                       ) : (
@@ -484,7 +488,7 @@ export function QuickPostFeed({
                         </OptimisticLink>
                       )}
 
-                      <div className={`${isPreview ? "mt-auto flex min-h-12 items-end border-t border-outline-variant/15 pt-5" : "mt-5"} flex flex-wrap items-center justify-between gap-3`}>
+                      <div className={`${isPreview ? `${isAgenda ? "mt-0 min-h-9 pt-2" : "mt-auto min-h-12 pt-5"} flex items-end border-t border-outline-variant/15` : "mt-5"} flex flex-wrap items-center justify-between gap-3`}>
                         {isLong ? (
                           <button type="button" onClick={() => toggleExpanded(post.id)} className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-secondary">
                             {isExpanded ? labels.showLess : labels.readMore}
