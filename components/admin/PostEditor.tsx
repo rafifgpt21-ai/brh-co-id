@@ -123,6 +123,15 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
   const [saveStatus, setSaveStatus] = useState<'Idle' | 'Uploading' | 'Saving' | 'Success' | 'Error'>('Idle');
   const [isSavingInProgress, setIsSavingInProgress] = useState(false);
 
+  const firstImageBlock = blocks.find((block) =>
+    block.type === 'image' && Boolean(previews[block.id] || block.url)
+  );
+  const automaticThumbnail = firstImageBlock
+    ? previews[firstImageBlock.id] || firstImageBlock.url || ''
+    : '';
+  const selectedThumbnail = previews.thumbnail || thumbnail;
+  const thumbnailPreview = selectedThumbnail || automaticThumbnail;
+
   // Autosave & Recovery States
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [autosavedData, setAutosavedData] = useState<Partial<PostEditorInitialData> | null>(null);
@@ -523,6 +532,12 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
             });
           }
         }
+      }
+
+      if (!finalThumbnail.trim()) {
+        finalThumbnail = finalBlocks.find((block) =>
+          block.type === 'image' && Boolean(block.url?.trim())
+        )?.url?.trim() || '';
       }
 
       setSaveStatus('Saving');
@@ -1009,9 +1024,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
               <div>
                 <label className="text-[9px] font-label font-bold tracking-[0.2em] text-secondary/70 uppercase mb-2 block">Thumbnail</label>
                 <div className="flex items-center gap-4">
-                  <div className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0 transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 scale-105' : 'border-outline-variant/20 bg-surface-container/50'}`}>
-                    {previews.thumbnail || thumbnail
-                      ? <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-contain p-1" />
+                  <div className={`w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0 transition-all ${thumbnailPreview ? 'border-secondary/30 scale-105' : 'border-outline-variant/20 bg-surface-container/50'}`}>
+                    {thumbnailPreview
+                      ? <img src={thumbnailPreview} alt="Preview" className="w-full h-full object-contain p-1" />
                       : <span className="material-symbols-outlined text-secondary/30 text-2xl">add_photo_alternate</span>
                     }
                   </div>
@@ -1024,9 +1039,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                         className="flex-1 h-11 px-4 rounded-xl bg-secondary text-on-secondary text-[10px] font-extrabold transition-all hover:bg-primary shadow-xs flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
                       >
                         <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-                        {previews.thumbnail || thumbnail ? 'GANTI' : 'UNGGAH'}
+                        {selectedThumbnail ? 'GANTI' : 'UNGGAH'}
                       </button>
-                      {(previews.thumbnail || thumbnail) && saveStatus === 'Idle' && (
+                      {selectedThumbnail && saveStatus === 'Idle' && (
                         <button
                           type="button"
                           onClick={() => {
@@ -1052,7 +1067,13 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                         </button>
                       )}
                     </div>
-                    <p className="text-[8px] font-medium text-on-surface-variant/50 leading-tight uppercase tracking-wider">Rasio 1:1 disarankan.</p>
+                    <p className="text-[8px] font-medium text-on-surface-variant/50 leading-tight uppercase tracking-wider">
+                      {selectedThumbnail
+                        ? 'Rasio 1:1 disarankan.'
+                        : automaticThumbnail
+                          ? 'Otomatis memakai gambar block pertama.'
+                          : 'Jika kosong, gambar block pertama akan dipakai.'}
+                    </p>
                     {compressingIds.has('thumbnail') && <p className="text-[9px] font-bold text-secondary">Mengompresi gambar...</p>}
                     {compressionInfo.thumbnail && (
                       <p className="text-[9px] font-bold text-on-surface-variant/70">
@@ -1150,10 +1171,10 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
               </div>
             </div>
 
-            {thumbnail && (
+            {thumbnailPreview && (
               <div className="rounded-2xl overflow-hidden border border-outline-variant/15 bg-surface-container-low mb-12 shadow-xs select-none">
                 <div className="relative mx-auto aspect-square w-full max-w-[400px] bg-surface-container">
-                  <img src={previews.thumbnail || thumbnail} alt={title} className="h-full w-full object-contain p-2" />
+                  <img src={thumbnailPreview} alt={title} className="h-full w-full object-contain p-2" />
                 </div>
               </div>
             )}
@@ -1507,9 +1528,9 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                     Cover Image
                   </label>
                   <div className="flex gap-3 items-start">
-                    <div className={`shrink-0 w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${previews.thumbnail || thumbnail ? 'border-secondary/30 bg-surface-container-low' : 'border-outline-variant/20 bg-surface-container/50'}`}>
-                      {previews.thumbnail || thumbnail ? (
-                        <img src={previews.thumbnail || thumbnail} alt="Preview" className="w-full h-full object-contain p-1" />
+                    <div className={`shrink-0 w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all ${thumbnailPreview ? 'border-secondary/30 bg-surface-container-low' : 'border-outline-variant/20 bg-surface-container/50'}`}>
+                      {thumbnailPreview ? (
+                        <img src={thumbnailPreview} alt="Preview" className="w-full h-full object-contain p-1" />
                       ) : (
                         <span className="material-symbols-outlined text-secondary/30 text-xl">add_photo_alternate</span>
                       )}
@@ -1524,7 +1545,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                         <span className="material-symbols-outlined text-[14px]">add_a_photo</span>
                         UNGGAH
                       </button>
-                      {(previews.thumbnail || thumbnail) && saveStatus === 'Idle' && (
+                      {selectedThumbnail && saveStatus === 'Idle' && (
                         <button
                           type="button"
                           onClick={() => {
@@ -1550,6 +1571,13 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                           HAPUS
                         </button>
                       )}
+                      <p className="text-[8px] font-medium leading-tight text-on-surface-variant/50">
+                        {selectedThumbnail
+                          ? 'Rasio 1:1 disarankan.'
+                          : automaticThumbnail
+                            ? 'Otomatis memakai gambar block pertama.'
+                            : 'Jika kosong, gambar block pertama akan dipakai.'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1609,8 +1637,8 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                       <span className="text-primary/70">Judul ideal (&gt;10 huruf)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined text-[16px] ${thumbnail ? 'text-green-500' : 'text-on-surface-variant/40'}`}>
-                        {thumbnail ? 'check_circle' : 'circle'}
+                      <span className={`material-symbols-outlined text-[16px] ${thumbnailPreview ? 'text-green-500' : 'text-on-surface-variant/40'}`}>
+                        {thumbnailPreview ? 'check_circle' : 'circle'}
                       </span>
                       <span className="text-primary/70">Thumbnail terunggah</span>
                     </div>

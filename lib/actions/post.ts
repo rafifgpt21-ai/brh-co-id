@@ -69,6 +69,13 @@ const postFormSchema = z.object({
   blocks: z.array(blockSchema),
 });
 
+function resolvePostThumbnail(thumbnail: string | undefined, blocks: PostBlock[]) {
+  const selectedThumbnail = thumbnail?.trim();
+  if (selectedThumbnail) return selectedThumbnail;
+
+  return blocks.find((block) => block.type === "image" && block.url?.trim())?.url?.trim() || null;
+}
+
 const HOME_SITE_SETTING_KEY = "home";
 
 const homeFeaturedPostIdsSchema = z.array(z.string().min(1)).length(5, "Pilih tepat 5 karya untuk Highlight");
@@ -137,7 +144,8 @@ export async function savePost(data: PostFormData) {
   }
 
   const validData = parsedData.data;
-  const submittedUrls = [validData.thumbnail, ...validData.blocks.map((block) => block.url)];
+  const resolvedThumbnail = resolvePostThumbnail(validData.thumbnail, validData.blocks);
+  const submittedUrls = [resolvedThumbnail, ...validData.blocks.map((block) => block.url)];
   if (!receiptsMatchUrls(newUploads, submittedUrls)) {
     return failWithRollback("Receipt upload tidak sesuai dengan file postingan");
   }
@@ -155,27 +163,16 @@ export async function savePost(data: PostFormData) {
       const oldPost = await prisma.post.findUnique({ where: { id: validData.id } });
       if (!oldPost) return failWithRollback("Post tidak ditemukan");
 
-      const filesToDelete: string[] = [];
-
-      // Check thumbnail
-      if (oldPost.thumbnail && oldPost.thumbnail !== validData.thumbnail) {
-        filesToDelete.push(oldPost.thumbnail);
-      }
-
-      // Check blocks
-      const oldUrls = (oldPost.blocks as PostBlock[])
+      const oldUrls = [
+        oldPost.thumbnail,
+        ...(oldPost.blocks as PostBlock[])
         .map((b) => b.url)
-        .filter((url): url is string => !!url);
-      const newUrls = validData.blocks
-        .map((b) => b.url)
-        .filter((url): url is string => !!url);
-
-      // Find URLs in old that are NOT in new
-      oldUrls.forEach((url) => {
-        if (!newUrls.includes(url)) {
-          filesToDelete.push(url);
-        }
-      });
+      ].filter((url): url is string => Boolean(url));
+      const newUrls = [
+        resolvedThumbnail,
+        ...validData.blocks.map((b) => b.url),
+      ].filter((url): url is string => Boolean(url));
+      const filesToDelete = Array.from(new Set(oldUrls.filter((url) => !newUrls.includes(url))));
 
       // 2. Update post
       const post = await prisma.post.update({
@@ -186,7 +183,7 @@ export async function savePost(data: PostFormData) {
           slug,
           slugEn,
           category: validData.category,
-          thumbnail: validData.thumbnail || null,
+          thumbnail: resolvedThumbnail,
           status: validData.status,
           publishedAt,
           blocks: validData.blocks.map((b) => ({
@@ -255,7 +252,7 @@ export async function savePost(data: PostFormData) {
           slug: uniqueSlug,
           slugEn,
           category: validData.category,
-          thumbnail: validData.thumbnail || null,
+          thumbnail: resolvedThumbnail,
           status: validData.status,
           publishedAt,
           blocks: validData.blocks.map((b) => ({

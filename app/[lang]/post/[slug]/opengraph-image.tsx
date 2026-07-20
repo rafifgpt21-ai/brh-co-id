@@ -36,7 +36,9 @@ export default async function OpenGraphImage({
   const lang: Locale = hasLocale(rawLang) ? rawLang : "id";
   const post = await getPublishedPostBySlug(slug);
   const localizedPost = post ? localizePost(post, lang) : null;
-  const thumbnailDataUrl = await getImageDataUrl(post?.thumbnail);
+  const thumbnailUrl = post?.thumbnail
+    || post?.blocks.find((block) => block.type === "image" && block.url)?.url;
+  const thumbnailDataUrl = await getImageDataUrl(thumbnailUrl);
   const title = localizedPost?.title || "BRH Insight";
   const category = post?.category || (lang === "id" ? "Pemikiran" : "Perspectives");
   const titleSize = title.length > 80 ? 46 : title.length > 50 ? 54 : 64;

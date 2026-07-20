@@ -54,8 +54,11 @@ export async function generateMetadata({
   const updatedAt = new Date(post.updatedAt).toISOString();
   const shareVersion = new Date(post.updatedAt).getTime();
   const query = await searchParams;
-  const openGraphUrl = query.share === "facebook"
-    ? `${canonicalUrl}?share=facebook&v=${shareVersion}`
+  const shareTarget = query.share === "facebook" || query.share === "whatsapp"
+    ? query.share
+    : null;
+  const openGraphUrl = shareTarget
+    ? `${canonicalUrl}?share=${shareTarget}&v=${shareVersion}`
     : canonicalUrl;
   const socialImageUrl = buildAbsoluteUrl(
     `/${lang}/post/${localizedPost.slug}/opengraph-image?v=${shareVersion}`,

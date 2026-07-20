@@ -80,7 +80,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
   const shareUrl = buildAbsoluteUrl(`/${lang}/post/${post.slug}`);
   const shareVersion = new Date(post.updatedAt).getTime();
   const facebookShareUrl = `${shareUrl}?share=facebook&v=${shareVersion}`;
-  const whatsappShareUrl = `${shareUrl}?share=wa2`;
+  const whatsappShareUrl = `${shareUrl}?share=whatsapp&v=${shareVersion}`;
   const shareLabels = {
     share: dict.post.share,
     shareToFacebook: dict.post.shareToFacebook,
