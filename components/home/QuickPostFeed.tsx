@@ -130,8 +130,10 @@ export function QuickPostFeed({
   const router = useRouter();
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const editCompressionTokenRef = useRef<symbol | null>(null);
+  const quoteTextRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const [activeType, setActiveType] = useState<QuickPostType>(visibleTypes[0] ?? "NORMAL");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [clampedQuotes, setClampedQuotes] = useState<Record<string, boolean>>({});
   const [editingPost, setEditingPost] = useState<QuickPostItem | null>(null);
   const [editType, setEditType] = useState<QuickPostType>("NORMAL");
   const [editContent, setEditContent] = useState("");
@@ -155,6 +157,39 @@ export function QuickPostFeed({
       if (editImagePreview) URL.revokeObjectURL(editImagePreview);
     };
   }, [editImagePreview]);
+
+  useEffect(() => {
+    if (!isPreview) return;
+
+    const updateClampedQuotes = () => {
+      setClampedQuotes((current) => {
+        const next = { ...current };
+        let changed = false;
+
+        Object.entries(quoteTextRefs.current).forEach(([id, element]) => {
+          if (!element || expanded[id]) return;
+          const isClamped = element.scrollHeight > element.clientHeight + 1;
+          if (next[id] !== isClamped) {
+            next[id] = isClamped;
+            changed = true;
+          }
+        });
+
+        return changed ? next : current;
+      });
+    };
+
+    const animationFrame = window.requestAnimationFrame(updateClampedQuotes);
+    const resizeObserver = new ResizeObserver(updateClampedQuotes);
+    Object.values(quoteTextRefs.current).forEach((element) => {
+      if (element) resizeObserver.observe(element);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+    };
+  }, [expanded, isPreview, quickPosts.QUOTE]);
 
   const columnLabels: Record<QuickPostType, string> = {
     NORMAL: labels.normal,
@@ -400,8 +435,8 @@ export function QuickPostFeed({
                   const isAgenda = type === "AGENDA";
                   const isExpanded = Boolean(expanded[post.id]);
                   const previewLimit = isPreview && isAgenda ? 120 : isPreview ? 180 : 280;
-                  const isLong = post.content.length > previewLimit;
-                  const visibleContent = isExpanded ? post.content : truncate(post.content, previewLimit);
+                  const isLong = isPreview && isQuote ? Boolean(clampedQuotes[post.id]) : post.content.length > previewLimit;
+                  const visibleContent = isExpanded || (isPreview && isQuote) ? post.content : truncate(post.content, previewLimit);
                   const completionTime = post.endsAt || post.startsAt;
                   const isCompleted = isAgenda && completionTime ? new Date(completionTime) < new Date() : false;
                   const shareUrl = buildAbsoluteUrl(`/${lang}/catatan#quick-post-${post.id}`);
@@ -461,7 +496,14 @@ export function QuickPostFeed({
                           {isQuote ? (
                           <span className={isPreview ? "relative block rounded-[1.35rem] bg-surface-container-low/55 p-5 ring-1 ring-outline-variant/15 sm:p-6" : "block"}>
                             {isPreview && <span className="material-symbols-outlined absolute right-4 top-3 text-[34px] text-secondary/12">format_quote</span>}
-                            <span className={`relative block text-pretty font-headline italic tracking-[-0.02em] text-primary ${isPreview ? `text-lg font-semibold leading-[1.5] sm:text-xl ${isExpanded ? "" : "line-clamp-7"}` : "text-xl font-black leading-tight sm:text-2xl"}`}>&ldquo;{visibleContent}&rdquo;</span>
+                            <span
+                              ref={isPreview ? (element) => {
+                                if (element) quoteTextRefs.current[post.id] = element;
+                                else delete quoteTextRefs.current[post.id];
+                              } : undefined}
+                              data-quote-content={isPreview ? post.id : undefined}
+                              className={`relative block text-pretty font-headline italic tracking-[-0.02em] text-primary ${isPreview ? `text-lg font-semibold leading-[1.5] sm:text-xl ${isExpanded ? "" : "line-clamp-[13]"}` : "text-xl font-black leading-tight sm:text-2xl"}`}
+                            >&ldquo;{visibleContent}&rdquo;</span>
                           </span>
                           ) : (
                             <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base ${isPreview && !isExpanded ? "line-clamp-4" : ""}`}>{visibleContent}</p>

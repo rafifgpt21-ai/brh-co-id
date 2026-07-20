@@ -1338,6 +1338,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                   onCancelDelete={() => setBlockToDelete(null)}
                   onMove={moveBlock}
                   onFileSelect={onBlockFileSelect}
+                  onFileDrop={onBlockFileChange}
                   saveStatus={saveStatus}
                   contacts={contacts}
                 />

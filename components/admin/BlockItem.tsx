@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState, type DragEvent } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { formatFileSize, type ImageCompressionResult } from '@/lib/image-compression';
@@ -9,8 +9,6 @@ const TiptapEditor = dynamic(() => import('./TiptapEditor').then(mod => mod.Tipt
   ssr: false,
   loading: () => <div className="h-[200px] w-full animate-pulse bg-surface-container-low rounded-xl border border-outline-variant/20 mt-2" />
 });
-
-import { useRef, useEffect } from 'react';
 
 const AutoResizingTextarea = ({ 
   value, 
@@ -75,6 +73,7 @@ interface BlockItemProps {
   onCancelDelete: () => void;
   onMove: (index: number, direction: 'up' | 'down') => void;
   onFileSelect: (id: string) => void;
+  onFileDrop: (id: string, file: File) => void;
   saveStatus: string;
   contacts?: { id: string, name: string | null, phone: string | null }[];
 }
@@ -95,8 +94,41 @@ export const BlockItem = memo(function BlockItem({
   onCancelDelete,
   onMove,
   onFileSelect,
+  onFileDrop,
   contacts = []
 }: BlockItemProps) {
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const handleImageDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (block.type !== 'image' || !event.dataTransfer.types.includes('Files')) return;
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDraggingFile(true);
+  };
+
+  const handleImageDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (block.type !== 'image' || !event.dataTransfer.types.includes('Files')) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleImageDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    if (block.type !== 'image') return;
+    event.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDraggingFile(false);
+  };
+
+  const handleImageDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (block.type !== 'image') return;
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDraggingFile(false);
+
+    const file = event.dataTransfer.files[0];
+    if (file) onFileDrop(block.id, file);
+  };
 
   const getEmbedUrl = (url?: string | null) => {
     if (!url) return "";
@@ -239,6 +271,17 @@ export const BlockItem = memo(function BlockItem({
             className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-xl py-2.5 px-4 text-primary font-headline font-bold text-sm sm:text-base focus:outline-none focus:border-secondary transition-colors"
           />
 
+          <div
+            onDragEnter={handleImageDragEnter}
+            onDragOver={handleImageDragOver}
+            onDragLeave={handleImageDragLeave}
+            onDrop={handleImageDrop}
+            className={`relative rounded-2xl transition-all ${
+              block.type === 'image' && isDraggingFile
+                ? 'ring-2 ring-secondary ring-offset-2 ring-offset-surface-container-lowest'
+                : ''
+            }`}
+          >
           {isCompressing ? (
             <div className="rounded-2xl border-2 border-dashed border-secondary/30 bg-secondary/5 p-10 text-center">
               <span className="material-symbols-outlined animate-spin text-3xl text-secondary">progress_activity</span>
@@ -284,16 +327,24 @@ export const BlockItem = memo(function BlockItem({
               )}
             </div>
           ) : (
-            <div className="border-2 border-dashed border-outline-variant/40 bg-primary-container/5 hover:bg-primary-container/10 transition-colors rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center text-center">
+            <div className={`border-2 border-dashed bg-primary-container/5 transition-colors rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center text-center ${
+              block.type === 'image' && isDraggingFile
+                ? 'border-secondary bg-secondary/10'
+                : 'border-outline-variant/40 hover:bg-primary-container/10'
+            }`}>
               <div className="w-14 h-14 bg-surface-container-lowest shadow-xs rounded-full flex items-center justify-center mb-3">
                 <span className="material-symbols-outlined text-3xl text-secondary">
-                  {block.type === 'pdf' ? 'description' : 'add_photo_alternate'}
+                  {block.type === 'pdf' ? 'description' : isDraggingFile ? 'download' : 'add_photo_alternate'}
                 </span>
               </div>
               <p className="text-primary font-headline font-bold mb-1">
-                Unggah {block.type === 'image' ? 'Gambar' : 'Dokumen PDF'}
+                {block.type === 'image'
+                  ? isDraggingFile ? 'Lepaskan gambar di sini' : 'Tarik & jatuhkan gambar di sini'
+                  : 'Unggah Dokumen PDF'}
               </p>
-              <p className="text-on-surface-variant/70 text-xs mb-4">Maks: {block.type === 'image' ? 'sumber 20MB, hasil 1MB' : '16MB'}</p>
+              <p className="text-on-surface-variant/70 text-xs mb-4">
+                {block.type === 'image' ? 'atau pilih file · sumber maks. 20MB, hasil 1MB' : 'Maks: 16MB'}
+              </p>
               <button
                 type="button"
                 onClick={() => onFileSelect(block.id)}
@@ -303,6 +354,14 @@ export const BlockItem = memo(function BlockItem({
               </button>
             </div>
           )}
+
+          {block.type === 'image' && isDraggingFile && (block.url || preview) && (
+            <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl bg-secondary/90 text-on-secondary backdrop-blur-sm">
+              <span className="material-symbols-outlined text-4xl">download</span>
+              <p className="mt-2 font-headline text-sm font-bold">Lepaskan untuk mengganti gambar</p>
+            </div>
+          )}
+          </div>
 
           <AutoResizingTextarea
             placeholder="Keterangan atau Sumber Indonesia (Opsional)..."
