@@ -360,33 +360,37 @@ export function QuickPostFeed({
         </div>
       </div>}
 
-      <div className={`grid grid-cols-1 ${isPreview ? "gap-3 lg:gap-5" : "gap-5"} ${visibleTypes.length === 1 ? "mx-auto max-w-3xl" : "lg:grid-cols-3"} ${isPreview ? "lg:items-stretch" : "lg:items-start"}`}>
+      <div className={`grid grid-cols-1 ${isPreview ? "gap-5 lg:gap-6 xl:gap-7" : "gap-5"} ${visibleTypes.length === 1 ? "mx-auto max-w-3xl" : "lg:grid-cols-3"} ${isPreview ? "lg:items-stretch" : "lg:items-start"}`}>
         {visibleTypes.map((type) => {
           const posts = isPreview ? quickPosts[type].slice(0, 1) : quickPosts[type];
           return (
-            <div key={type} className={`${activeType === type || visibleTypes.length === 1 ? "flex" : "hidden"} min-w-0 flex-col ${isPreview ? "gap-2.5 lg:gap-4" : "gap-4"} lg:flex`}>
+            <div key={type} className={`${activeType === type || visibleTypes.length === 1 ? "flex" : "hidden"} min-w-0 flex-col ${isPreview ? "gap-3.5 lg:gap-5" : "gap-4"} lg:flex`}>
               <section
                 data-quick-post-column={type}
                 id={`quick-post-column-${type.toLowerCase()}`}
                 role="tabpanel"
                 aria-label={columnLabels[type]}
-                className={`min-w-0 overflow-hidden border border-outline-variant/30 bg-surface-container-lowest transition duration-200 ${isPreview ? "flex flex-1 flex-col rounded-xl hover:-translate-y-px hover:border-outline-variant/60 lg:min-h-[clamp(320px,46svh,420px)]" : "block rounded-[1.75rem] shadow-sm"}`}
+                className={`min-w-0 overflow-hidden border bg-surface-container-lowest transition duration-300 ${isPreview ? "relative flex flex-1 flex-col rounded-[1.75rem] border-outline-variant/20 shadow-[0_22px_65px_-38px_rgba(55,34,28,0.38)] hover:-translate-y-1 hover:border-secondary/25 hover:shadow-[0_28px_70px_-36px_rgba(122,49,31,0.38)] sm:min-h-[620px] lg:min-h-[clamp(680px,76svh,760px)]" : "block rounded-[1.75rem] border-outline-variant/30 shadow-sm"}`}
               >
-              <header className={`flex items-center border-b border-outline-variant/20 ${isPreview ? "gap-2.5 bg-surface-container-low/40 px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5" : "gap-3 bg-surface-container-low px-5 py-5"}`}>
-                <span className={isPreview ? "inline-flex text-secondary/75" : "grid h-10 w-10 place-items-center rounded-full bg-secondary/10 text-secondary"}>
+              {isPreview && <span className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-secondary/55 to-transparent" />}
+              <header className={`flex items-center ${isPreview ? "gap-3.5 px-5 pb-3 pt-5 sm:px-6 sm:pb-4 sm:pt-6 lg:px-7" : "gap-3 border-b border-outline-variant/20 bg-surface-container-low px-5 py-5"}`}>
+                <span className={isPreview ? "grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-secondary/10 text-secondary ring-1 ring-secondary/10" : "grid h-10 w-10 place-items-center rounded-full bg-secondary/10 text-secondary"}>
                   <span className={`material-symbols-outlined ${isPreview ? "text-[20px]" : "text-[21px]"}`}>{columnIcons[type]}</span>
                 </span>
-                <h2 className={`font-headline tracking-tight text-primary ${isPreview ? "text-lg font-bold sm:text-xl lg:text-[1.35rem]" : "text-xl font-black sm:text-2xl"}`}>
-                  {columnLabels[type]}
-                </h2>
+                <div className="min-w-0">
+                  {isPreview && <span className="mb-0.5 block text-[9px] font-black uppercase tracking-[0.18em] text-on-surface-variant/45">Quickpost</span>}
+                  <h2 className={`font-headline tracking-tight text-primary ${isPreview ? "text-lg font-black sm:text-xl lg:text-[1.3rem]" : "text-xl font-black sm:text-2xl"}`}>
+                    {columnLabels[type]}
+                  </h2>
+                </div>
               </header>
 
-              <div className={`${isPreview ? "flex flex-1 flex-col px-4 py-1 sm:px-6 sm:py-2 lg:px-7 lg:py-3" : "px-5 py-2 sm:px-6"}`}>
+              <div className={`${isPreview ? "flex flex-1 flex-col px-5 pb-5 sm:px-6 sm:pb-6 lg:px-7" : "px-5 py-2 sm:px-6"}`}>
                 {posts.length === 0 ? (
-                  <div className={`grid place-items-center text-center ${isPreview ? "min-h-36 flex-1 py-5 sm:min-h-44 sm:py-7" : "min-h-56 py-10"}`}>
+                  <div className={`grid place-items-center text-center ${isPreview ? "min-h-56 flex-1 py-10" : "min-h-56 py-10"}`}>
                     <div>
-                      <span className={`material-symbols-outlined text-secondary/30 ${isPreview ? "text-2xl" : "text-3xl"}`}>{columnIcons[type]}</span>
-                      <h3 className={`font-headline text-primary ${isPreview ? "mt-2.5 text-base font-bold" : "mt-3 text-lg font-black"}`}>{emptyLabels[type]}</h3>
+                      <span className={`material-symbols-outlined mx-auto grid place-items-center text-secondary/35 ${isPreview ? "h-14 w-14 rounded-2xl border border-outline-variant/20 bg-surface-container-low text-[25px] shadow-sm" : "text-3xl"}`}>{columnIcons[type]}</span>
+                      <h3 className={`font-headline text-primary ${isPreview ? "mt-4 text-base font-black" : "mt-3 text-lg font-black"}`}>{emptyLabels[type]}</h3>
                       <p className={`mx-auto mt-2 max-w-xs text-xs leading-relaxed text-on-surface-variant/55 ${isPreview ? "max-w-[17rem]" : ""}`}>{labels.emptyDescription}</p>
                     </div>
                   </div>
@@ -402,7 +406,7 @@ export function QuickPostFeed({
                   const shareUrl = buildAbsoluteUrl(`/${lang}/catatan#quick-post-${post.id}`);
 
                   return (
-                    <article key={post.id} id={`quick-post-${post.id}`} className={`group relative scroll-mt-24 border-b border-outline-variant/20 last:border-b-0 ${isPreview ? "py-4 lg:py-5" : "py-6"}`}>
+                    <article key={post.id} id={`quick-post-${post.id}`} className={`group relative scroll-mt-24 border-b border-outline-variant/20 last:border-b-0 ${isPreview ? "flex h-full flex-1 flex-col pb-1 pt-2" : "py-6"}`}>
                       {isAdmin && (
                         <div className={`absolute right-0 top-4 z-10 flex items-center gap-1 rounded-full border border-outline-variant/20 bg-surface-container-lowest/95 p-1 shadow-lg transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 ${isPending ? "pointer-events-none opacity-60" : ""}`}>
                           <button type="button" onClick={() => startEdit(post)} className="grid h-8 w-8 place-items-center rounded-full text-secondary hover:bg-secondary/10" aria-label={labels.edit} title={labels.edit}>
@@ -415,8 +419,9 @@ export function QuickPostFeed({
                       )}
 
                       {post.imageUrl && type === "NORMAL" && (
-                        <div className={`relative overflow-hidden bg-surface-container ${isPreview ? "mb-3 h-18 w-18 rounded-lg sm:mb-4 sm:h-24 sm:w-24 lg:h-28 lg:w-full lg:rounded-xl" : "mb-5 aspect-16/10 rounded-2xl"}`}>
-                          <Image src={post.imageUrl} alt="" fill sizes={isPreview ? "(max-width: 640px) 72px, (max-width: 1024px) 96px, 33vw" : "(max-width: 1024px) 100vw, 33vw"} className="object-cover transition duration-700 group-hover:scale-[1.03]" />
+                        <div className={`relative overflow-hidden bg-surface-container-low ${isPreview ? "mb-5 aspect-square w-full rounded-[1.35rem] border border-outline-variant/15" : "mb-5 aspect-16/10 rounded-2xl"}`}>
+                          <Image src={post.imageUrl} alt="" fill sizes={isPreview ? "(max-width: 1024px) 100vw, 33vw" : "(max-width: 1024px) 100vw, 33vw"} className={`${isPreview ? "object-contain" : "object-cover"} transition duration-700 group-hover:scale-[1.025]`} />
+                          {isPreview && <span className="pointer-events-none absolute inset-0 rounded-[1.35rem] ring-1 ring-inset ring-white/35" />}
                         </div>
                       )}
 
@@ -450,7 +455,10 @@ export function QuickPostFeed({
                       ) : (
                         <button type="button" onClick={() => toggleExpanded(post.id)} className="block w-full text-left">
                           {isQuote ? (
-                          <p className={`text-pretty font-headline italic tracking-[-0.02em] text-primary ${isPreview ? `text-lg font-semibold leading-[1.42] sm:text-xl ${isExpanded ? "" : "line-clamp-6"}` : "text-xl font-black leading-tight sm:text-2xl"}`}>&ldquo;{visibleContent}&rdquo;</p>
+                          <span className={isPreview ? "relative block rounded-[1.35rem] bg-surface-container-low/55 p-5 ring-1 ring-outline-variant/15 sm:p-6" : "block"}>
+                            {isPreview && <span className="material-symbols-outlined absolute right-4 top-3 text-[34px] text-secondary/12">format_quote</span>}
+                            <span className={`relative block text-pretty font-headline italic tracking-[-0.02em] text-primary ${isPreview ? `text-lg font-semibold leading-[1.5] sm:text-xl ${isExpanded ? "" : "line-clamp-7"}` : "text-xl font-black leading-tight sm:text-2xl"}`}>&ldquo;{visibleContent}&rdquo;</span>
+                          </span>
                           ) : (
                             <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base ${isPreview && !isExpanded ? "line-clamp-4" : ""}`}>{visibleContent}</p>
                           )}
@@ -476,7 +484,7 @@ export function QuickPostFeed({
                         </OptimisticLink>
                       )}
 
-                      <div className={`${isPreview ? "mt-4" : "mt-5"} flex flex-wrap items-center justify-between gap-3`}>
+                      <div className={`${isPreview ? "mt-auto flex min-h-12 items-end border-t border-outline-variant/15 pt-5" : "mt-5"} flex flex-wrap items-center justify-between gap-3`}>
                         {isLong ? (
                           <button type="button" onClick={() => toggleExpanded(post.id)} className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-secondary">
                             {isExpanded ? labels.showLess : labels.readMore}
@@ -499,7 +507,7 @@ export function QuickPostFeed({
               </section>
 
               {isPreview && archiveHrefs?.[type] && (
-                <OptimisticLink href={archiveHrefs[type]} className="mx-auto inline-flex h-11 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent px-5 text-[10px] font-bold uppercase tracking-wider text-primary transition duration-200 hover:-translate-y-px hover:border-outline-variant/50 hover:text-tertiary active:translate-y-0 active:scale-[0.98]">
+                <OptimisticLink href={archiveHrefs[type]} className="mx-auto inline-flex h-11 items-center justify-center gap-2 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-5 text-[10px] font-black uppercase tracking-wider text-primary shadow-[0_12px_30px_-22px_rgba(55,34,28,0.55)] transition duration-200 hover:-translate-y-0.5 hover:border-secondary/30 hover:text-secondary hover:shadow-[0_16px_34px_-22px_rgba(122,49,31,0.5)] active:translate-y-0 active:scale-[0.98]">
                   {viewAllLabels[type]}
                   <span className="material-symbols-outlined text-[18px]">east</span>
                 </OptimisticLink>
