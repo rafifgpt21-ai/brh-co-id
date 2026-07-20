@@ -45,6 +45,15 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const firstTextBlock = localizedPost.blocks.find((block) => block.type === 'text');
   const description = firstTextBlock?.content?.replace(/<[^>]*>/g, '').slice(0, 160) || `${dict.home.readMore} ${localizedPost.title}`;
   const canonicalUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}`);
+  const socialImageUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}/opengraph-image`);
+  const socialImage = {
+    url: socialImageUrl,
+    secureUrl: socialImageUrl,
+    width: 1200,
+    height: 630,
+    type: "image/png",
+    alt: localizedPost.title,
+  };
 
   return {
     title: `${localizedPost.title} | BRH Insight`,
@@ -59,7 +68,13 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       siteName: "BRH Insight",
       type: "article",
       publishedTime: new Date(post.publishedAt || post.createdAt).toISOString(),
-      images: post.thumbnail ? [{ url: post.thumbnail, alt: localizedPost.title }] : [],
+      images: [socialImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: localizedPost.title,
+      description,
+      images: [{ url: socialImageUrl, alt: localizedPost.title }],
     },
   };
 }

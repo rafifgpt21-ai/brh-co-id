@@ -77,6 +77,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
   };
 
   const shareUrl = buildAbsoluteUrl(`/${lang}/post/${post.slug}`);
+  const whatsappShareUrl = `${shareUrl}?share=wa2`;
   const shareLabels = {
     share: dict.post.share,
     shareToFacebook: dict.post.shareToFacebook,
@@ -171,7 +172,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
               transition={{ delay: 0.24, duration: 0.45 }}
               className="mt-8"
             >
-              <ShareActions url={shareUrl} title={post.title} labels={shareLabels} />
+              <ShareActions url={shareUrl} whatsappShareUrl={whatsappShareUrl} title={post.title} labels={shareLabels} />
             </motion.div>
           </motion.div>
         </div>
@@ -411,7 +412,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
           className="flex flex-col items-center pt-12 border-t border-outline-variant/10"
         >
           <p className="font-label text-xs font-bold tracking-[0.2em] uppercase text-on-surface-variant mb-6">{dict.post.articleEnd}</p>
-          <ShareActions url={shareUrl} title={post.title} labels={shareLabels} className="mb-6" />
+          <ShareActions url={shareUrl} whatsappShareUrl={whatsappShareUrl} title={post.title} labels={shareLabels} className="mb-6" />
           <div className="flex flex-wrap justify-center gap-4">
             <OptimisticLink
               href={`/${lang}`}
