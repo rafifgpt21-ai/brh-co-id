@@ -103,6 +103,13 @@ const quickPostStatusSchema = z.object({
   status: z.enum(["Published", "Draft"]),
 });
 
+const articleRepostSchema = z.object({
+  postId: z.string().min(1),
+  content: z.string().trim().min(1, "Ringkasan tidak boleh kosong").max(2000, "Ringkasan terlalu panjang"),
+  includeThumbnail: z.boolean(),
+  status: z.enum(["Published", "Draft"]),
+});
+
 const quickPostUpdateSchema = z.object({
   id: z.string().min(1),
   ...quickPostFields,
@@ -234,6 +241,114 @@ export async function createQuickPost(data: QuickPostFormData) {
   } catch (error) {
     console.error("Error creating quick post:", error);
     return failWithRollback(error instanceof Error ? error.message : "Gagal menyimpan quick post");
+  }
+}
+
+export async function repostArticleToQuickPost(data: {
+  postId: string;
+  content: string;
+  includeThumbnail: boolean;
+  status: "Published" | "Draft";
+}) {
+  const session = await requireAdmin();
+  if (!session) {
+    return { success: false as const, error: "Unauthorized" };
+  }
+
+  const parsedData = articleRepostSchema.safeParse(data);
+  if (!parsedData.success) {
+    return { success: false as const, error: parsedData.error.issues[0].message };
+  }
+
+  try {
+    const prisma = await getPrisma();
+    const post = await prisma.post.findUnique({
+      where: { id: parsedData.data.postId },
+      select: { id: true, title: true, slug: true, thumbnail: true, status: true },
+    });
+
+    if (!post) {
+      return { success: false as const, error: "Artikel tidak ditemukan" };
+    }
+    if (post.status !== "Published") {
+      return { success: false as const, error: "Hanya artikel Published yang dapat direpost" };
+    }
+
+    const existingQuickPost = await prisma.quickPost.findFirst({
+      where: { sourcePostId: post.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, imageUrl: true },
+    });
+    const imageUrl = parsedData.data.includeThumbnail ? post.thumbnail : null;
+    const quickPostData = {
+      type: "NORMAL",
+      content: parsedData.data.content,
+      imageUrl,
+      sourcePostId: post.id,
+      sourceTitle: post.title,
+      sourceSlug: post.slug,
+      startsAt: null,
+      endsAt: null,
+      locationLabel: null,
+      locationLatitude: null,
+      locationLongitude: null,
+      status: parsedData.data.status,
+    };
+
+    const quickPost = existingQuickPost
+      ? await prisma.quickPost.update({
+          where: { id: existingQuickPost.id },
+          data: { ...quickPostData, createdAt: new Date() },
+          select: { id: true },
+        })
+      : await prisma.quickPost.create({
+          data: quickPostData,
+          select: { id: true },
+        });
+
+    if (existingQuickPost?.imageUrl && existingQuickPost.imageUrl !== imageUrl) {
+      try {
+        await deleteFilesFromStorage([existingQuickPost.imageUrl]);
+      } catch (fileError) {
+        console.error("Error deleting replaced repost image:", fileError);
+      }
+    }
+
+    refreshQuickPostPaths();
+    revalidatePath("/admin");
+    await refreshQuickPostKnowledgeIndex(quickPost.id);
+    return { success: true as const, id: quickPost.id, updated: Boolean(existingQuickPost) };
+  } catch (error) {
+    console.error("Error reposting article to quick post:", error);
+    return { success: false as const, error: "Gagal merepost artikel" };
+  }
+}
+
+export async function getArticleReposts() {
+  const session = await requireAdmin();
+  if (!session) return [];
+
+  try {
+    const prisma = await getPrisma();
+    const quickPosts = await prisma.quickPost.findMany({
+      where: { sourcePostId: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { sourcePostId: true, content: true, imageUrl: true, status: true },
+    });
+    const seen = new Set<string>();
+    return quickPosts.flatMap((post) => {
+      if (!post.sourcePostId || seen.has(post.sourcePostId)) return [];
+      seen.add(post.sourcePostId);
+      return [{
+        sourcePostId: post.sourcePostId,
+        content: post.content,
+        includeThumbnail: Boolean(post.imageUrl),
+        status: post.status === "Published" ? "Published" as const : "Draft" as const,
+      }];
+    });
+  } catch (error) {
+    console.error("Error fetching reposted article ids:", error);
+    return [];
   }
 }
 

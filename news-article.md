@@ -6,10 +6,10 @@ Tool reusable tersedia di `.agent/tools/seed-news-article.ts`.
 
 ## Struktur bahan
 
-Satu folder bahan harus memuat:
+Satu folder bahan umumnya memuat:
 
 - `artikel.md`
-- satu gambar JPEG, PNG, WebP, atau AVIF
+- satu gambar JPEG, PNG, WebP, atau AVIF; gambar boleh belum ada jika memakai `--status Draft --no-image`
 
 Format `artikel.md` yang disarankan:
 
@@ -76,6 +76,9 @@ npx tsx .agent/tools/seed-news-article.ts --folder "..." --image "cover.jpg" --i
 
 # Simpan sebagai draft
 npx tsx .agent/tools/seed-news-article.ts --folder "..." --status Draft --commit
+
+# Simpan draft teks terlebih dahulu; thumbnail dan block gambar ditambahkan nanti
+npx tsx .agent/tools/seed-news-article.ts --folder "..." --status Draft --no-image --commit
 ```
 
 ## Susunan post
@@ -86,6 +89,8 @@ Tool membuat post kategori `Artikel` (atau nilai `--category`) dengan urutan:
 2. block Gambar;
 3. block Teks lanjutan, penulis, dan waktu terbit;
 4. block Link berjudul `Baca di <nama sumber>` jika URL sumber tersedia.
+
+Pada mode `--no-image`, tool membuat satu block Teks lengkap tanpa thumbnail dan tanpa block Gambar. Mode ini sengaja dibatasi untuk `Draft`; gambar dapat ditambahkan kemudian melalui Post Editor sebelum publikasi.
 
 Sumber tidak ditempelkan sebagai URL mentah di block teks. Gambar yang sama diunggah sebagai dua aset terpisah karena profil thumbnail dan konten berbeda.
 

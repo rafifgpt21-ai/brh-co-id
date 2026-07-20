@@ -68,6 +68,8 @@ export const dictionary = {
     addImage: "Add Image",
     changeImage: "Change Image",
     removeImage: "Remove Image",
+    sourceArticle: "From the article",
+    readSource: "Read article",
     publish: "Publish",
     draft: "Draft",
     posting: "Saving...",

@@ -99,6 +99,9 @@ model QuickPost {
   type              String   // 'NORMAL' | 'AGENDA' | 'QUOTE'
   content           String
   imageUrl          String?
+  sourcePostId      String?  @db.ObjectId
+  sourceTitle       String?
+  sourceSlug        String?
   startsAt          DateTime?
   endsAt            DateTime?
   locationLabel     String?

@@ -19,6 +19,9 @@ export type QuickPostItem = {
   type: string;
   content: string;
   imageUrl?: string | null;
+  sourcePostId?: string | null;
+  sourceTitle?: string | null;
+  sourceSlug?: string | null;
   startsAt?: Date | string | null;
   endsAt?: Date | string | null;
   locationLabel?: string | null;
@@ -60,6 +63,8 @@ type QuickPostFeedLabels = AgendaFieldLabels & {
   addImage: string;
   changeImage: string;
   removeImage: string;
+  sourceArticle: string;
+  readSource: string;
 };
 
 const COLUMN_TYPES: QuickPostType[] = ["NORMAL", "AGENDA", "QUOTE"];
@@ -450,6 +455,25 @@ export function QuickPostFeed({
                             <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface sm:text-base ${isPreview && !isExpanded ? "line-clamp-4" : ""}`}>{visibleContent}</p>
                           )}
                         </button>
+                      )}
+
+                      {post.sourceSlug && post.sourceTitle && (
+                        <OptimisticLink
+                          href={`/${lang}/post/${post.sourceSlug}`}
+                          className={`${isPreview ? "mt-4 rounded-xl p-3" : "mt-5 rounded-2xl p-4"} group/source flex items-center gap-3 border border-outline-variant/25 bg-surface-container-low transition hover:border-secondary/35 hover:bg-secondary/5`}
+                        >
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary/10 text-secondary">
+                            <span className="material-symbols-outlined text-[20px]">article</span>
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-secondary">{labels.sourceArticle}</span>
+                            <span className="mt-1 block line-clamp-2 text-sm font-bold leading-snug text-primary">{post.sourceTitle}</span>
+                          </span>
+                          <span className="hidden shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wider text-secondary sm:flex">
+                            {labels.readSource}
+                            <span className="material-symbols-outlined text-[17px] transition-transform group-hover/source:translate-x-0.5">arrow_forward</span>
+                          </span>
+                        </OptimisticLink>
                       )}
 
                       <div className={`${isPreview ? "mt-4" : "mt-5"} flex flex-wrap items-center justify-between gap-3`}>

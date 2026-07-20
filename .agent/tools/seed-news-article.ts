@@ -23,6 +23,7 @@ type Args = {
   timezone: "WIB" | "WITA" | "WIT";
   category: string;
   caption?: string;
+  noImage: boolean;
   imageAfter: number;
   status: PublishStatus;
   commit: boolean;
@@ -47,6 +48,16 @@ type CompressionResult = {
   width: number;
   height: number;
   unchanged: boolean;
+};
+
+type PostBlockInput = {
+  id: string;
+  type: string;
+  content: string;
+  url?: string;
+  title?: string;
+  caption?: string;
+  isLocked: boolean;
 };
 
 const PROFILES = {
@@ -81,8 +92,9 @@ Pemakaian:
   npx tsx .agent/tools/seed-news-article.ts --folder "..." --commit
 
 Opsi:
-  --folder <path>         Folder berisi artikel.md dan gambar (wajib)
+  --folder <path>         Folder berisi artikel.md dan, biasanya, satu gambar
   --image <path>          Pilih gambar jika folder memuat lebih dari satu gambar
+  --no-image              Buat Draft tanpa thumbnail/block gambar
   --title <text>          Override judul hasil ekstraksi
   --slug <text>           Override slug (default: dibentuk dari judul)
   --author <text>         Override penulis
@@ -115,6 +127,7 @@ function parseArgs(argv: string[]): Args {
     defaultTime: "08:00",
     timezone: "WIB",
     category: "Artikel",
+    noImage: false,
     imageAfter: 3,
     status: "Published",
     commit: false,
@@ -133,6 +146,10 @@ function parseArgs(argv: string[]): Args {
     }
     if (arg === "--skip-index") {
       result.skipIndex = true;
+      continue;
+    }
+    if (arg === "--no-image") {
+      result.noImage = true;
       continue;
     }
 
@@ -181,6 +198,10 @@ function parseArgs(argv: string[]): Args {
   }
 
   if (!result.folder) throw new Error("--folder wajib diisi");
+  if (result.noImage && result.image) throw new Error("--no-image tidak dapat dipakai bersama --image");
+  if (result.noImage && result.status !== "Draft") {
+    throw new Error("--no-image hanya dapat dipakai bersama --status Draft");
+  }
   return result;
 }
 
@@ -426,12 +447,14 @@ async function main() {
   const folder = path.resolve(args.folder);
   const markdownPath = path.join(folder, "artikel.md");
   const article = parseArticle(await readFile(markdownPath, "utf8"), args);
-  const imagePath = await findImage(folder, args.image);
-  const sourceImage = await readFile(imagePath);
-  const [thumbnail, contentImage] = await Promise.all([
-    compressImage(sourceImage, "thumbnail"),
-    compressImage(sourceImage, "content"),
-  ]);
+  const imagePath = args.noImage ? undefined : await findImage(folder, args.image);
+  const sourceImage = imagePath ? await readFile(imagePath) : undefined;
+  const [thumbnail, contentImage] = sourceImage
+    ? await Promise.all([
+        compressImage(sourceImage, "thumbnail"),
+        compressImage(sourceImage, "content"),
+      ])
+    : [undefined, undefined];
   const existing = await prisma.post.findFirst({
     where: { OR: [{ slug: article.slug }, { title: article.title }] },
     select: { id: true, slug: true },
@@ -447,71 +470,92 @@ async function main() {
     category: args.category,
     status: args.status,
     paragraphs: article.paragraphs.length,
-    imagePath,
-    sourceBytes: sourceImage.length,
-    thumbnailBytes: thumbnail.buffer.length,
-    contentBytes: contentImage.buffer.length,
-    thumbnailSavedPercent: Math.max(0, Math.round((1 - thumbnail.buffer.length / sourceImage.length) * 100)),
-    contentSavedPercent: Math.max(0, Math.round((1 - contentImage.buffer.length / sourceImage.length) * 100)),
-    thumbnailFormat: thumbnail.mime,
-    contentFormat: contentImage.mime,
+    imageMode: args.noImage ? "deferred" : "included",
+    imagePath: imagePath ?? null,
+    sourceBytes: sourceImage?.length ?? null,
+    thumbnailBytes: thumbnail?.buffer.length ?? null,
+    contentBytes: contentImage?.buffer.length ?? null,
+    thumbnailSavedPercent: sourceImage && thumbnail
+      ? Math.max(0, Math.round((1 - thumbnail.buffer.length / sourceImage.length) * 100))
+      : null,
+    contentSavedPercent: sourceImage && contentImage
+      ? Math.max(0, Math.round((1 - contentImage.buffer.length / sourceImage.length) * 100))
+      : null,
+    thumbnailFormat: thumbnail?.mime ?? null,
+    contentFormat: contentImage?.mime ?? null,
     existingPost: existing,
   };
   console.log(JSON.stringify(preview, null, 2));
   if (!args.commit) return;
   if (existing) throw new Error(`Post sudah ada: ${existing.id} (${existing.slug})`);
 
-  const splitAt = Math.min(args.imageAfter, article.paragraphs.length);
-  const beforeImage = article.paragraphs.slice(0, splitAt);
-  const afterImage = article.paragraphs.slice(splitAt);
   const uploadedKeys: string[] = [];
   const utapi = new UTApi();
 
   try {
-    const uploads = await utapi.uploadFiles([
-      new UTFile([thumbnail.buffer], `${article.slug}-thumbnail${thumbnail.extension}`, {
-        type: thumbnail.mime,
-      }),
-      new UTFile([contentImage.buffer], `${article.slug}-content${contentImage.extension}`, {
-        type: contentImage.mime,
-      }),
-    ]);
-    const [thumbnailUpload, contentUpload] = uploads;
-    if (thumbnailUpload.error || !thumbnailUpload.data) {
-      throw new Error(`Upload thumbnail gagal: ${thumbnailUpload.error?.message ?? "unknown"}`);
+    let thumbnailUrl: string | undefined;
+    let contentImageUrl: string | undefined;
+    if (thumbnail && contentImage) {
+      const uploads = await utapi.uploadFiles([
+        new UTFile([thumbnail.buffer], `${article.slug}-thumbnail${thumbnail.extension}`, {
+          type: thumbnail.mime,
+        }),
+        new UTFile([contentImage.buffer], `${article.slug}-content${contentImage.extension}`, {
+          type: contentImage.mime,
+        }),
+      ]);
+      const [thumbnailUpload, contentUpload] = uploads;
+      if (thumbnailUpload.error || !thumbnailUpload.data) {
+        throw new Error(`Upload thumbnail gagal: ${thumbnailUpload.error?.message ?? "unknown"}`);
+      }
+      uploadedKeys.push(thumbnailUpload.data.key);
+      thumbnailUrl = thumbnailUpload.data.ufsUrl;
+      if (contentUpload.error || !contentUpload.data) {
+        throw new Error(`Upload gambar konten gagal: ${contentUpload.error?.message ?? "unknown"}`);
+      }
+      uploadedKeys.push(contentUpload.data.key);
+      contentImageUrl = contentUpload.data.ufsUrl;
     }
-    uploadedKeys.push(thumbnailUpload.data.key);
-    if (contentUpload.error || !contentUpload.data) {
-      throw new Error(`Upload gambar konten gagal: ${contentUpload.error?.message ?? "unknown"}`);
-    }
-    uploadedKeys.push(contentUpload.data.key);
 
     const metadataHtml =
       `<hr><p><strong>Penulis:</strong> ${escapeHtml(article.author)}` +
       `<br><strong>Waktu terbit:</strong> ${escapeHtml(article.publishedLabel)}</p>`;
-    const blocks = [
-      {
+    let blocks: PostBlockInput[];
+    if (contentImageUrl) {
+      const splitAt = Math.min(args.imageAfter, article.paragraphs.length);
+      const beforeImage = article.paragraphs.slice(0, splitAt);
+      const afterImage = article.paragraphs.slice(splitAt);
+      blocks = [
+        {
+          id: randomUUID(),
+          type: "text",
+          content: paragraphsToHtml(beforeImage),
+          isLocked: false,
+        },
+        {
+          id: randomUUID(),
+          type: "image",
+          content: "",
+          url: contentImageUrl,
+          title: article.title,
+          caption: args.caption || `Ilustrasi: ${article.title}`,
+          isLocked: false,
+        },
+        {
+          id: randomUUID(),
+          type: "text",
+          content: paragraphsToHtml(afterImage) + metadataHtml,
+          isLocked: false,
+        },
+      ];
+    } else {
+      blocks = [{
         id: randomUUID(),
         type: "text",
-        content: paragraphsToHtml(beforeImage),
+        content: paragraphsToHtml(article.paragraphs) + metadataHtml,
         isLocked: false,
-      },
-      {
-        id: randomUUID(),
-        type: "image",
-        content: "",
-        url: contentUpload.data.ufsUrl,
-        title: article.title,
-        caption: args.caption || `Ilustrasi: ${article.title}`,
-        isLocked: false,
-      },
-      {
-        id: randomUUID(),
-        type: "text",
-        content: paragraphsToHtml(afterImage) + metadataHtml,
-        isLocked: false,
-      },
-    ];
+      }];
+    }
     if (article.sourceUrl) {
       blocks.push({
         id: randomUUID(),
@@ -529,7 +573,7 @@ async function main() {
         slug: article.slug,
         category: args.category,
         status: args.status,
-        thumbnail: thumbnailUpload.data.ufsUrl,
+        thumbnail: thumbnailUrl ?? null,
         publishedAt: article.publishedAt,
         createdAt: article.publishedAt,
         updatedAt: article.publishedAt,

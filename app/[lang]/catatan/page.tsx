@@ -55,6 +55,8 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     addImage: dict.quickPost.addImage,
     changeImage: dict.quickPost.changeImage,
     removeImage: dict.quickPost.removeImage,
+    sourceArticle: dict.quickPost.sourceArticle,
+    readSource: dict.quickPost.readSource,
     emptyDescription: dict.quickPost.emptyDescription,
     agendaRequired: dict.quickPost.agendaRequired,
     normal: dict.quickPost.normal,
