@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { compressImage, formatFileSize, type ImageCompressionResult } from '@/lib/image-compression';
 import { createUploadReceipt, type UploadReceipt } from '@/lib/uploadthing-types';
 import { rollbackUploadedFiles } from '@/lib/actions/uploadthing';
+import { usePublishProgress, type PublishedPostSummary } from './PublishProgressProvider';
 
 export type EditorBlock = {
   id: string;
@@ -85,6 +86,7 @@ const AutoResizingTextarea = ({
 
 export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialData }) => {
   const router = useRouter();
+  const { isPublishing, startPublish } = usePublishProgress();
   const [isPending, startTransition] = useTransition();
   
   // Base states
@@ -121,7 +123,8 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
   const [compressingIds, setCompressingIds] = useState<Set<string>>(new Set());
   const compressionTokensRef = useRef<Record<string, symbol>>({});
   const [saveStatus, setSaveStatus] = useState<'Idle' | 'Uploading' | 'Saving' | 'Success' | 'Error'>('Idle');
-  const [isSavingInProgress, setIsSavingInProgress] = useState(false);
+  const [isLocalSaveInProgress, setIsSavingInProgress] = useState(false);
+  const isSavingInProgress = isLocalSaveInProgress || isPublishing;
 
   const firstImageBlock = blocks.find((block) =>
     block.type === 'image' && Boolean(previews[block.id] || block.url)
@@ -474,21 +477,14 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
     }
   }, [cancelCompression, stagedFiles, previews]);
 
-  const handleSave = async (status: 'Published' | 'Draft') => {
-    if (!title.trim()) {
-      alert('Judul tidak boleh kosong!');
-      return;
-    }
-    if (compressingIds.size > 0) {
-      alert('Tunggu sampai proses kompresi gambar selesai.');
-      return;
-    }
-
-    setIsSavingInProgress(true);
-    setSaveStatus('Uploading');
+  const persistPost = async (
+    status: 'Published' | 'Draft',
+    onStage: (stage: 'Uploading' | 'Saving') => void,
+  ): Promise<{ success: boolean; error?: string; post?: PublishedPostSummary }> => {
     const uploadedReceipts: UploadReceipt[] = [];
 
     try {
+      onStage('Uploading');
       let finalThumbnail = thumbnail;
       let finalBlocks = [...blocks];
 
@@ -540,7 +536,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         )?.url?.trim() || '';
       }
 
-      setSaveStatus('Saving');
+      onStage('Saving');
 
       const result = await savePost({
         id: initialData?.id,
@@ -566,21 +562,38 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
       });
 
       if (result.success) {
-        setSaveStatus('Success');
-        
-        // Remove local autosave draft
-        localStorage.removeItem(`brh_autosave_post_${initialData?.id || 'new'}`);
-        
-        setTimeout(() => {
-          router.push('/admin');
-          router.refresh();
-        }, 1000);
-      } else {
-        if (uploadedReceipts.length > 0) await rollbackUploadedFiles(uploadedReceipts);
-        setSaveStatus('Error');
-        alert(result.error || 'Gagal menyimpan');
-        setSaveStatus('Idle');
+        if (!result.post) return { success: true };
+        const savedPost = result.post;
+        const excerpt = finalBlocks
+          .find((block) => block.type === 'text')
+          ?.content.replace(/<[^>]*>/g, ' ')
+          .replace(/&nbsp;|&#160;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&quot;/gi, '"')
+          .replace(/&#39;|&apos;/gi, "'")
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 520) || '';
+
+        return {
+          success: true,
+          post: {
+            id: savedPost.id,
+            title: savedPost.title,
+            slug: savedPost.slug,
+            category: savedPost.category,
+            status: savedPost.status,
+            thumbnail: savedPost.thumbnail,
+            excerpt,
+            publishedAt: savedPost.publishedAt,
+            createdAt: savedPost.createdAt,
+            updatedAt: savedPost.updatedAt,
+          },
+        };
       }
+
+      if (uploadedReceipts.length > 0) await rollbackUploadedFiles(uploadedReceipts);
+      return { success: false, error: result.error || 'Gagal menyimpan' };
     } catch (error) {
       console.error("Upload/Save error:", error);
       if (uploadedReceipts.length > 0) {
@@ -590,7 +603,67 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
           console.error('Upload rollback failed:', cleanupError);
         }
       }
-      setSaveStatus('Error');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan postingan.',
+      };
+    }
+  };
+
+  const handleSave = async (status: 'Published' | 'Draft') => {
+    if (!title.trim()) {
+      alert('Judul tidak boleh kosong!');
+      return;
+    }
+    if (compressingIds.size > 0) {
+      alert('Tunggu sampai proses kompresi gambar selesai.');
+      return;
+    }
+    if (isPublishing) {
+      alert('Publikasi lain masih berjalan. Tunggu hingga proses tersebut selesai.');
+      return;
+    }
+
+    if (status === 'Published') {
+      setIsSavingInProgress(true);
+      const started = startPublish({
+        title: title.trim(),
+        kind: initialData?.id ? 'update' : 'create',
+        task: async (setStage) => {
+          const result = await persistPost('Published', (stage) => {
+            setStage(stage === 'Uploading' ? 'uploading' : 'saving');
+          });
+
+          if (result.success) {
+            localStorage.removeItem(`brh_autosave_post_${initialData?.id || 'new'}`);
+          }
+          return result;
+        },
+      });
+
+      if (started) {
+        router.push('/admin');
+      } else {
+        setIsSavingInProgress(false);
+      }
+      return;
+    }
+
+    setIsSavingInProgress(true);
+    setSaveStatus('Uploading');
+    try {
+      const result = await persistPost('Draft', setSaveStatus);
+      if (result.success) {
+        setSaveStatus('Success');
+        localStorage.removeItem(`brh_autosave_post_${initialData?.id || 'new'}`);
+        window.setTimeout(() => {
+          router.push('/admin');
+          router.refresh();
+        }, 1000);
+      } else {
+        setSaveStatus('Error');
+        alert(result.error || 'Gagal menyimpan');
+      }
     } finally {
       setIsSavingInProgress(false);
     }

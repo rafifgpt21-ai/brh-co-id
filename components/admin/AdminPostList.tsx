@@ -7,6 +7,7 @@ import { deletePost, resetHomeFeaturedPostIds, saveHomeFeaturedPostIds } from '@
 import { motion, AnimatePresence } from 'framer-motion';
 import { repostArticleToQuickPost } from '@/lib/actions/quick-post';
 import Image from 'next/image';
+import { usePublishProgress } from './PublishProgressProvider';
 
 type Post = {
   id: string;
@@ -37,6 +38,7 @@ export function AdminPostList({
   initialHomeFeaturedPostIds: string[];
   initialArticleReposts: ArticleRepost[];
 }) {
+  const { latestPublishedPost } = usePublishProgress();
   const [posts, setPosts] = useState(initialPosts);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'Published' | 'Draft'>('all');
@@ -60,6 +62,19 @@ export function AdminPostList({
     direction: 'desc',
   });
 
+  useEffect(() => {
+    setPosts(initialPosts);
+  }, [initialPosts]);
+
+  useEffect(() => {
+    if (!latestPublishedPost) return;
+    setPosts((current) => {
+      const exists = current.some((post) => post.id === latestPublishedPost.id);
+      if (!exists) return [latestPublishedPost, ...current];
+      return current.map((post) => post.id === latestPublishedPost.id ? latestPublishedPost : post);
+    });
+  }, [latestPublishedPost]);
+
   const requestSort = (key: keyof Post) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -71,9 +86,17 @@ export function AdminPostList({
   const sortedPosts = [...posts].sort((a, b) => {
     if (!sortConfig) return 0;
     const { key, direction } = sortConfig;
-    
-    const valA = a[key] ?? '';
-    const valB = b[key] ?? '';
+
+    const getSortValue = (post: Post) => {
+      const value = post[key];
+      if (key === 'publishedAt' || key === 'createdAt' || key === 'updatedAt') {
+        return value ? new Date(value as Date).getTime() : 0;
+      }
+      return typeof value === 'string' ? value.toLocaleLowerCase('id-ID') : value ?? '';
+    };
+
+    const valA = getSortValue(a);
+    const valB = getSortValue(b);
 
     if (valA < valB) {
       return direction === 'asc' ? -1 : 1;
@@ -438,7 +461,7 @@ export function AdminPostList({
         <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-4 bg-surface-container-low/30 border-b border-outline-variant/30 text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-widest">
           <button 
             onClick={() => requestSort('title')}
-            className="col-span-1 lg:col-span-5 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
+            className="col-span-4 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
           >
             Judul Karya
             {sortConfig?.key === 'title' && (
@@ -450,10 +473,22 @@ export function AdminPostList({
           
           <button 
             onClick={() => requestSort('category')}
-            className="col-span-2 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
+            className="col-span-1 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
           >
             Kategori
             {sortConfig?.key === 'category' && (
+              <span className="material-symbols-outlined text-[16px] animate-in fade-in duration-300">
+                {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => requestSort('publishedAt')}
+            className="col-span-2 flex items-center gap-1.5 hover:text-on-surface transition-colors cursor-pointer text-left"
+          >
+            Tanggal Terbit
+            {sortConfig?.key === 'publishedAt' && (
               <span className="material-symbols-outlined text-[16px] animate-in fade-in duration-300">
                 {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
               </span>
@@ -493,7 +528,7 @@ export function AdminPostList({
             <div key={post.id} className="group grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 items-start lg:items-center px-5 sm:px-6 lg:px-8 py-5 hover:bg-surface-container-low/50 transition-colors">
 
               {/* Kolom 1: Judul */}
-              <div className="col-span-1 lg:col-span-5 flex items-start sm:items-center gap-4">
+              <div className="col-span-1 lg:col-span-4 flex items-start sm:items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center shrink-0 text-on-surface-variant/80">
                   <span className="material-symbols-outlined text-[24px]">
                     {post.category === 'Buku' ? 'auto_stories' : post.category === 'Jurnal' ? 'science' : post.category === 'Opini' ? 'forum' : 'article'}
@@ -522,7 +557,9 @@ export function AdminPostList({
                   <div className="flex lg:hidden flex-wrap items-center gap-2 mt-1.5 text-xs text-on-surface-variant/80 font-medium">
                     <span className="bg-surface-container-low px-2 py-0.5 rounded-md">{post.category}</span>
                     <span className="w-1 h-1 rounded-full bg-outline-variant/60"></span>
-                    <span>{formatDate(post.updatedAt)}</span>
+                    <span>Terbit {post.publishedAt ? formatDate(post.publishedAt) : '—'}</span>
+                    <span className="w-1 h-1 rounded-full bg-outline-variant/60"></span>
+                    <span>Diubah {formatDate(post.updatedAt)}</span>
                     <span className="w-1 h-1 rounded-full bg-outline-variant/60"></span>
                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${post.status === 'Published'
                       ? 'bg-green-100 text-green-700'
@@ -535,16 +572,21 @@ export function AdminPostList({
               </div>
 
               {/* Kolom 2: Kategori */}
-              <div className="hidden lg:block col-span-2 text-sm font-semibold text-on-surface-variant/80">
+              <div className="hidden lg:block col-span-1 text-sm font-semibold text-on-surface-variant/80">
                 {post.category}
               </div>
 
-              {/* Kolom 3: Tanggal */}
+              {/* Kolom 3: Tanggal Terbit */}
+              <div className="hidden lg:block col-span-2 text-sm text-on-surface-variant/80">
+                {post.publishedAt ? formatDate(post.publishedAt) : '—'}
+              </div>
+
+              {/* Kolom 4: Terakhir Diubah */}
               <div className="hidden lg:block col-span-2 text-sm text-on-surface-variant/80">
                 {formatDate(post.updatedAt)}
               </div>
 
-              {/* Kolom 4: Status Badge */}
+              {/* Kolom 5: Status Badge */}
               <div className="hidden lg:flex col-span-1 items-center justify-center">
                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${post.status === 'Published'
                   ? 'bg-green-100 text-green-700'
@@ -554,7 +596,7 @@ export function AdminPostList({
                 </span>
               </div>
 
-              {/* Kolom 5: Action Buttons */}
+              {/* Kolom 6: Action Buttons */}
               <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-1.5 w-full lg:w-auto mt-2 lg:mt-0 transition-opacity">
                 {post.status === 'Published' && (
                   <button

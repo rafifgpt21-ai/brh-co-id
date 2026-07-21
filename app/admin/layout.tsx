@@ -4,6 +4,7 @@ import { defaultLocale, hasLocale, localeCookieName, type Locale } from "@/lib/i
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
+import { PublishProgressProvider } from "@/components/admin/PublishProgressProvider";
 
 async function getAdminLocale(): Promise<Locale> {
   const cookieStore = await cookies();
@@ -26,15 +27,17 @@ async function AdminHeader() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <LenisProvider>
-      <Suspense fallback={<div className="h-20 w-full bg-[#fcf8fa]/80" />}>
-        <AdminHeader />
-      </Suspense>
-      <main className="flex-1 pt-20">
-        <div className="w-full px-1 sm:px-6 mx-auto pt-2 md:pt-4 pb-8 lg:pb-16">
-          {children}
-        </div>
-      </main>
-    </LenisProvider>
+    <PublishProgressProvider>
+      <LenisProvider>
+        <Suspense fallback={<div className="h-20 w-full bg-[#fcf8fa]/80" />}>
+          <AdminHeader />
+        </Suspense>
+        <main className="flex-1 pt-20">
+          <div className="w-full px-1 sm:px-6 mx-auto pt-2 md:pt-4 pb-8 lg:pb-16">
+            {children}
+          </div>
+        </main>
+      </LenisProvider>
+    </PublishProgressProvider>
   );
 }
