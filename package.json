@@ -13,6 +13,8 @@
     "seed:posts": "npx tsx scripts/seed-posts.ts",
     "seed:material-books": "npx tsx scripts/seed-material-book-posts.ts",
     "seed:lautan-tanpa-tepi": "npx tsx scripts/seed-lautan-tanpa-tepi-books.ts",
+    "seed:menembus-ruang-dan-waktu": "npx tsx scripts/seed-menembus-ruang-dan-waktu-books.ts",
+    "seed:tuntunan-sholat-thoriqoh": "npx tsx scripts/seed-tuntunan-sholat-thoriqoh-book.ts",
     "seed:quick-posts": "npx tsx scripts/seed-quick-posts.ts",
     "reset:content": "npx tsx scripts/reset-database.ts",
     "delete:posts": "npx tsx scripts/delete-all-posts.ts",

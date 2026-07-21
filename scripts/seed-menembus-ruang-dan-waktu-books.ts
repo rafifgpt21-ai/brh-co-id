@@ -1,18 +1,22 @@
 import "dotenv/config";
 
 import { randomUUID } from "crypto";
-import { readdir, readFile } from "fs/promises";
+import { readFile } from "fs/promises";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const booksDirectory = path.join(process.cwd(), "material", "buku");
+const targetFileNames = [
+  "menembus-ruang-dan-waktu-ziarah-ke-irak.md",
+  "menembus-ruang-dan-waktu-ziarah-eropa-untuk-peradaban-dunia.md",
+] as const;
 
 type BookMaterial = {
   title: string;
   slug: string;
-  category: string;
-  publishedAt?: string;
+  materialCategory: string;
+  publishedAt: string;
   body: string;
 };
 
@@ -109,7 +113,7 @@ function parseBookMaterial(fileName: string, raw: string): BookMaterial {
       }),
   );
 
-  for (const field of ["title", "slug", "category"] as const) {
+  for (const field of ["title", "slug", "category", "publishedAt"] as const) {
     if (!metadata[field]) {
       throw new Error(`${fileName}: required field "${field}" is missing.`);
     }
@@ -120,56 +124,78 @@ function parseBookMaterial(fileName: string, raw: string): BookMaterial {
   }
 
   if (
-    metadata.publishedAt &&
-    (!/^\d{4}-\d{2}-\d{2}$/.test(metadata.publishedAt) ||
-      Number.isNaN(Date.parse(`${metadata.publishedAt}T00:00:00.000Z`)))
+    !/^\d{4}-\d{2}-\d{2}$/.test(metadata.publishedAt) ||
+    Number.isNaN(Date.parse(`${metadata.publishedAt}T00:00:00.000Z`))
   ) {
-    throw new Error(`${fileName}: publishedAt must use the YYYY-MM-DD format.`);
+    throw new Error(`${fileName}: publishedAt must use a valid YYYY-MM-DD date.`);
+  }
+
+  if (!match[2].trim()) {
+    throw new Error(`${fileName}: book content is empty.`);
   }
 
   return {
     title: metadata.title,
     slug: metadata.slug,
-    category: metadata.category,
+    materialCategory: metadata.category,
     publishedAt: metadata.publishedAt,
     body: match[2].trim(),
   };
 }
 
-async function loadBooks() {
-  const fileNames = (await readdir(booksDirectory))
-    .filter((fileName) => fileName.endsWith(".md"))
-    .sort();
+async function loadTargetBooks() {
   const books = await Promise.all(
-    fileNames.map(async (fileName) => {
+    targetFileNames.map(async (fileName) => {
       const raw = await readFile(path.join(booksDirectory, fileName), "utf8");
       return parseBookMaterial(fileName, raw);
     }),
   );
 
-  const slugs = new Set<string>();
-  for (const book of books) {
-    if (slugs.has(book.slug)) {
-      throw new Error(`Duplicate slug found: ${book.slug}`);
-    }
-    slugs.add(book.slug);
-  }
-
-  if (books.length === 0) {
-    throw new Error(`No Markdown files found in ${booksDirectory}.`);
+  const slugs = new Set(books.map((book) => book.slug));
+  if (slugs.size !== books.length) {
+    throw new Error("The Menembus Ruang dan Waktu material contains duplicate slugs.");
   }
 
   return books;
 }
 
+async function assertNoPostCollisions(books: BookMaterial[]) {
+  const existingPosts = await prisma.post.findMany({
+    where: {
+      OR: [
+        { slug: { in: books.map((book) => book.slug) } },
+        { title: { in: books.map((book) => book.title) } },
+      ],
+    },
+    select: { slug: true, title: true },
+  });
+
+  for (const existingPost of existingPosts) {
+    const bookWithSameTitle = books.find((book) => book.title === existingPost.title);
+    if (bookWithSameTitle && bookWithSameTitle.slug !== existingPost.slug) {
+      throw new Error(
+        `Refusing to seed duplicate title "${existingPost.title}" at slug "${bookWithSameTitle.slug}" because it already exists at "${existingPost.slug}".`,
+      );
+    }
+  }
+}
+
 async function main() {
-  const books = await loadBooks();
-  console.log(`Seeding ${books.length} material books as drafts...`);
+  const books = await loadTargetBooks();
+
+  if (process.argv.includes("--check")) {
+    for (const book of books) {
+      markdownToHtml(book.body);
+      console.log(`Validated: ${book.title} (${book.publishedAt})`);
+    }
+    console.log(`Validated ${books.length} targeted book materials without writing to the database.`);
+    return;
+  }
+
+  await assertNoPostCollisions(books);
+  console.log(`Seeding ${books.length} Menembus Ruang dan Waktu books as drafts...`);
 
   for (const book of books) {
-    const publishedAt = book.publishedAt
-      ? new Date(`${book.publishedAt}T00:00:00.000Z`)
-      : null;
     const blocks = [
       {
         id: randomUUID(),
@@ -184,7 +210,7 @@ async function main() {
         title: book.title,
         category: "Buku",
         status: "Draft",
-        publishedAt,
+        publishedAt: new Date(`${book.publishedAt}T00:00:00.000Z`),
         blocks,
       },
       create: {
@@ -192,12 +218,14 @@ async function main() {
         slug: book.slug,
         category: "Buku",
         status: "Draft",
-        publishedAt,
+        publishedAt: new Date(`${book.publishedAt}T00:00:00.000Z`),
         blocks,
       },
     });
 
-    console.log(`Upserted draft: ${book.title} (${book.category})`);
+    console.log(
+      `Upserted draft: ${book.title} (${book.materialCategory}; ${book.publishedAt})`,
+    );
   }
 
   const seededPosts = await prisma.post.findMany({
@@ -211,19 +239,18 @@ async function main() {
     },
   });
   const booksBySlug = new Map(books.map((book) => [book.slug, book]));
-  const invalidPosts = seededPosts.filter(
-    (post) => {
-      const expectedDate = booksBySlug.get(post.slug)?.publishedAt;
-      const actualDate = post.publishedAt?.toISOString().slice(0, 10);
-
-      return (
-        post.category !== "Buku" ||
-        post.status !== "Draft" ||
-        (expectedDate ? actualDate !== expectedDate : post.publishedAt !== null) ||
-        post.blocks.length === 0
-      );
-    },
-  );
+  const invalidPosts = seededPosts.filter((post) => {
+    const expectedDate = booksBySlug.get(post.slug)?.publishedAt;
+    const actualDate = post.publishedAt?.toISOString().slice(0, 10);
+    return (
+      post.category !== "Buku" ||
+      post.status !== "Draft" ||
+      actualDate !== expectedDate ||
+      post.blocks.length !== 1 ||
+      post.blocks[0].type !== "text" ||
+      !post.blocks[0].content
+    );
+  });
 
   if (seededPosts.length !== books.length || invalidPosts.length > 0) {
     throw new Error(
@@ -231,15 +258,14 @@ async function main() {
     );
   }
 
-  console.log("Verified: every seeded book is a draft with content and the expected publishing date.");
-  console.log(`Done. Upserted ${books.length} draft book posts.`);
+  console.log("Verified both targeted posts as dated drafts with populated content.");
 }
 
 main()
   .catch((error) => {
-    console.error("Material book seed failed.");
+    console.error("Menembus Ruang dan Waktu seed failed.");
     console.error(error);
-    process.exit(1);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
