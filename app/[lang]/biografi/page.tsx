@@ -165,13 +165,13 @@ export default function BiografiPage() {
               aria-label="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
               className="mb-6 font-headline font-black leading-none tracking-tighter text-primary"
             >
-              <span className="mb-3 block font-label text-xs font-bold uppercase tracking-[0.3em] text-secondary md:text-sm">
+              <span className="mb-3 block font-label text-sm font-bold uppercase tracking-[0.3em] text-secondary md:text-base">
                 Assoc. Prof.
               </span>
               <span className="block text-5xl md:text-7xl">
                 Budi Rahman <span className="text-secondary">Hakim</span>
               </span>
-              <span className="mt-4 block font-label text-sm font-semibold tracking-[0.16em] text-on-surface/60 md:text-base">
+              <span className="mt-4 block font-label text-base font-semibold tracking-[0.16em] text-on-surface/60 md:text-lg">
                 S.Ag., M.S.W., Ph.D.
               </span>
             </motion.h1>
