@@ -162,9 +162,18 @@ export default function BiografiPage() {
               initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
-              className="mb-6 font-headline text-5xl font-black leading-none tracking-tighter text-primary md:text-7xl"
+              aria-label="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
+              className="mb-6 font-headline font-black leading-none tracking-tighter text-primary"
             >
-              Budi Rahman <span className="text-secondary">Hakim</span>
+              <span className="mb-3 block font-label text-xs font-bold uppercase tracking-[0.3em] text-secondary md:text-sm">
+                Assoc. Prof.
+              </span>
+              <span className="block text-5xl md:text-7xl">
+                Budi Rahman <span className="text-secondary">Hakim</span>
+              </span>
+              <span className="mt-4 block font-label text-sm font-semibold tracking-[0.16em] text-on-surface/60 md:text-base">
+                S.Ag., M.S.W., Ph.D.
+              </span>
             </motion.h1>
             <motion.p
               initial={false}
@@ -250,7 +259,7 @@ export default function BiografiPage() {
 
             <div className="mt-12 border-t border-secondary/10 pt-8">
               <p className="font-body text-sm leading-relaxed text-on-surface/60">
-                Akademisi, penulis, jurnalis senior, dan pembina spiritual yang menjembatani tradisi pesantren, tasawuf, ilmu sosial modern, dan pembangunan peradaban.
+                Associate Professor, penulis, jurnalis senior, dan pembina spiritual yang menjembatani tradisi pesantren, tasawuf, ilmu sosial modern, dan pembangunan peradaban.
               </p>
             </div>
           </motion.div>
@@ -295,7 +304,7 @@ export default function BiografiPage() {
           <section>
             <SectionHeader num="03" title="Kiprah & Pengalaman" />
             <div className="space-y-10">
-              <RoleItem role="Dosen Tetap" organization="UIN Syarif Hidayatullah Jakarta" />
+              <RoleItem role="Associate Professor" organization="UIN Syarif Hidayatullah Jakarta" />
               <RoleItem role="Pendiri & Pengasuh" organization="Pesantren Peradaban Dunia JAGAT 'ARSY" />
               <RoleItem role="Penasehat Keruhanian" organization="Keraton Kacirebonan & Sumedang Larang" years="2021-Sekarang" />
               <RoleItem role="Ketua Penasehat" organization="Zawiyah Pusat Roudloh TQN Suryalaya Sirnarasa" years="2019-Sekarang" />
