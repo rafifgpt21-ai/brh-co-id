@@ -368,8 +368,19 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
             </span>
             <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(280px,0.7fr)] lg:items-start">
               <div>
-                <h2 className="font-headline text-3xl font-black leading-tight tracking-tight text-primary md:text-5xl">
-                  Budi Rahman <span className="text-secondary">Hakim</span> (BRH)
+                <h2
+                  aria-label="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
+                  className="font-headline font-black leading-tight tracking-tight text-primary"
+                >
+                  <span className="mb-2 block font-label text-sm font-bold uppercase tracking-[0.3em] text-secondary md:text-base">
+                    Assoc. Prof.
+                  </span>
+                  <span className="block text-3xl md:text-5xl">
+                    Budi Rahman <span className="text-secondary">Hakim</span>
+                  </span>
+                  <span className="mt-3 block font-label text-base font-semibold tracking-[0.14em] text-on-surface/60 md:text-lg">
+                    S.Ag., M.S.W., Ph.D.
+                  </span>
                 </h2>
                 <p className="mt-6 max-w-2xl text-base leading-relaxed text-on-surface-variant md:text-lg">
                   {dict.home.biographyCopy}

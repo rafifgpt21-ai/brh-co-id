@@ -44,7 +44,7 @@ export const dictionary = {
     viewAll: "View All Works",
     biographyEyebrow: "SERVING CIVILIZATION",
     biographyCopy:
-      "An academic (Ph.D. from Tilburg University, the Netherlands), prolific writer, and spiritual mentor who dedicates his life to integrating Sufi wisdom with the progress of modern social civilization. Founder of JAGAT 'ARSY Civilization Boarding School.",
+      "An academic, author, senior journalist, and spiritual mentor working at the intersection of Islamic studies, Sufism, social welfare, media, and civilizational development. Associate Professor at UIN Syarif Hidayatullah Jakarta, senior journalist at Rakyat Merdeka Media Group, and founder and caregiver of JAGAT 'ARSY Civilization Boarding School in BSD Serpong, South Tangerang.",
     biographyCta: "READ THE FULL BIOGRAPHY",
     quoteAuthor: "-BRH-",
     heroPanel: {

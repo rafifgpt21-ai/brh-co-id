@@ -44,7 +44,7 @@ export const dictionary = {
     viewAll: "Lihat Semua Karya",
     biographyEyebrow: "MENGABDI UNTUK PERADABAN",
     biographyCopy:
-      "Seorang akademisi (Ph.D. dari Tilburg University, Belanda), penulis produktif, dan pembina spiritual yang mendedikasikan hidupnya untuk integrasi kearifan Tasawuf dengan kemajuan peradaban sosial modern. Pendiri Pesantren Peradaban Dunia JAGAT 'ARSY.",
+      "Akademisi, penulis, jurnalis senior, dan pembina spiritual yang bergerak di persimpangan antara studi Islam, tasawuf, kesejahteraan sosial, media, dan pembangunan peradaban. Associate Professor di UIN Syarif Hidayatullah Jakarta, wartawan senior Rakyat Merdeka Media Group, serta pendiri dan pengasuh Pesantren Peradaban Dunia JAGAT 'ARSY di BSD Serpong, Tangerang Selatan.",
     biographyCta: "PELAJARI BIOGRAFI SELENGKAPNYA",
     quoteAuthor: "-BRH-",
     heroPanel: {
