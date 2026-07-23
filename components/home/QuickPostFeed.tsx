@@ -454,7 +454,6 @@ export function QuickPostFeed({
                   <span className={`material-symbols-outlined ${isPreview ? "text-[20px]" : "text-[21px]"}`}>{columnIcons[type]}</span>
                 </span>
                 <div className="min-w-0">
-                  {isPreview && <span className="mb-0.5 block text-[9px] font-black uppercase tracking-[0.18em] text-on-surface-variant/45">Quickpost</span>}
                   <h2 className={`font-headline tracking-tight text-primary ${isPreview ? "text-lg font-black sm:text-xl lg:text-[1.3rem]" : "text-xl font-black sm:text-2xl"}`}>
                     {columnLabels[type]}
                   </h2>
