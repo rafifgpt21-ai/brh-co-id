@@ -158,11 +158,7 @@ export const Header = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-outline-variant/20 bg-background/86 backdrop-blur-xl transition-colors duration-200">
       <div className="w-full px-5 md:px-8 lg:px-12 xl:px-24 flex justify-between items-center h-14">
-        <div className="flex items-center gap-4">
-          <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
-            <OptimisticLink href={withLocale("/", lang)}>BRH Insight</OptimisticLink>
-          </div>
-        </div>
+        <div className="w-0 lg:w-28" aria-hidden="true" />
         
         <Suspense fallback={<StaticNavLinks lang={lang} dict={dict} />}>
           <NavLinks isAdmin={false} lang={lang} dict={dict} />

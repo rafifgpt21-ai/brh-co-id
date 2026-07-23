@@ -9,6 +9,9 @@ import HeroSearch from '@/components/HeroSearch';
 import { formatLocalizedDate, withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
+const HERO_LOGO_URL =
+  "https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2pBzMPp7NKm4gFlpP1SBy2k6nIHaZW9OfGqEz7";
+
 type HeroPanelItem =
   | {
       kind: "quote" | "insight";
@@ -171,9 +174,16 @@ export default function HomeHero({
 
       <div className="relative z-[1] mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.62fr)] lg:items-center lg:gap-12 xl:gap-16 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.68fr)] 2xl:gap-20">
         <div className="min-w-0">
-          <h1 className="max-w-4xl text-pretty font-headline text-[2.45rem] font-extrabold leading-[1.02] tracking-[-0.04em] text-primary xs:text-5xl sm:text-6xl md:text-[4rem] lg:text-[4.7rem] xl:text-[5rem]">
-            <span className="block">Budi Rahman</span>
-            <span className="block font-bold italic text-secondary">Hakim</span>
+          <h1 className="relative aspect-[61/20] w-full max-w-[42rem] overflow-hidden">
+            <span className="sr-only">Budi Rahman Hakim</span>
+            <Image
+              src={HERO_LOGO_URL}
+              alt=""
+              fill
+              preload
+              sizes="(max-width: 768px) calc(100vw - 2rem), 42rem"
+              className="object-cover"
+            />
           </h1>
           <p className="mt-4 max-w-3xl text-pretty font-headline text-lg font-bold leading-snug text-tertiary sm:text-xl md:text-2xl">
             {home.heroTitleA} {home.heroTitleB}{" "}
