@@ -6,7 +6,7 @@ import {
   getStaticKnowledgeSources,
   htmlToText,
 } from "@/lib/chatbot/content";
-import type { Locale } from "@/lib/i18n/config";
+import { withLocale, type Locale } from "@/lib/i18n/config";
 import { localizePost } from "@/lib/i18n/posts";
 
 type PostBlock = {
@@ -53,7 +53,7 @@ function postToKnowledgeSource(post: KnowledgePost, locale: Locale): KnowledgeSo
     sourceId: post.id,
     locale,
     title: localizedPost.title,
-    url: `/${locale}/post/${localizedPost.slug}`,
+    url: withLocale(`/post/${localizedPost.slug}`, locale),
     category: localizedPost.category,
     thumbnail: post.thumbnail,
     content,
@@ -114,7 +114,7 @@ function quickPostToKnowledgeSource(quickPost: {
     sourceId: quickPost.id,
     locale,
     title: `${label}: ${truncateTitle(content)}`,
-    url: `/${locale}/catatan#quick-post-${quickPost.id}`,
+    url: `${withLocale("/catatan", locale)}#quick-post-${quickPost.id}`,
     category: isQuote
       ? (locale === "en" ? "Quote" : "Kutipan")
       : isAgenda

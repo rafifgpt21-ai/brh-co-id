@@ -5,6 +5,20 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
 import { PublishProgressProvider } from "@/components/admin/PublishProgressProvider";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
+};
 
 async function getAdminLocale(): Promise<Locale> {
   const cookieStore = await cookies();

@@ -4,7 +4,7 @@ import { AgendaFields, type AgendaFieldLabels } from "@/components/home/AgendaFi
 import { ShareActions } from "@/components/common/ShareActions";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { deleteQuickPost, updateQuickPost, updateQuickPostStatus, type QuickPostType } from "@/lib/actions/quick-post";
-import { formatLocalizedDate, getDateLocale, type Locale } from "@/lib/i18n/config";
+import { formatLocalizedDate, getDateLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { buildAbsoluteUrl } from "@/lib/share-url";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -461,7 +461,7 @@ export function QuickPostFeed({
                   const visibleContent = isExpanded || (isPreview && isQuote) ? post.content : truncate(post.content, previewLimit);
                   const completionTime = post.endsAt || post.startsAt;
                   const isCompleted = isAgenda && completionTime ? new Date(completionTime) < new Date() : false;
-                  const shareUrl = buildAbsoluteUrl(`/${lang}/catatan#quick-post-${post.id}`);
+                  const shareUrl = buildAbsoluteUrl(`${withLocale("/catatan", lang)}#quick-post-${post.id}`);
                   const showPostMeta = (post.status === "Draft" && isAdmin) || isCompleted || !isAgenda;
 
                   return (
@@ -535,7 +535,7 @@ export function QuickPostFeed({
 
                       {post.sourceSlug && post.sourceTitle && (
                         <OptimisticLink
-                          href={`/${lang}/post/${post.sourceSlug}`}
+                          href={withLocale(`/post/${post.sourceSlug}`, lang)}
                           className={`${isPreview ? "mt-4 rounded-xl p-3" : "mt-5 rounded-2xl p-4"} group/source flex items-center gap-3 border border-outline-variant/25 bg-surface-container-low transition hover:border-secondary/35 hover:bg-secondary/5`}
                         >
                           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary/10 text-secondary">

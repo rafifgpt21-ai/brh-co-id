@@ -24,7 +24,9 @@ type NavigationFeedbackContextValue = {
 const NavigationFeedbackContext = createContext<NavigationFeedbackContextValue | null>(null);
 
 function normalizeHref(href: LinkProps["href"]) {
-  return typeof href === "string" ? href : href.toString();
+  const value = typeof href === "string" ? href : href.toString();
+  if (!value.startsWith("/id")) return value;
+  return value.replace(/^\/id(?=\/|[?#]|$)/, "") || "/";
 }
 
 function NavigationFeedbackRuntime({ children }: { children: ReactNode }) {
@@ -69,7 +71,7 @@ function NavigationFeedbackRuntime({ children }: { children: ReactNode }) {
 
 export function NavigationFeedbackProvider({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={children}>
+    <Suspense fallback={null}>
       <NavigationFeedbackRuntime>{children}</NavigationFeedbackRuntime>
     </Suspense>
   );
@@ -111,6 +113,7 @@ export function OptimisticLink({
   const router = useRouter();
   const { pendingHref, startNavigation } = useNavigationFeedback();
   const hrefString = normalizeHref(href);
+  const normalizedHref = typeof href === "string" ? hrefString : href;
   const isPending = pendingHref === hrefString;
 
   const prefetch = useCallback(() => {
@@ -127,7 +130,7 @@ export function OptimisticLink({
   return (
     <Link
       {...props}
-      href={href}
+      href={normalizedHref}
       data-active={active ? "" : undefined}
       data-pending={isPending ? "" : undefined}
       aria-current={active ? "page" : props["aria-current"]}

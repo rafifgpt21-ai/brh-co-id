@@ -1,20 +1,16 @@
 import {
-  defaultLocale,
   hasLocale,
   localeCookieName,
-  type Locale,
 } from "@/lib/i18n/config";
 import { NextResponse, type NextRequest } from "next/server";
 
-function getLocale(request: NextRequest): Locale {
-  const cookieLocale = request.cookies.get(localeCookieName)?.value;
-  if (hasLocale(cookieLocale)) return cookieLocale;
-
-  const accepted = request.headers.get("accept-language") || "";
-  const lowerAccepted = accepted.toLowerCase();
-  if (lowerAccepted.includes("id")) return "id";
-
-  return defaultLocale;
+function setLocaleCookie(response: NextResponse, locale: "en" | "id") {
+  response.cookies.set(localeCookieName, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+  return response;
 }
 
 export function proxy(request: NextRequest) {
@@ -24,32 +20,26 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const pathnameHasLocale = pathname
-    .split("/")
-    .filter(Boolean)
-    .some((segment, index) => index === 0 && hasLocale(segment));
-
-  if (pathnameHasLocale) {
-    const locale = pathname.split("/")[1];
-    const response = NextResponse.next();
-    if (hasLocale(locale)) {
-      response.cookies.set(localeCookieName, locale, {
-        path: "/",
-        maxAge: 60 * 60 * 24 * 365,
-        sameSite: "lax",
-      });
-    }
-    return response;
+  const locale = pathname.split("/")[1];
+  if (locale === "id") {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/id(?=\/|$)/, "") || "/";
+    return setLocaleCookie(NextResponse.redirect(url, 308), "id");
   }
 
-  const locale = getLocale(request);
+  if (hasLocale(locale)) {
+    return setLocaleCookie(NextResponse.next(), locale);
+  }
+
   const url = request.nextUrl.clone();
-  url.pathname = pathname === "/" ? `/${locale}` : `/${locale}${pathname}`;
-  return NextResponse.redirect(url);
+  url.pathname = pathname === "/" ? "/id" : `/id${pathname}`;
+  return setLocaleCookie(NextResponse.rewrite(url), "id");
 }
 
 export { proxy as middleware, proxy as default };
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.png|.*\\..*).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|logo.png|sitemap.xml|robots.txt|opengraph-image|.*\\..*).*)",
+  ],
 };

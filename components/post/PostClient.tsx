@@ -3,8 +3,7 @@
 import { motion, useScroll, useSpring } from "framer-motion";
 import Image from "next/image";
 import React from "react";
-import type { Locale } from "@/lib/i18n/config";
-import { formatLocalizedDate } from "@/lib/i18n/config";
+import { formatLocalizedDate, withLocale, type Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getCategoryLabel } from "@/lib/i18n/posts";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
@@ -77,7 +76,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
-  const shareUrl = buildAbsoluteUrl(`/${lang}/post/${post.slug}`);
+  const shareUrl = buildAbsoluteUrl(withLocale(`/post/${post.slug}`, lang));
   const shareVersion = getSocialPreviewVersion(post.updatedAt);
   const facebookShareUrl = `${shareUrl}?share=facebook&v=${shareVersion}`;
   const whatsappShareUrl = `${shareUrl}?share=whatsapp&v=${shareVersion}`;
@@ -125,7 +124,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             className="flex flex-col items-center"
           >
             <OptimisticLink
-              href={`/${lang}/explore`}
+              href={withLocale("/explore", lang)}
               className="group mb-8 inline-flex items-center gap-2 rounded-full border border-outline-variant/25 bg-surface-container-lowest/85 px-5 py-2.5 font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant backdrop-blur-md transition hover:border-secondary/35 hover:text-secondary"
             >
               <span className="material-symbols-outlined text-[16px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
@@ -257,7 +256,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                     className="my-12"
                   >
                     <OptimisticLink
-                      href={`/${lang}/pdf-viewer?url=${encodeURIComponent(documentSrc)}&title=${encodeURIComponent(block.title || "Dokumen")}`}
+                      href={`${withLocale("/pdf-viewer", lang)}?url=${encodeURIComponent(documentSrc)}&title=${encodeURIComponent(block.title || "Dokumen")}`}
                       className="flex items-center gap-6 p-8 rounded-4xl bg-surface-container-high border border-outline-variant/15 hover:bg-surface-container-highest transition-all duration-500 group active:scale-[0.98]"
                     >
                       <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 group-hover:bg-secondary group-hover:text-on-secondary transition-all duration-500">
@@ -418,13 +417,13 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
           <ShareActions url={shareUrl} facebookShareUrl={facebookShareUrl} whatsappShareUrl={whatsappShareUrl} title={post.title} labels={shareLabels} className="mb-6" />
           <div className="flex flex-wrap justify-center gap-4">
             <OptimisticLink
-              href={`/${lang}`}
+              href={withLocale("/", lang)}
               className="px-8 py-3 rounded-full bg-primary text-on-primary font-headline font-bold text-sm hover:translate-y-[-2px] hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98]"
             >
               {dict.post.home}
             </OptimisticLink>
             <OptimisticLink
-              href={`/${lang}/explore`}
+              href={withLocale("/explore", lang)}
               className="px-8 py-3 rounded-full bg-surface-container-high text-primary font-headline font-bold text-sm hover:translate-y-[-2px] transition-all border border-outline-variant/20 active:scale-[0.98]"
             >
               {dict.post.catalog}
@@ -464,7 +463,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                   }}
                 >
                   <OptimisticLink
-                    href={`/${lang}/post/${rPost.slug}`}
+                    href={withLocale(`/post/${rPost.slug}`, lang)}
                     className="group flex flex-col h-full bg-surface-container-lowest rounded-3xl overflow-hidden border border-outline-variant/10 hover:border-secondary/30 transition-all duration-500 hover:shadow-xl hover:shadow-secondary/5"
                   >
                     {rPost.thumbnail ? (

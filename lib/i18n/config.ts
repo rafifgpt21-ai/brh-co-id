@@ -2,7 +2,7 @@ export const locales = ["en", "id"] as const;
 
 export type Locale = (typeof locales)[number];
 
-export const defaultLocale: Locale = "en";
+export const defaultLocale: Locale = "id";
 export const localeCookieName = "BRH_LOCALE";
 
 export const localeLabels: Record<Locale, string> = {
@@ -31,7 +31,8 @@ export function stripLocale(pathname: string) {
 
 export function withLocale(pathname: string, locale: Locale) {
   const stripped = stripLocale(pathname);
-  return stripped === "/" ? `/${locale}` : `/${locale}${stripped}`;
+  if (locale === "id") return stripped;
+  return stripped === "/" ? "/en" : `/en${stripped}`;
 }
 
 export function getDateLocale(locale: Locale) {

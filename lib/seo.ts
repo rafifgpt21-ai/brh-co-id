@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { buildAbsoluteUrl } from "@/lib/share-url";
-import { locales, type Locale } from "@/lib/i18n/config";
+import { locales, stripLocale, withLocale, type Locale } from "@/lib/i18n/config";
 
-const SITE_NAME = "The Official Website of BRH";
+const SITE_NAME = "Budi Rahman Hakim";
 
 type PageMetadataOptions = {
   title: string;
@@ -21,14 +21,15 @@ export function createPageMetadata({
   image,
   absoluteTitle,
 }: PageMetadataOptions): Metadata {
-  const canonical = buildAbsoluteUrl(path);
-  const localizedPath = path.replace(/^\/(en|id)(?=\/|$)/, "");
+  const localizedPath = stripLocale(path);
+  const canonical = buildAbsoluteUrl(withLocale(localizedPath, locale));
   const languages = Object.fromEntries(
     locales.map((item) => [
       item,
-      buildAbsoluteUrl(localizedPath === "" ? `/${item}` : `/${item}${localizedPath}`),
+      buildAbsoluteUrl(withLocale(localizedPath, item)),
     ]),
   );
+  languages["x-default"] = buildAbsoluteUrl(withLocale(localizedPath, "id"));
 
   return {
     title: absoluteTitle ? { absolute: title } : title,

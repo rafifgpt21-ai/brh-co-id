@@ -11,10 +11,14 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const dict = await getDictionary(lang);
 
   return createPageMetadata({
-    title: `${dict.research.title} | BRH Insight`,
+    title:
+      lang === "id"
+        ? "Riset Budi Rahman Hakim | BRH"
+        : "Research by Budi Rahman Hakim | BRH",
     description: dict.research.intro,
     path: `/${lang}/riset`,
     locale: lang,
+    absoluteTitle: true,
   });
 }
 

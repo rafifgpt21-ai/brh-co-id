@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { getPostByFileUrl } from "@/lib/actions/post";
 import PDFViewerClient from "@/components/pdf/PDFViewerClient";
-import { hasLocale, type Locale } from "@/lib/i18n/config";
+import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { notFound } from "next/navigation";
 
@@ -31,7 +31,7 @@ export default async function PDFViewerPage({
           <h1 className="text-3xl font-headline font-bold text-primary mb-4 tracking-tight">{dict.pdf.missingTitle}</h1>
           <p className="text-on-surface-variant mb-10 leading-relaxed">{dict.pdf.missingDescription}</p>
           <Link 
-            href={`/${lang}`}
+            href={withLocale("/", lang)}
             className="inline-block px-10 py-4 bg-primary text-on-primary rounded-full font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:shadow-xl hover:translate-y-[-2px] transition-all"
           >
             {dict.pdf.backHome}
@@ -55,7 +55,7 @@ export default async function PDFViewerPage({
           <h1 className="text-3xl font-headline font-bold text-primary mb-4 tracking-tight">{dict.pdf.restrictedTitle}</h1>
           <p className="text-on-surface-variant mb-10 leading-relaxed">{dict.pdf.restrictedDescription}</p>
           <Link 
-            href={`/${lang}`}
+            href={withLocale("/", lang)}
             className="inline-block px-10 py-4 bg-primary text-on-primary rounded-full font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:shadow-xl hover:translate-y-[-2px] transition-all"
           >
             {dict.pdf.backHome}

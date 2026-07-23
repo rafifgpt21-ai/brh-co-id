@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { isPendingNavigationTarget, OptimisticLink, useNavigationFeedback } from '@/components/navigation/NavigationFeedback';
-import type { Locale } from '@/lib/i18n/config';
+import { withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 interface NavLinksProps {
@@ -12,17 +12,17 @@ interface NavLinksProps {
 }
 
 export const getNavLinks = (isAdmin: boolean | undefined, lang: Locale, labels: Dictionary["nav"]) => [
-  { href: `/${lang}`, label: labels.home },
-  { href: `/${lang}/explore`, label: labels.explore },
-  { href: `/${lang}/biografi`, label: labels.biography },
-  { href: `/${lang}/publikasi`, label: labels.publications },
-  { href: `/${lang}/riset`, label: labels.research },
+  { href: withLocale("/", lang), label: labels.home },
+  { href: withLocale("/explore", lang), label: labels.explore },
+  { href: withLocale("/biografi", lang), label: labels.biography },
+  { href: withLocale("/publikasi", lang), label: labels.publications },
+  { href: withLocale("/riset", lang), label: labels.research },
   ...(isAdmin ? [{ href: '/admin', label: labels.admin }] : []),
 ];
 
 export function isNavLinkCurrent(pathname: string | null, href: string, lang: Locale) {
   if (!pathname) return false;
-  const localeRoot = `/${lang}`;
+  const localeRoot = withLocale("/", lang);
 
   if (href === localeRoot) {
     return pathname === localeRoot;

@@ -1,12 +1,13 @@
 export const dictionary = {
   metadata: {
-    title: "The Official Website of BRH",
-    description: "Sowing Ideas, Moving Change",
+    title: "Budi Rahman Hakim — Official Website",
+    description:
+      "Official website of Assoc. Prof. Budi Rahman Hakim, an academic, author, senior journalist, and spiritual mentor. Explore his biography, works, publications, and research.",
   },
   nav: {
     home: "Home",
-    explore: "Explore",
-    biography: "About",
+    explore: "Works",
+    biography: "Biography",
     publications: "Publications",
     research: "Research",
     admin: "Manage",

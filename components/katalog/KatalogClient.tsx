@@ -5,7 +5,7 @@ import type { Post } from "@prisma/client";
 import ArchiveCard from "./ArchiveCard";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Locale } from "@/lib/i18n/config";
+import { withLocale, type Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { useNavigationFeedback } from "@/components/navigation/NavigationFeedback";
 
@@ -45,7 +45,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
         params.delete("search");
       }
       const query = params.toString();
-      const href = query ? `/${lang}/explore?${query}` : `/${lang}/explore`;
+      const href = query ? `${withLocale("/explore", lang)}?${query}` : withLocale("/explore", lang);
       startNavigation(href);
       router.replace(href, { scroll: false });
     });
@@ -67,7 +67,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
         params.delete("category");
       }
       const query = params.toString();
-      const href = query ? `/${lang}/explore?${query}` : `/${lang}/explore`;
+      const href = query ? `${withLocale("/explore", lang)}?${query}` : withLocale("/explore", lang);
       startNavigation(href);
       router.replace(href, { scroll: false });
     });
@@ -78,7 +78,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
     setActiveCategory("Semua");
     setDisplayLimit(12);
     startTransition(() => {
-      const href = `/${lang}/explore`;
+      const href = withLocale("/explore", lang);
       startNavigation(href);
       router.replace(href, { scroll: false });
     });

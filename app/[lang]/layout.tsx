@@ -3,7 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { NavigationFeedbackProvider, OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { LenisProvider } from "@/components/providers/LenisProvider";
-import { defaultLocale, hasLocale, locales, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, hasLocale, locales, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -41,18 +41,18 @@ async function LocalizedFloatingActions({ params }: { params: PublicLayoutParams
 function HeaderFallback() {
   const lang = defaultLocale;
   const links = [
-    { href: `/${lang}`, label: "Home" },
-    { href: `/${lang}/explore`, label: "Explore" },
-    { href: `/${lang}/biografi`, label: "Biography" },
-    { href: `/${lang}/publikasi`, label: "Publications" },
-    { href: `/${lang}/riset`, label: "Research" },
+    { href: withLocale("/", lang), label: "Beranda" },
+    { href: withLocale("/explore", lang), label: "Karya" },
+    { href: withLocale("/biografi", lang), label: "Biografi" },
+    { href: withLocale("/publikasi", lang), label: "Publikasi" },
+    { href: withLocale("/riset", lang), label: "Riset" },
   ];
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-outline-variant/20 bg-background/86 backdrop-blur-xl transition-colors duration-200">
       <div className="flex h-14 w-full items-center justify-between px-5 md:px-8 lg:px-12 xl:px-24">
         <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
-          <OptimisticLink href={`/${lang}`}>BRH Insight</OptimisticLink>
+          <OptimisticLink href={withLocale("/", lang)}>BRH Insight</OptimisticLink>
         </div>
         <div className="hidden items-center gap-10 font-headline font-medium tracking-tight lg:flex">
           {links.map((link) => (
@@ -65,12 +65,7 @@ function HeaderFallback() {
             </OptimisticLink>
           ))}
         </div>
-        <OptimisticLink
-          href="/admin/login"
-          className="rounded-xl px-4 py-2 font-headline text-sm font-medium text-primary transition-all hover:bg-secondary/5 sm:px-6 sm:text-base"
-        >
-          Login
-        </OptimisticLink>
+        <div className="h-10 w-16" aria-hidden="true" />
       </div>
     </nav>
   );
@@ -87,11 +82,11 @@ function FooterFallback() {
           <div className="h-4 w-64 max-w-full rounded-full bg-background/10" />
         </div>
         <div className="flex flex-wrap justify-center gap-8 font-label text-xs font-semibold uppercase tracking-widest md:gap-12">
-          <OptimisticLink href={`/${defaultLocale}/biografi`} className="text-background/70 transition-colors hover:text-primary">
-            Biography
+          <OptimisticLink href={withLocale("/biografi", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
+            Biografi
           </OptimisticLink>
-          <OptimisticLink href={`/${defaultLocale}/riset`} className="text-background/70 transition-colors hover:text-primary">
-            Research
+          <OptimisticLink href={withLocale("/riset", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
+            Riset
           </OptimisticLink>
           <a href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 transition-colors hover:text-primary">
             Contact

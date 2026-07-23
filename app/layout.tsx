@@ -4,49 +4,10 @@ import { getPublicBaseUrl } from "@/lib/share-url";
 import "./globals.css";
 
 const appUrl = getPublicBaseUrl();
-const siteTitle = "The Official Website of BRH";
-const logoUrl = new URL("/logo.png", appUrl).toString();
-
-const structuredData = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": `${appUrl}/#website`,
-      url: appUrl,
-      name: siteTitle,
-      alternateName: "BRH Insight",
-      inLanguage: ["id-ID", "en-US"],
-      publisher: {
-        "@id": `${appUrl}/#organization`,
-      },
-      author: {
-        "@id": `${appUrl}/#person`,
-      },
-    },
-    {
-      "@type": "Organization",
-      "@id": `${appUrl}/#organization`,
-      name: "BRH Insight",
-      alternateName: "BRH",
-      url: appUrl,
-      logo: {
-        "@type": "ImageObject",
-        url: logoUrl,
-        contentUrl: logoUrl,
-        width: 1000,
-        height: 1000,
-      },
-    },
-    {
-      "@type": "Person",
-      "@id": `${appUrl}/#person`,
-      name: "Budi Rahman Hakim",
-      alternateName: "BRH",
-      url: appUrl,
-    },
-  ],
-};
+const siteTitle = "Budi Rahman Hakim";
+const defaultTitle = "Budi Rahman Hakim — Website Resmi BRH";
+const defaultDescription =
+  "Website resmi Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D.—akademisi, penulis, jurnalis senior, dan pembina spiritual. Jelajahi biografi, karya, publikasi, dan riset.";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -63,20 +24,20 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: siteTitle,
+    default: defaultTitle,
     template: `%s | ${siteTitle}`,
   },
-  description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+  description: defaultDescription,
   applicationName: siteTitle,
   authors: [{ name: "Budi Rahman Hakim" }],
-  creator: siteTitle,
-  publisher: siteTitle,
+  creator: "Budi Rahman Hakim",
+  publisher: "BRH Insight",
   alternates: {
     canonical: appUrl,
   },
   openGraph: {
-    title: siteTitle,
-    description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+    title: defaultTitle,
+    description: defaultDescription,
     url: appUrl,
     siteName: siteTitle,
     type: "website",
@@ -84,8 +45,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: siteTitle,
-    description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+    title: defaultTitle,
+    description: defaultDescription,
     images: ["/opengraph-image"],
   },
   robots: {
@@ -114,12 +75,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
-          }}
-        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font -- Material Symbols is still used across the existing icon system. */}

@@ -3,7 +3,7 @@ import { NavLinks } from './NavLinks';
 import { MobileMenu } from './MobileMenu';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
-import type { Locale } from '@/lib/i18n/config';
+import { withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { Suspense } from 'react';
 
@@ -16,20 +16,7 @@ async function AccountControls({ dict, variant = "topbar" }: { dict: Dictionary;
   const isDrawer = variant === "drawer";
 
   if (!session) {
-    if (isDrawer) {
-      return (
-        <OptimisticLink href="/admin/login" className="group flex w-full items-center justify-between border-b border-outline-variant/20 pb-4 pt-1 font-headline text-sm font-semibold text-primary transition-colors hover:text-primary/80">
-          <span>{dict.nav.login}</span>
-          <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">login</span>
-        </OptimisticLink>
-      );
-    }
-
-    return (
-      <OptimisticLink href="/admin/login" className="text-primary font-headline font-medium px-6 py-2 rounded-xl hover:bg-secondary/5 transition-all text-sm sm:text-base">
-        {dict.nav.login}
-      </OptimisticLink>
-    );
+    return null;
   }
 
   if (isDrawer) {
@@ -114,21 +101,8 @@ async function AccountControls({ dict, variant = "topbar" }: { dict: Dictionary;
   );
 }
 
-function AccountFallback({ dict, variant = "topbar" }: { dict: Dictionary; variant?: HeaderControlVariant }) {
-  if (variant === "drawer") {
-    return (
-      <OptimisticLink href="/admin/login" className="group flex w-full items-center justify-between border-b border-outline-variant/20 pb-4 pt-1 font-headline text-sm font-semibold text-primary transition-colors hover:text-primary/80">
-        <span>{dict.nav.login}</span>
-        <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">login</span>
-      </OptimisticLink>
-    );
-  }
-
-  return (
-    <OptimisticLink href="/admin/login" className="text-primary font-headline font-medium px-6 py-2 rounded-xl hover:bg-secondary/5 transition-all text-sm sm:text-base">
-      {dict.nav.login}
-    </OptimisticLink>
-  );
+function AccountFallback() {
+  return null;
 }
 
 function LanguageSwitcherFallback({ lang }: { lang: Locale }) {
@@ -141,11 +115,11 @@ function LanguageSwitcherFallback({ lang }: { lang: Locale }) {
 
 function StaticNavLinks({ lang, dict }: { lang: Locale; dict: Dictionary }) {
   const links = [
-    { href: `/${lang}`, label: dict.nav.home },
-    { href: `/${lang}/explore`, label: dict.nav.explore },
-    { href: `/${lang}/biografi`, label: dict.nav.biography },
-    { href: `/${lang}/publikasi`, label: dict.nav.publications },
-    { href: `/${lang}/riset`, label: dict.nav.research },
+    { href: withLocale("/", lang), label: dict.nav.home },
+    { href: withLocale("/explore", lang), label: dict.nav.explore },
+    { href: withLocale("/biografi", lang), label: dict.nav.biography },
+    { href: withLocale("/publikasi", lang), label: dict.nav.publications },
+    { href: withLocale("/riset", lang), label: dict.nav.research },
   ];
 
   return (
@@ -186,7 +160,7 @@ export const Header = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
       <div className="w-full px-5 md:px-8 lg:px-12 xl:px-24 flex justify-between items-center h-14">
         <div className="flex items-center gap-4">
           <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
-            <OptimisticLink href={`/${lang}`}>BRH Insight</OptimisticLink>
+            <OptimisticLink href={withLocale("/", lang)}>BRH Insight</OptimisticLink>
           </div>
         </div>
         
@@ -198,7 +172,7 @@ export const Header = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
           <Suspense fallback={<LanguageSwitcherFallback lang={lang} />}>
             <LanguageSwitcher currentLocale={lang} />
           </Suspense>
-          <Suspense fallback={<AccountFallback dict={dict} />}>
+          <Suspense fallback={<AccountFallback />}>
             <AccountControls dict={dict} />
           </Suspense>
         </div>
@@ -213,7 +187,7 @@ export const Header = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
                 <Suspense fallback={<LanguageSwitcherFallback lang={lang} />}>
                   <LanguageSwitcher currentLocale={lang} variant="drawer" />
                 </Suspense>
-                <Suspense fallback={<AccountFallback dict={dict} variant="drawer" />}>
+                <Suspense fallback={<AccountFallback />}>
                   <AccountControls dict={dict} variant="drawer" />
                 </Suspense>
               </>

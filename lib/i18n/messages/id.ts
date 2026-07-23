@@ -1,12 +1,13 @@
 export const dictionary = {
   metadata: {
-    title: "The Official Website of BRH",
-    description: "Menyemai Pemikiran, Menggerakkan Perubahan",
+    title: "Budi Rahman Hakim — Website Resmi BRH",
+    description:
+      "Website resmi Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D.—akademisi, penulis, jurnalis senior, dan pembina spiritual. Jelajahi biografi, karya, publikasi, dan riset.",
   },
   nav: {
     home: "Beranda",
-    explore: "Explore",
-    biography: "Tentang",
+    explore: "Karya",
+    biography: "Biografi",
     publications: "Publikasi",
     research: "Riset",
     admin: "Kelola",

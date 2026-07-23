@@ -10,7 +10,6 @@ import {
   languages,
   type LanguageCode,
 } from "@/lib/brh-content";
-import { STATIC_UPLOADTHING_ASSETS } from "@/lib/uploadthing-protected-files";
 
 const expertise = [
   "Spiritualitas & Tasawuf",
@@ -147,8 +146,8 @@ export default function BiografiPage() {
             <div className="absolute -inset-4 rounded-full bg-secondary/10 blur-2xl transition-all duration-700 group-hover:bg-secondary/20" />
             <div className="relative h-64 w-64 overflow-hidden rounded-full border-8 border-white shadow-2xl md:h-80 md:w-80">
               <Image
-                src={STATIC_UPLOADTHING_ASSETS.biographyPortrait}
-                alt="Budi Rahman Hakim"
+                src="/budi-rahman-hakim.jpg"
+                alt="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
                 fill
                 priority
                 sizes="(max-width: 768px) 256px, 320px"
@@ -255,6 +254,38 @@ export default function BiografiPage() {
                   <p className="font-body text-sm font-medium">Tangerang Selatan, Indonesia</p>
                 </div>
               </div>
+              <a
+                href="https://staff.uinjkt.ac.id/profile.php?staff=8329a42e-7de6-2437-b005-8070ab79b99c"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-secondary shadow-sm transition-all group-hover:bg-secondary group-hover:text-white">
+                  <span className="material-symbols-outlined text-lg">badge</span>
+                </div>
+                <div>
+                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
+                    Profil Resmi
+                  </p>
+                  <p className="font-body text-sm font-medium">UIN Jakarta</p>
+                </div>
+              </a>
+              <a
+                href="https://sinta.kemdiktisaintek.go.id/authors/profile/6950877/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-secondary shadow-sm transition-all group-hover:bg-secondary group-hover:text-white">
+                  <span className="material-symbols-outlined text-lg">school</span>
+                </div>
+                <div>
+                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
+                    Profil Peneliti
+                  </p>
+                  <p className="font-body text-sm font-medium">SINTA</p>
+                </div>
+              </a>
             </div>
 
             <div className="mt-12 border-t border-secondary/10 pt-8">

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import HeroSearch from '@/components/HeroSearch';
-import { formatLocalizedDate, type Locale } from '@/lib/i18n/config';
+import { formatLocalizedDate, withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
 type HeroPanelItem =
@@ -171,19 +171,22 @@ export default function HomeHero({
 
       <div className="relative z-[1] mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.62fr)] lg:items-center lg:gap-12 xl:gap-16 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.68fr)] 2xl:gap-20">
         <div className="min-w-0">
-          <h1 className="max-w-4xl text-pretty font-headline text-[2.05rem] font-extrabold leading-[1.09] tracking-[-0.035em] text-tertiary xs:text-4xl sm:text-5xl md:text-[3.45rem] lg:text-[4rem] xl:text-[4.15rem]">
-            <span className="block text-primary">{home.heroTitleA}</span>
-            <span className="block xl:inline">{home.heroTitleB}</span>
-            <span className="block font-bold italic text-secondary xl:ml-4 xl:inline">{home.heroTitleC}</span>
+          <h1 className="max-w-4xl text-pretty font-headline text-[2.45rem] font-extrabold leading-[1.02] tracking-[-0.04em] text-primary xs:text-5xl sm:text-6xl md:text-[4rem] lg:text-[4.7rem] xl:text-[5rem]">
+            <span className="block">Budi Rahman</span>
+            <span className="block font-bold italic text-secondary">Hakim</span>
           </h1>
+          <p className="mt-4 max-w-3xl text-pretty font-headline text-lg font-bold leading-snug text-tertiary sm:text-xl md:text-2xl">
+            {home.heroTitleA} {home.heroTitleB}{" "}
+            <span className="italic text-secondary">{home.heroTitleC}</span>
+          </p>
 
-          <div className="mt-5 max-w-2xl sm:mt-7 lg:mt-10">
+          <div className="mt-5 max-w-2xl sm:mt-7 lg:mt-8">
             <HeroSearch lang={lang} labels={search} />
           </div>
 
           <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2.5 sm:mt-5 sm:flex sm:flex-row sm:gap-3 lg:mt-6">
             <Link
-              href={`/${lang}/explore`}
+              href={withLocale("/explore", lang)}
               className="tap-target inline-flex min-w-0 items-center justify-center gap-2 rounded-full bg-primary px-4 text-[13px] font-bold text-on-primary shadow-[0_6px_16px_rgba(164,31,19,0.12)] transition duration-200 hover:-translate-y-px hover:bg-tertiary active:translate-y-0 active:scale-[0.98] sm:px-6 sm:text-sm"
             >
               <span className="material-symbols-outlined text-[19px]">travel_explore</span>

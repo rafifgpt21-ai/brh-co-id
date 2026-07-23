@@ -3,8 +3,8 @@ import { QuickPostFeed } from "@/components/home/QuickPostFeed";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { getQuickPostsByType } from "@/lib/actions/quick-post";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { hasLocale, type Locale } from "@/lib/i18n/config";
-import { buildAbsoluteUrl } from "@/lib/share-url";
+import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
+import { createPageMetadata } from "@/lib/seo";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -32,22 +32,16 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
-  const canonicalUrl = buildAbsoluteUrl(`/${lang}/catatan`);
-
-  return {
-    title: `${dict.quickPost.allTitle} | BRH Insight`,
+  return createPageMetadata({
+    title:
+      lang === "id"
+        ? "Catatan Budi Rahman Hakim | BRH"
+        : "Notes by Budi Rahman Hakim | BRH",
     description: dict.quickPost.allIntro,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      title: dict.quickPost.allTitle,
-      description: dict.quickPost.allIntro,
-      url: canonicalUrl,
-      siteName: "BRH Insight",
-      type: "website",
-    },
-  };
+    path: `/${lang}/catatan`,
+    locale: lang,
+    absoluteTitle: true,
+  });
 }
 
 function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>) {
@@ -138,7 +132,7 @@ export default async function CatatanPage({ params }: { params: Promise<{ lang: 
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 border-b border-outline-variant/30 pb-6 sm:mb-10 sm:pb-8">
           <OptimisticLink
-            href={`/${lang}`}
+            href={withLocale("/", lang)}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-outline-variant/30 bg-surface-container-lowest px-4 text-[11px] font-black uppercase tracking-wider text-on-surface-variant transition hover:border-secondary/40 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
           >
             <span className="material-symbols-outlined text-[17px]">west</span>

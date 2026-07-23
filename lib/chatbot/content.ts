@@ -5,7 +5,7 @@ import {
   researchAgenda,
   researchAreas,
 } from "@/lib/brh-content";
-import type { Locale } from "@/lib/i18n/config";
+import { withLocale, type Locale } from "@/lib/i18n/config";
 
 export type KnowledgeSource = {
   sourceType: "post" | "static_page" | "quick_post";
@@ -105,7 +105,7 @@ function buildStaticSources(locale: Locale): KnowledgeSource[] {
       sourceId: "biografi",
       locale,
       title: locale === "en" ? "BRH Biography" : "Biografi BRH",
-      url: `/${locale}/biografi`,
+      url: withLocale("/biografi", locale),
       category: locale === "en" ? "Biography" : "Biografi",
       content: biographyText,
     },
@@ -114,7 +114,7 @@ function buildStaticSources(locale: Locale): KnowledgeSource[] {
       sourceId: "riset",
       locale,
       title: locale === "en" ? "BRH Research" : "Riset BRH",
-      url: `/${locale}/riset`,
+      url: withLocale("/riset", locale),
       category: locale === "en" ? "Research" : "Riset",
       content: researchText,
     },

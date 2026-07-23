@@ -7,7 +7,7 @@ import { getHomeFeaturedPosts, getLatestPublishedQuickPostByType, getPublishedPo
 import { getQuickPostsByType } from '@/lib/actions/quick-post';
 import HomeHero from '@/components/home/HomeHero';
 import { QuickPostFeed } from '@/components/home/QuickPostFeed';
-import { formatLocalizedDate, hasLocale, type Locale } from '@/lib/i18n/config';
+import { formatLocalizedDate, hasLocale, withLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getCategoryLabel, localizePost } from '@/lib/i18n/posts';
 import { notFound } from 'next/navigation';
@@ -16,7 +16,10 @@ import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 import { SectionSkeleton } from '@/components/ui/SectionSkeleton';
 import { createPageMetadata } from '@/lib/seo';
 import type { Metadata } from 'next';
-import { STATIC_UPLOADTHING_ASSETS } from '@/lib/uploadthing-protected-files';
+import {
+  getWebsiteStructuredData,
+  serializeStructuredData,
+} from '@/lib/structured-data';
 
 export const unstable_instant = {
   prefetch: "runtime",
@@ -40,7 +43,7 @@ const ScrollReveal = dynamic(() => import('@/components/home/ScrollReveal'), {
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang: rawLang } = await params;
-  if (!hasLocale(rawLang)) return { title: { absolute: "The Official Website of BRH" } };
+  if (!hasLocale(rawLang)) return { title: { absolute: "Budi Rahman Hakim" } };
 
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
@@ -179,7 +182,7 @@ async function getHeroPanelItems(lang: Locale, dict: Awaited<ReturnType<typeof g
       id: localizedPost.id,
       title: localizedPost.title,
       excerpt: getPostSnippet(localizedPost),
-      href: `/${lang}/post/${localizedPost.slug}`,
+      href: withLocale(`/post/${localizedPost.slug}`, lang),
       category: getCategoryLabel(localizedPost.category, dict.explore.categories),
       thumbnail: localizedPost.thumbnail,
       createdAt: localizedPost.publishedAt || localizedPost.createdAt,
@@ -209,9 +212,9 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
           lang={lang}
           labels={quickPostFeedLabels}
           archiveHrefs={{
-            NORMAL: `/${lang}/catatan/pandangan`,
-            AGENDA: `/${lang}/catatan/agenda`,
-            QUOTE: `/${lang}/catatan/kutipan`,
+            NORMAL: withLocale("/catatan/pandangan", lang),
+            AGENDA: withLocale("/catatan/agenda", lang),
+            QUOTE: withLocale("/catatan/kutipan", lang),
           }}
           variant="preview"
         />
@@ -253,7 +256,7 @@ function ArchiveSectionHeader({
           {titleA} <span className="text-tertiary">{titleB}</span>
         </h2>
       </div>
-      <OptimisticLink href={`/${lang}/explore`} className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98]">
+      <OptimisticLink href={withLocale("/explore", lang)} className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98]">
         {dict.home.viewAll}
         <span className="material-symbols-outlined text-[19px]">grid_view</span>
       </OptimisticLink>
@@ -284,7 +287,7 @@ async function HomeHighlightSection({ lang, dict }: { lang: Locale; dict: Awaite
           <div className="-mx-4 grid snap-x snap-mandatory auto-cols-[82vw] grid-flow-col gap-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:auto-cols-[44vw] sm:px-6 lg:mx-0 lg:grid-flow-row lg:grid-cols-5 lg:gap-4 lg:overflow-visible lg:px-0 lg:pb-0 xl:gap-5">
             {highlightedPosts.map((post, index) => (
               <ScrollReveal key={post.id} delay={index * 0.06} className="snap-start">
-                <OptimisticLink href={`/${lang}/post/${post.slug}`} className="surface-lift-hover group flex h-full flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface">
+                <OptimisticLink href={withLocale(`/post/${post.slug}`, lang)} className="surface-lift-hover group flex h-full flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface">
                   <div className="relative aspect-square w-full overflow-hidden bg-surface-container">
                     {post.thumbnail ? (
                       <Image src={post.thumbnail} alt={post.title} fill sizes="(max-width: 640px) 82vw, (max-width: 1024px) 44vw, 20vw" className="object-contain p-2 transition duration-700 group-hover:scale-[1.03]" priority={index < 2} />
@@ -321,7 +324,7 @@ async function HomeLatestUpdatesSection({ lang, dict }: { lang: Locale; dict: Aw
               const snippet = getPostSnippet(post);
               return (
                 <ScrollReveal key={post.id} delay={(index % 4) * 0.04} className="w-full sm:snap-start">
-                  <OptimisticLink data-latest-update-card href={`/${lang}/post/${post.slug}`} className="surface-lift-hover group grid h-36 w-full grid-cols-[8.5rem_minmax(0,1fr)] overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest sm:h-full sm:min-h-36 sm:grid-cols-[9.5rem_minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[42%_minmax(0,1fr)]">
+                  <OptimisticLink data-latest-update-card href={withLocale(`/post/${post.slug}`, lang)} className="surface-lift-hover group grid h-36 w-full grid-cols-[8.5rem_minmax(0,1fr)] overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest sm:h-full sm:min-h-36 sm:grid-cols-[9.5rem_minmax(0,1fr)] lg:min-h-0 lg:grid-cols-[42%_minmax(0,1fr)]">
                     <div className="relative aspect-square w-full self-start overflow-hidden bg-surface-container">
                       {post.thumbnail ? (
                         <Image src={post.thumbnail} alt={post.title} fill sizes="(max-width: 640px) 136px, (max-width: 1024px) 152px, 12vw" className="object-contain p-1.5 transition duration-700 group-hover:scale-[1.03]" />
@@ -353,8 +356,8 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
           <ScrollReveal>
               <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container shadow-[0_14px_45px_rgba(41,47,54,0.08)]">
               <Image
-                src={STATIC_UPLOADTHING_ASSETS.biographyPortrait}
-                alt="Budi Rahman Hakim (BRH)"
+                src="/budi-rahman-hakim.jpg"
+                alt="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
                 fill
                 sizes="(max-width: 1024px) 100vw, 320px"
                 className="object-cover grayscale transition duration-700 hover:grayscale-0"
@@ -386,7 +389,7 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
                   {dict.home.biographyCopy}
                 </p>
                 <OptimisticLink
-                  href={`/${lang}/biografi`}
+                  href={withLocale("/biografi", lang)}
                   className="mt-7 inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary transition hover:text-secondary"
                 >
                   {dict.home.biographyCta}
@@ -444,17 +447,25 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
   const heroPanelItems = await getHeroPanelItems(lang, dict);
 
   return (
-    <div className="overflow-x-hidden bg-surface pb-24 sm:pb-0">
-      <HomeHero
-        lang={lang}
-        home={dict.home}
-        search={dict.search}
-        heroPanelItems={heroPanelItems}
-        heroPanelLabels={dict.home.heroPanel}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeStructuredData(getWebsiteStructuredData()),
+        }}
       />
-      <Suspense fallback={<RouteSkeleton />}>
-        <HomeStreamedContent lang={lang} dict={dict} />
-      </Suspense>
-    </div>
+      <div className="overflow-x-hidden bg-surface pb-24 sm:pb-0">
+        <HomeHero
+          lang={lang}
+          home={dict.home}
+          search={dict.search}
+          heroPanelItems={heroPanelItems}
+          heroPanelLabels={dict.home.heroPanel}
+        />
+        <Suspense fallback={<RouteSkeleton />}>
+          <HomeStreamedContent lang={lang} dict={dict} />
+        </Suspense>
+      </div>
+    </>
   );
 }

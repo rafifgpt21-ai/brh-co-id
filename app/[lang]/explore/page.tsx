@@ -19,10 +19,14 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const dict = await getDictionary(lang);
 
   return createPageMetadata({
-    title: dict.explore.metadataTitle,
+    title:
+      lang === "id"
+        ? "Karya Budi Rahman Hakim | BRH"
+        : "Works by Budi Rahman Hakim | BRH",
     description: dict.explore.metadataDescription,
     path: `/${lang}/explore`,
     locale: lang,
+    absoluteTitle: true,
   });
 }
 

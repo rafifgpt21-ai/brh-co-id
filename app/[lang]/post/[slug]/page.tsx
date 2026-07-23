@@ -2,7 +2,7 @@ import { getPublishedPostBySlug, getRelatedPublishedPosts } from "@/lib/data/pub
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import PostClient from "@/components/post/PostClient";
-import { hasLocale, type Locale } from "@/lib/i18n/config";
+import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { localizePost } from "@/lib/i18n/posts";
 import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
@@ -50,7 +50,9 @@ export async function generateMetadata({
   const localizedPost = localizePost(post, lang);
   const firstTextBlock = localizedPost.blocks.find((block) => block.type === 'text');
   const description = firstTextBlock?.content?.replace(/<[^>]*>/g, '').slice(0, 160) || `${dict.home.readMore} ${localizedPost.title}`;
-  const canonicalUrl = buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}`);
+  const canonicalUrl = buildAbsoluteUrl(withLocale(`/post/${localizedPost.slug}`, lang));
+  const idUrl = buildAbsoluteUrl(withLocale(`/post/${post.slug}`, "id"));
+  const enUrl = buildAbsoluteUrl(withLocale(`/post/${post.slugEn || post.slug}`, "en"));
   const updatedAt = new Date(post.updatedAt).toISOString();
   const shareVersion = getSocialPreviewVersion(post.updatedAt);
   const query = await searchParams;
@@ -63,7 +65,7 @@ export async function generateMetadata({
   const isWhatsappShare = shareTarget === "whatsapp" && Boolean(post.thumbnail);
   const socialImageUrl = isWhatsappShare
     ? buildAbsoluteUrl(`/api/share-image/${encodeURIComponent(localizedPost.slug)}.jpg?v=${shareVersion}`)
-    : buildAbsoluteUrl(`/${lang}/post/${localizedPost.slug}/opengraph-image?v=${shareVersion}`);
+    : buildAbsoluteUrl(`${withLocale(`/post/${localizedPost.slug}/opengraph-image`, lang)}?v=${shareVersion}`);
   const socialImage = {
     url: socialImageUrl,
     secureUrl: socialImageUrl,
@@ -78,6 +80,11 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical: canonicalUrl,
+      languages: {
+        id: idUrl,
+        en: enUrl,
+        "x-default": idUrl,
+      },
     },
     openGraph: {
       title: localizedPost.title,

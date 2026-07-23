@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
-import { defaultLocale, hasLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 
 export default function Error({
   error,
@@ -40,7 +40,7 @@ export default function Error({
           Try again
         </button>
         <Link
-          href={`/${lang}`}
+          href={withLocale("/", lang)}
           className="tap-target inline-flex items-center justify-center rounded-full border border-outline-variant/60 bg-surface px-6 text-sm font-black text-primary transition hover:border-secondary hover:bg-surface-container-low"
         >
           Back home

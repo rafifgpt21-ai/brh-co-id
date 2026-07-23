@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Locale } from "@/lib/i18n/config";
+import { withLocale, type Locale } from "@/lib/i18n/config";
 import { useNavigationFeedback } from "@/components/navigation/NavigationFeedback";
 
 export default function HeroSearch({
@@ -18,7 +18,7 @@ export default function HeroSearch({
   const { startNavigation } = useNavigationFeedback();
 
   useEffect(() => {
-    router.prefetch(`/${lang}/explore`);
+    router.prefetch(withLocale("/explore", lang));
   }, [lang, router]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -26,8 +26,8 @@ export default function HeroSearch({
 
     startTransition(() => {
       const href = query.trim()
-        ? `/${lang}/explore?search=${encodeURIComponent(query.trim())}`
-        : `/${lang}/explore`;
+        ? `${withLocale("/explore", lang)}?search=${encodeURIComponent(query.trim())}`
+        : withLocale("/explore", lang);
       startNavigation(href);
       if (query.trim()) {
         router.push(href);

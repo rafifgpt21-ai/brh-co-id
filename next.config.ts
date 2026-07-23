@@ -10,6 +10,31 @@ type BrhNextConfig = NextConfig & {
 
 const nextConfig: BrhNextConfig = {
   cacheComponents: true,
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "brh.co.id" }],
+        destination: "https://www.brh.co.id/:path*",
+        permanent: true,
+      },
+      {
+        source: "/biografi.php",
+        destination: "/biografi",
+        permanent: true,
+      },
+      {
+        source: "/diskusi.php",
+        destination: "/catatan",
+        permanent: true,
+      },
+      {
+        source: "/login.php",
+        destination: "/admin/login",
+        permanent: true,
+      },
+    ];
+  },
   /* config options here */
   images: {
     remotePatterns: [

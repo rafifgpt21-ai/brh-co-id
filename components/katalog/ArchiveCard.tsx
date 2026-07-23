@@ -2,8 +2,7 @@
 
 import Image from 'next/image';
 import type { Post } from "@prisma/client";
-import type { Locale } from '@/lib/i18n/config';
-import { formatLocalizedDate } from '@/lib/i18n/config';
+import { formatLocalizedDate, withLocale, type Locale } from '@/lib/i18n/config';
 import { getCategoryLabel } from '@/lib/i18n/posts';
 import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 
@@ -40,7 +39,7 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
 
   return (
     <OptimisticLink
-      href={`/${lang}/post/${post.slug}`}
+      href={withLocale(`/post/${post.slug}`, lang)}
       className="surface-lift-hover group flex h-full min-h-[120px] flex-row overflow-hidden rounded-lg border border-outline-variant/25 bg-surface-container-lowest md:min-h-0"
     >
       {/* Thumbnail (Left) */}
