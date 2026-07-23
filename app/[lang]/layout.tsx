@@ -42,10 +42,11 @@ function HeaderFallback() {
   const lang = defaultLocale;
   const links = [
     { href: withLocale("/", lang), label: "Beranda" },
-    { href: withLocale("/explore", lang), label: "Karya" },
-    { href: withLocale("/biografi", lang), label: "Biografi" },
+    { href: withLocale("/tentang", lang), label: "Tentang" },
     { href: withLocale("/publikasi", lang), label: "Publikasi" },
     { href: withLocale("/riset", lang), label: "Riset" },
+    { href: withLocale("/pengabdian", lang), label: "Pengabdian" },
+    { href: withLocale("/kontak", lang), label: "Kontak" },
   ];
 
   return (
@@ -54,7 +55,7 @@ function HeaderFallback() {
         <div className="text-xl font-bold tracking-tighter text-tertiary font-headline">
           <OptimisticLink href={withLocale("/", lang)}>BRH Insight</OptimisticLink>
         </div>
-        <div className="hidden items-center gap-10 font-headline font-medium tracking-tight lg:flex">
+        <div className="hidden items-center gap-7 font-headline font-medium tracking-tight lg:flex xl:gap-10">
           {links.map((link) => (
             <OptimisticLink
               key={link.href}
@@ -82,15 +83,18 @@ function FooterFallback() {
           <div className="h-4 w-64 max-w-full rounded-full bg-background/10" />
         </div>
         <div className="flex flex-wrap justify-center gap-8 font-label text-xs font-semibold uppercase tracking-widest md:gap-12">
-          <OptimisticLink href={withLocale("/biografi", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
-            Biografi
+          <OptimisticLink href={withLocale("/tentang", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
+            Tentang
           </OptimisticLink>
           <OptimisticLink href={withLocale("/riset", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
             Riset
           </OptimisticLink>
-          <a href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 transition-colors hover:text-primary">
-            Contact
-          </a>
+          <OptimisticLink href={withLocale("/pengabdian", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
+            Pengabdian
+          </OptimisticLink>
+          <OptimisticLink href={withLocale("/kontak", defaultLocale)} className="text-background/70 transition-colors hover:text-primary">
+            Kontak
+          </OptimisticLink>
         </div>
       </div>
     </footer>

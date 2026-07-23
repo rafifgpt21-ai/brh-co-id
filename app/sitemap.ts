@@ -3,7 +3,7 @@ import { getPublishedPosts } from "@/lib/data/public-content";
 import { buildAbsoluteUrl } from "@/lib/share-url";
 import { locales, withLocale } from "@/lib/i18n/config";
 
-const staticPaths = ["/", "/explore", "/biografi", "/publikasi", "/riset", "/catatan"];
+const staticPaths = ["/", "/tentang", "/publikasi", "/riset", "/pengabdian", "/kontak", "/explore", "/catatan"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries = staticPaths.flatMap((path) => {

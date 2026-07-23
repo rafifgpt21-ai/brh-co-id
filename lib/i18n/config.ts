@@ -15,6 +15,14 @@ export const localeNames: Record<Locale, string> = {
   id: "Indonesia",
 };
 
+const localizedRouteGroups = [
+  { id: "/tentang", en: "/about", aliases: ["/biografi"] },
+  { id: "/publikasi", en: "/publications", aliases: [] },
+  { id: "/riset", en: "/research", aliases: [] },
+  { id: "/pengabdian", en: "/engagement", aliases: [] },
+  { id: "/kontak", en: "/contact", aliases: [] },
+] as const;
+
 export function hasLocale(value: string | undefined | null): value is Locale {
   return !!value && (locales as readonly string[]).includes(value);
 }
@@ -31,8 +39,21 @@ export function stripLocale(pathname: string) {
 
 export function withLocale(pathname: string, locale: Locale) {
   const stripped = stripLocale(pathname);
-  if (locale === "id") return stripped;
-  return stripped === "/" ? "/en" : `/en${stripped}`;
+  const route = localizedRouteGroups.find((item) => {
+    const bases: readonly string[] = [item.id, item.en, ...item.aliases];
+    return bases.some((base) => stripped === base || stripped.startsWith(`${base}/`));
+  });
+  let localizedPath = stripped;
+
+  if (route) {
+    const bases: readonly string[] = [route.id, route.en, ...route.aliases];
+    const matchingBase = bases.find((base) => stripped === base || stripped.startsWith(`${base}/`));
+    const suffix = matchingBase ? stripped.slice(matchingBase.length) : "";
+    localizedPath = `${locale === "id" ? route.id : route.en}${suffix}`;
+  }
+
+  if (locale === "id") return localizedPath;
+  return localizedPath === "/" ? "/en" : `/en${localizedPath}`;
 }
 
 export function getDateLocale(locale: Locale) {

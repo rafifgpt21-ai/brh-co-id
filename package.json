@@ -16,6 +16,7 @@
     "seed:menembus-ruang-dan-waktu": "npx tsx scripts/seed-menembus-ruang-dan-waktu-books.ts",
     "seed:tuntunan-sholat-thoriqoh": "npx tsx scripts/seed-tuntunan-sholat-thoriqoh-book.ts",
     "seed:quick-posts": "npx tsx scripts/seed-quick-posts.ts",
+    "migrate:engagement": "npx tsx scripts/migrate-engagement-structure.ts",
     "reset:content": "npx tsx scripts/reset-database.ts",
     "delete:posts": "npx tsx scripts/delete-all-posts.ts",
     "index:chatbot": "npx tsx scripts/index-chatbot.ts"

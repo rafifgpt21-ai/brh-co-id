@@ -3,7 +3,7 @@
 import { AgendaFields, type AgendaFieldLabels } from "@/components/home/AgendaFields";
 import { ShareActions } from "@/components/common/ShareActions";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
-import { deleteQuickPost, updateQuickPost, updateQuickPostStatus, type QuickPostType } from "@/lib/actions/quick-post";
+import { deleteQuickPost, updateQuickPost, updateQuickPostStatus, type ActiveQuickPostType, type AgendaCategory, type QuickPostType } from "@/lib/actions/quick-post";
 import { formatLocalizedDate, getDateLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { buildAbsoluteUrl } from "@/lib/share-url";
 import Image from "next/image";
@@ -17,11 +17,13 @@ import { rollbackUploadedFiles } from "@/lib/actions/uploadthing";
 export type QuickPostItem = {
   id: string;
   type: string;
+  agendaCategory?: AgendaCategory | null;
   content: string;
   imageUrl?: string | null;
   sourcePostId?: string | null;
   sourceTitle?: string | null;
   sourceSlug?: string | null;
+  agendaLink?: string | null;
   startsAt?: Date | string | null;
   endsAt?: Date | string | null;
   locationLabel?: string | null;
@@ -50,6 +52,11 @@ type QuickPostFeedLabels = AgendaFieldLabels & {
   viewAllQuote: string;
   draftBadge: string;
   completedBadge: string;
+  teaching: string;
+  engagement: string;
+  agendaCategory: string;
+  agendaCategoryRequired: string;
+  openTeachingLink: string;
   publish: string;
   edit: string;
   save: string;
@@ -69,7 +76,7 @@ type QuickPostFeedLabels = AgendaFieldLabels & {
   readSource: string;
 };
 
-const COLUMN_TYPES: QuickPostType[] = ["NORMAL", "AGENDA", "QUOTE"];
+const COLUMN_TYPES: QuickPostType[] = ["AGENDA", "QUOTE"];
 
 function truncate(content: string, length: number) {
   return content.length > length ? `${content.slice(0, length).trim()}...` : content;
@@ -134,16 +141,18 @@ export function QuickPostFeed({
   const editCompressionTokenRef = useRef<symbol | null>(null);
   const deleteCancelButtonRef = useRef<HTMLButtonElement>(null);
   const quoteTextRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-  const [activeType, setActiveType] = useState<QuickPostType>(visibleTypes[0] ?? "NORMAL");
+  const [activeType, setActiveType] = useState<QuickPostType>(visibleTypes[0] ?? "AGENDA");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [clampedQuotes, setClampedQuotes] = useState<Record<string, boolean>>({});
   const [editingPost, setEditingPost] = useState<QuickPostItem | null>(null);
   const [deletingPost, setDeletingPost] = useState<QuickPostItem | null>(null);
-  const [editType, setEditType] = useState<QuickPostType>("NORMAL");
+  const [editType, setEditType] = useState<QuickPostType>("AGENDA");
+  const [editAgendaCategory, setEditAgendaCategory] = useState<AgendaCategory | "">("");
   const [editContent, setEditContent] = useState("");
   const [editAgendaDate, setEditAgendaDate] = useState("");
   const [editAgendaStartTime, setEditAgendaStartTime] = useState("");
   const [editAgendaEndTime, setEditAgendaEndTime] = useState("");
+  const [editAgendaLink, setEditAgendaLink] = useState("");
   const [editLocationLabel, setEditLocationLabel] = useState("");
   const [editLocationLatitude, setEditLocationLatitude] = useState<number | undefined>();
   const [editLocationLongitude, setEditLocationLongitude] = useState<number | undefined>();
@@ -260,10 +269,12 @@ export function QuickPostFeed({
     const end = getWibFormParts(post.endsAt);
     setEditingPost(post);
     setEditType(type);
+    setEditAgendaCategory(post.agendaCategory || "");
     setEditContent(post.content);
     setEditAgendaDate(start.date);
     setEditAgendaStartTime(start.time);
     setEditAgendaEndTime(end.time);
+    setEditAgendaLink(post.agendaLink || "");
     setEditLocationLabel(post.locationLabel || "");
     setEditLocationLatitude(post.locationLatitude ?? undefined);
     setEditLocationLongitude(post.locationLongitude ?? undefined);
@@ -288,6 +299,7 @@ export function QuickPostFeed({
     clearEditStagedImage();
     setEditingPost(null);
     setEditContent("");
+    setEditAgendaLink("");
     setEditMessage("");
   };
 
@@ -334,6 +346,10 @@ export function QuickPostFeed({
       setEditMessage(labels.agendaRequired);
       return;
     }
+    if (editType === "AGENDA" && !editAgendaCategory) {
+      setEditMessage(labels.agendaCategoryRequired);
+      return;
+    }
     if (isEditCompressing) {
       setEditMessage("Tunggu sampai kompresi gambar selesai.");
       return;
@@ -350,9 +366,11 @@ export function QuickPostFeed({
         }
         const agendaPayload = editType === "AGENDA"
           ? {
+              agendaCategory: editAgendaCategory || undefined,
               agendaDate: editAgendaDate,
               agendaStartTime: editAgendaStartTime,
               agendaEndTime: editAgendaEndTime,
+              agendaLink: editAgendaCategory === "TEACHING" ? editAgendaLink : "",
               locationLabel: editLocationLabel,
               ...(typeof editLocationLatitude === "number" && typeof editLocationLongitude === "number"
                 ? { locationLatitude: editLocationLatitude, locationLongitude: editLocationLongitude }
@@ -361,7 +379,7 @@ export function QuickPostFeed({
           : {};
         const result = await updateQuickPost({
           id: editingPost.id,
-          type: editType,
+          type: editType as ActiveQuickPostType,
           content: editContent,
           imageUrl: editType === "NORMAL" ? finalImageUrl : "",
           newUploads: uploadedReceipts,
@@ -461,8 +479,9 @@ export function QuickPostFeed({
                   const visibleContent = isExpanded || (isPreview && isQuote) ? post.content : truncate(post.content, previewLimit);
                   const completionTime = post.endsAt || post.startsAt;
                   const isCompleted = isAgenda && completionTime ? new Date(completionTime) < new Date() : false;
-                  const shareUrl = buildAbsoluteUrl(`${withLocale("/catatan", lang)}#quick-post-${post.id}`);
-                  const showPostMeta = (post.status === "Draft" && isAdmin) || isCompleted || !isAgenda;
+                  const sharePath = isAgenda ? withLocale("/pengabdian", lang) : withLocale("/catatan", lang);
+                  const shareUrl = buildAbsoluteUrl(`${sharePath}#quick-post-${post.id}`);
+                  const showPostMeta = true;
 
                   return (
                     <article key={post.id} id={`quick-post-${post.id}`} className={`group relative scroll-mt-24 border-b border-outline-variant/20 last:border-b-0 ${isPreview ? `flex flex-col ${isAgenda ? "min-h-0 py-2" : "h-full flex-1 pb-1 pt-2"}` : "py-6"}`}>
@@ -489,29 +508,48 @@ export function QuickPostFeed({
                           {post.status === "Draft" && isAdmin && <span className="rounded-full bg-surface-container px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-on-surface-variant">{labels.draftBadge}</span>}
                           {isCompleted && <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-primary">{labels.completedBadge}</span>}
                           {!isAgenda && <span className="text-[11px] font-bold text-on-surface-variant/55">{formatLocalizedDate(post.createdAt, lang)}</span>}
+                          {isAgenda && post.agendaCategory && (
+                            <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-secondary">
+                              {post.agendaCategory === "TEACHING" ? labels.teaching : labels.engagement}
+                            </span>
+                          )}
                         </div>
                       )}
 
                       {isAgenda && post.startsAt ? (
-                        <div className={`${isPreview ? "mb-2 rounded-xl p-3 sm:rounded-2xl" : "mb-5 rounded-2xl p-4"} bg-secondary/8 text-primary`}>
-                          <p className="flex items-start gap-2 text-sm font-black leading-snug">
-                            <span className="material-symbols-outlined text-[19px] text-secondary">calendar_month</span>
-                            <span>{formatAgendaDate(post.startsAt, lang)}</span>
-                          </p>
-                          <p className={`${isPreview ? "mt-1.5" : "mt-2"} flex items-center gap-2 text-xs font-bold text-on-surface-variant`}>
-                            <span className="material-symbols-outlined text-[18px] text-secondary">schedule</span>
-                            <span>{formatAgendaTime(post.startsAt, lang)}{post.endsAt ? `–${formatAgendaTime(post.endsAt, lang)}` : ""} WIB</span>
-                          </p>
+                        <div className={`${isPreview ? "mb-2 rounded-2xl p-4" : "mb-5 rounded-2xl p-4 sm:p-5"} border border-secondary/12 bg-secondary/8 text-primary`}>
+                          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-x-4">
+                            <p className="flex min-w-0 items-start gap-2 text-sm font-black leading-snug">
+                              <span className="material-symbols-outlined shrink-0 text-[19px] text-secondary">calendar_month</span>
+                              <span>{formatAgendaDate(post.startsAt, lang)}</span>
+                            </p>
+                            <p className="flex min-w-0 items-start gap-2 text-xs font-bold leading-relaxed text-on-surface-variant">
+                              <span className="material-symbols-outlined shrink-0 text-[18px] text-secondary">schedule</span>
+                              <span>{formatAgendaTime(post.startsAt, lang)}{post.endsAt ? `–${formatAgendaTime(post.endsAt, lang)}` : ""} WIB</span>
+                            </p>
+                          </div>
                           {post.locationLabel && (
-                            <p className={`${isPreview ? "mt-1.5 line-clamp-1" : "mt-2"} flex items-start gap-2 text-xs leading-relaxed text-on-surface-variant`}>
-                              <span className="material-symbols-outlined mt-0.5 text-[18px] text-secondary">location_on</span>
-                              <span>{post.locationLabel}</span>
+                            <p className={`${isPreview ? "mt-2.5 line-clamp-2" : "mt-3"} flex min-w-0 items-start gap-2 text-xs leading-relaxed text-on-surface-variant`}>
+                              <span className="material-symbols-outlined mt-0.5 shrink-0 text-[18px] text-secondary">location_on</span>
+                              <span className="break-words">{post.locationLabel}</span>
                             </p>
                           )}
 
-                          <button type="button" onClick={() => toggleExpanded(post.id)} className={`${isPreview ? "mt-2 pt-2" : "mt-4 pt-4"} block w-full border-t border-secondary/15 text-left`}>
+                          <button type="button" onClick={() => toggleExpanded(post.id)} className={`${isPreview ? "mt-3 pt-3" : "mt-4 pt-4"} block w-full border-t border-secondary/15 text-left`}>
                             <p className={`whitespace-pre-wrap text-pretty font-body text-sm leading-relaxed text-on-surface ${isPreview ? "sm:text-sm" : "sm:text-base"} ${isPreview && !isExpanded ? "line-clamp-2" : ""}`}>{visibleContent}</p>
                           </button>
+
+                          {post.agendaCategory === "TEACHING" && post.agendaLink && (
+                            <a
+                              href={post.agendaLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-center text-xs font-black text-on-primary shadow-sm transition hover:bg-tertiary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary/25 sm:w-auto"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                              {labels.openTeachingLink}
+                            </a>
+                          )}
                         </div>
                       ) : (
                         <button type="button" onClick={() => toggleExpanded(post.id)} className="block w-full text-left">
@@ -595,7 +633,7 @@ export function QuickPostFeed({
               </button>
             </div>
 
-            <div className="mb-4 grid grid-cols-3 rounded-full bg-surface-container p-1 text-[11px] font-bold">
+            <div className="mb-4 grid grid-cols-2 rounded-full bg-surface-container p-1 text-[11px] font-bold">
               {COLUMN_TYPES.map((type) => (
                 <button key={type} type="button" onClick={() => {
                   setEditType(type);
@@ -635,25 +673,59 @@ export function QuickPostFeed({
             )}
 
             {editType === "AGENDA" && (
-              <AgendaFields
-                labels={labels}
-                lang={lang}
-                date={editAgendaDate}
-                startTime={editAgendaStartTime}
-                endTime={editAgendaEndTime}
-                locationLabel={editLocationLabel}
-                locationLatitude={editLocationLatitude}
-                locationLongitude={editLocationLongitude}
-                disabled={isPending}
-                onDateChange={setEditAgendaDate}
-                onStartTimeChange={setEditAgendaStartTime}
-                onEndTimeChange={setEditAgendaEndTime}
-                onLocationChange={(location) => {
-                  setEditLocationLabel(location.label);
-                  setEditLocationLatitude(location.latitude);
-                  setEditLocationLongitude(location.longitude);
-                }}
-              />
+              <>
+                <fieldset className="mt-4">
+                  <legend className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-secondary">{labels.agendaCategory}</legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      ["TEACHING", labels.teaching],
+                      ["ENGAGEMENT", labels.engagement],
+                    ] as const).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={editAgendaCategory === value}
+                        onClick={() => {
+                          setEditAgendaCategory(value);
+                          if (value !== "TEACHING") setEditAgendaLink("");
+                        }}
+                        className={`h-11 rounded-xl border text-sm font-black transition ${
+                          editAgendaCategory === value
+                            ? "border-primary bg-primary text-on-primary"
+                            : "border-outline-variant/30 text-on-surface-variant"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+                <AgendaFields
+                  labels={labels}
+                  lang={lang}
+                  date={editAgendaDate}
+                  startTime={editAgendaStartTime}
+                  endTime={editAgendaEndTime}
+                  link={editAgendaLink}
+                  showLink={editAgendaCategory === "TEACHING"}
+                  locationLabel={editLocationLabel}
+                  locationLatitude={editLocationLatitude}
+                  locationLongitude={editLocationLongitude}
+                  disabled={isPending}
+                  onDateChange={setEditAgendaDate}
+                  onStartTimeChange={setEditAgendaStartTime}
+                  onEndTimeChange={setEditAgendaEndTime}
+                  onLinkChange={(value) => {
+                    setEditAgendaLink(value);
+                    setEditMessage("");
+                  }}
+                  onLocationChange={(location) => {
+                    setEditLocationLabel(location.label);
+                    setEditLocationLatitude(location.latitude);
+                    setEditLocationLongitude(location.longitude);
+                  }}
+                />
+              </>
             )}
 
             <div className="mt-3 flex items-center justify-between gap-3">

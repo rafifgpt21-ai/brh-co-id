@@ -83,7 +83,7 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
     : filteredPosts;
 }
 
-export async function getHomeFeaturedPosts(limit = 5) {
+export async function getHomeFeaturedPosts(limit = 3) {
   "use cache";
   cacheTag("posts");
   cacheLife("minutes");
@@ -158,7 +158,7 @@ export async function getPublishedQuickPosts(limit = 12) {
   });
 }
 
-export async function getLatestPublishedQuickPostByType(type: "NORMAL" | "AGENDA" | "QUOTE") {
+export async function getLatestPublishedQuickPostByType(type: "AGENDA" | "QUOTE") {
   "use cache";
   cacheTag("quick-posts");
   cacheLife("minutes");

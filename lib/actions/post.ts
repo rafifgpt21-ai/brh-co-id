@@ -78,7 +78,7 @@ function resolvePostThumbnail(thumbnail: string | undefined, blocks: PostBlock[]
 
 const HOME_SITE_SETTING_KEY = "home";
 
-const homeFeaturedPostIdsSchema = z.array(z.string().min(1)).length(5, "Pilih tepat 5 karya untuk Highlight");
+const homeFeaturedPostIdsSchema = z.array(z.string().min(1)).length(3, "Pilih tepat 3 karya untuk Karya Pilihan");
 
 function parsePublicationDate(value: string) {
   const date = new Date(`${value}T12:00:00.000Z`);

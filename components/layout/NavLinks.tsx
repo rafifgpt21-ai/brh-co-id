@@ -13,10 +13,11 @@ interface NavLinksProps {
 
 export const getNavLinks = (isAdmin: boolean | undefined, lang: Locale, labels: Dictionary["nav"]) => [
   { href: withLocale("/", lang), label: labels.home },
-  { href: withLocale("/explore", lang), label: labels.explore },
-  { href: withLocale("/biografi", lang), label: labels.biography },
+  { href: withLocale("/tentang", lang), label: labels.about },
   { href: withLocale("/publikasi", lang), label: labels.publications },
   { href: withLocale("/riset", lang), label: labels.research },
+  { href: withLocale("/pengabdian", lang), label: labels.engagement },
+  { href: withLocale("/kontak", lang), label: labels.contact },
   ...(isAdmin ? [{ href: '/admin', label: labels.admin }] : []),
 ];
 
@@ -37,7 +38,7 @@ export const NavLinks = ({ isAdmin, lang, dict }: NavLinksProps) => {
   const links = getNavLinks(isAdmin, lang, dict.nav);
 
   return (
-    <div className="hidden lg:flex items-center gap-10 font-headline font-medium tracking-tight">
+    <div className="hidden lg:flex items-center gap-7 font-headline font-medium tracking-tight xl:gap-10">
       {links.map((link) => {
         const isCurrentRoute = isNavLinkCurrent(pathname, link.href, lang);
         const isActive = isPendingNavigationTarget(pendingHref, link.href) || (!pendingHref && isCurrentRoute);

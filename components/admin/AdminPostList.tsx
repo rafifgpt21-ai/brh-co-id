@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { deletePost, resetHomeFeaturedPostIds, saveHomeFeaturedPostIds } from '@/lib/actions/post';
 import { motion, AnimatePresence } from 'framer-motion';
-import { repostArticleToQuickPost } from '@/lib/actions/quick-post';
-import Image from 'next/image';
 import { usePublishProgress } from './PublishProgressProvider';
 
 type Post = {
@@ -16,27 +14,17 @@ type Post = {
   category: string;
   status: string;
   thumbnail: string | null;
-  excerpt: string;
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
-type ArticleRepost = {
-  sourcePostId: string;
-  content: string;
-  includeThumbnail: boolean;
-  status: 'Published' | 'Draft';
-};
-
 export function AdminPostList({
   initialPosts,
   initialHomeFeaturedPostIds,
-  initialArticleReposts,
 }: {
   initialPosts: Post[];
   initialHomeFeaturedPostIds: string[];
-  initialArticleReposts: ArticleRepost[];
 }) {
   const { latestPublishedPost } = usePublishProgress();
   const [posts, setPosts] = useState(initialPosts);
@@ -46,17 +34,6 @@ export function AdminPostList({
   const [featuredStatus, setFeaturedStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [deleteModal, setDeleteModal] = useState<{ id: string, title: string } | null>(null);
-  const [articleReposts, setArticleReposts] = useState<Record<string, ArticleRepost>>(() =>
-    Object.fromEntries(initialArticleReposts.map((repost) => [repost.sourcePostId, repost]))
-  );
-  const [repostModal, setRepostModal] = useState<Post | null>(null);
-  const [repostContent, setRepostContent] = useState('');
-  const [repostStatus, setRepostStatus] = useState<'Published' | 'Draft'>('Published');
-  const [includeThumbnail, setIncludeThumbnail] = useState(true);
-  const [repostMessage, setRepostMessage] = useState('');
-  const [repostToast, setRepostToast] = useState('');
-  const [isRepostPending, startRepostTransition] = useTransition();
-  const repostTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof Post; direction: 'asc' | 'desc' } | null>({
     key: 'updatedAt',
     direction: 'desc',
@@ -124,7 +101,7 @@ export function AdminPostList({
     .map((id) => featuredPostMap.get(id))
     .filter((post): post is Post => Boolean(post));
   const availableFeaturedPosts = publishedPosts.filter((post) => !visibleHomeFeaturedPostIds.includes(post.id));
-  const canAddFeaturedPost = selectedFeaturedPosts.length < 5 && availableFeaturedPosts.length > 0;
+  const canAddFeaturedPost = selectedFeaturedPosts.length < 3 && availableFeaturedPosts.length > 0;
 
   const handleDelete = (id: string, title: string) => {
     setDeleteModal({ id, title });
@@ -146,86 +123,12 @@ export function AdminPostList({
     });
   };
 
-  const openRepost = (post: Post) => {
-    const existing = articleReposts[post.id];
-    setRepostModal(post);
-    setRepostContent(existing?.content || post.excerpt || `Baca karya terbaru BRH Insight: ${post.title}`);
-    setRepostStatus(existing?.status || 'Published');
-    setIncludeThumbnail(existing?.includeThumbnail ?? Boolean(post.thumbnail));
-    setRepostMessage('');
-  };
-
-  const closeRepost = () => {
-    if (isRepostPending) return;
-    setRepostModal(null);
-    setRepostMessage('');
-  };
-
-  const submitRepost = () => {
-    if (!repostModal || !repostContent.trim()) {
-      setRepostMessage('Ringkasan tidak boleh kosong.');
-      return;
-    }
-
-    const sourcePost = repostModal;
-    setRepostMessage('');
-    startRepostTransition(async () => {
-      const result = await repostArticleToQuickPost({
-        postId: sourcePost.id,
-        content: repostContent,
-        includeThumbnail,
-        status: repostStatus,
-      });
-      if (!result.success) {
-        setRepostMessage(result.error || 'Gagal merepost artikel.');
-        return;
-      }
-
-      setArticleReposts((current) => ({
-        ...current,
-        [sourcePost.id]: {
-          sourcePostId: sourcePost.id,
-          content: repostContent.trim(),
-          includeThumbnail,
-          status: repostStatus,
-        },
-      }));
-      setRepostModal(null);
-      setRepostToast(result.updated ? 'Repost berhasil diperbarui.' : 'Artikel berhasil direpost ke Perspektif BRH.');
-    });
-  };
-
-  useEffect(() => {
-    if (!repostModal) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const focusTimer = window.setTimeout(() => repostTextareaRef.current?.focus(), 120);
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isRepostPending) {
-        setRepostModal(null);
-        setRepostMessage('');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [repostModal, isRepostPending]);
-
-  useEffect(() => {
-    if (!repostToast) return;
-    const timer = window.setTimeout(() => setRepostToast(''), 4000);
-    return () => window.clearTimeout(timer);
-  }, [repostToast]);
-
   const addFeaturedPost = (id: string) => {
     if (!id) return;
     setFeaturedStatus(null);
     setHomeFeaturedPostIds((currentIds) => {
       const validCurrentIds = currentIds.filter((postId) => featuredPostMap.get(postId)?.status === 'Published');
-      if (validCurrentIds.includes(id) || validCurrentIds.length >= 5) return validCurrentIds;
+      if (validCurrentIds.includes(id) || validCurrentIds.length >= 3) return validCurrentIds;
       return [...validCurrentIds, id];
     });
   };
@@ -251,15 +154,15 @@ export function AdminPostList({
 
   const saveFeaturedPosts = () => {
     setFeaturedStatus(null);
-    if (visibleHomeFeaturedPostIds.length !== 5) {
-      setFeaturedStatus({ type: 'error', message: 'Lengkapi tepat 5 karya sebelum menyimpan Highlight.' });
+    if (visibleHomeFeaturedPostIds.length !== 3) {
+      setFeaturedStatus({ type: 'error', message: 'Lengkapi tepat 3 karya sebelum menyimpan Karya Pilihan.' });
       return;
     }
     startTransition(async () => {
       const result = await saveHomeFeaturedPostIds(visibleHomeFeaturedPostIds);
       if (result.success) {
         setHomeFeaturedPostIds(result.homeFeaturedPostIds || []);
-        setFeaturedStatus({ type: 'success', message: 'Lima karya Highlight berhasil disimpan.' });
+        setFeaturedStatus({ type: 'success', message: 'Tiga Karya Pilihan berhasil disimpan.' });
       } else {
         setFeaturedStatus({ type: 'error', message: result.error || 'Gagal menyimpan pilihan beranda.' });
       }
@@ -345,9 +248,9 @@ export function AdminPostList({
                 <span className="material-symbols-outlined text-[22px]">star</span>
               </div>
               <div>
-                <h2 className="text-lg font-black text-on-surface">Kelola Highlight</h2>
+                <h2 className="text-lg font-black text-on-surface">Kelola Karya Pilihan</h2>
                 <p className="text-sm font-medium text-on-surface-variant/70">
-                  Pilih tepat 5 karya Published. Urutan di bawah menjadi urutan tampil di beranda.
+                  Pilih tepat 3 karya Published. Urutan di bawah menjadi urutan tampil di beranda.
                 </p>
               </div>
             </div>
@@ -361,7 +264,7 @@ export function AdminPostList({
               className="h-11 min-w-0 rounded-full border border-outline-variant/40 bg-surface px-4 text-sm font-bold text-on-surface outline-none transition focus:border-on-surface/50 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-72"
             >
               <option value="">
-                {selectedFeaturedPosts.length >= 5 ? 'Highlight sudah lengkap' : `Tambah karya (${selectedFeaturedPosts.length}/5)`}
+                {selectedFeaturedPosts.length >= 3 ? 'Karya Pilihan sudah lengkap' : `Tambah karya (${selectedFeaturedPosts.length}/3)`}
               </option>
               {availableFeaturedPosts.map((post) => (
                 <option key={post.id} value={post.id}>
@@ -371,7 +274,7 @@ export function AdminPostList({
             </select>
             <Button
               onClick={saveFeaturedPosts}
-              disabled={isPending || selectedFeaturedPosts.length !== 5}
+              disabled={isPending || selectedFeaturedPosts.length !== 3}
               className="h-11 rounded-full! bg-primary px-5 text-sm font-black text-on-primary hover:bg-primary/90 disabled:opacity-60"
             >
               Simpan
@@ -387,8 +290,8 @@ export function AdminPostList({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-2 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => {
+        <div className="mt-5 grid gap-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => {
             const post = selectedFeaturedPosts[index];
 
             return (
@@ -547,12 +450,6 @@ export function AdminPostList({
                       Highlight #{visibleHomeFeaturedPostIds.indexOf(post.id) + 1}
                     </span>
                   )}
-                  {articleReposts[post.id] && (
-                    <span className="mt-2 ml-1 inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-secondary">
-                      <span className="material-symbols-outlined text-[14px]">repeat</span>
-                      Perspektif BRH
-                    </span>
-                  )}
                   {/* Mobile meta */}
                   <div className="flex lg:hidden flex-wrap items-center gap-2 mt-1.5 text-xs text-on-surface-variant/80 font-medium">
                     <span className="bg-surface-container-low px-2 py-0.5 rounded-md">{post.category}</span>
@@ -598,18 +495,6 @@ export function AdminPostList({
 
               {/* Kolom 6: Action Buttons */}
               <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-1.5 w-full lg:w-auto mt-2 lg:mt-0 transition-opacity">
-                {post.status === 'Published' && (
-                  <button
-                    type="button"
-                    onClick={() => openRepost(post)}
-                    className="mr-auto inline-flex h-11 items-center justify-center gap-2 rounded-full bg-secondary/10 px-3.5 text-secondary transition hover:bg-secondary hover:text-on-secondary lg:mr-0 lg:w-11 lg:px-0"
-                    title={articleReposts[post.id] ? 'Perbarui repost di Perspektif BRH' : 'Repost ke Perspektif BRH'}
-                    aria-label={articleReposts[post.id] ? 'Perbarui repost di Perspektif BRH' : 'Repost ke Perspektif BRH'}
-                  >
-                    <span className="material-symbols-outlined text-[20px]">repeat</span>
-                    <span className="text-xs font-black lg:hidden">{articleReposts[post.id] ? 'Perbarui repost' : 'Repost'}</span>
-                  </button>
-                )}
                 <Link
                   href={`/post/${post.slug}`}
                   target="_blank"
@@ -699,164 +584,6 @@ export function AdminPostList({
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {repostModal && (
-          <div className="fixed inset-0 z-100 flex items-end justify-center sm:items-center sm:p-5" role="presentation">
-            <motion.button
-              type="button"
-              aria-label="Tutup dialog repost"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeRepost}
-              className="absolute inset-0 h-full w-full bg-on-surface/45 backdrop-blur-sm"
-            />
-            <motion.section
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="repost-dialog-title"
-              initial={{ opacity: 0, y: 40, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="relative flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[2rem] border border-outline-variant/20 bg-surface-container-lowest shadow-2xl sm:max-h-[88vh] sm:rounded-[2rem]"
-            >
-              <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-outline-variant/50 sm:hidden" />
-              <header className="flex items-start gap-3 border-b border-outline-variant/20 px-5 py-4 sm:px-6 sm:py-5">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-secondary text-on-secondary">
-                  <span className="material-symbols-outlined text-[23px]">repeat</span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 id="repost-dialog-title" className="font-headline text-lg font-black leading-tight text-primary sm:text-xl">
-                    {articleReposts[repostModal.id] ? 'Perbarui repost' : 'Repost ke Perspektif BRH'}
-                  </h2>
-                  <p className="mt-1 text-xs font-medium leading-relaxed text-on-surface-variant/70">
-                    Ringkasan ini akan tampil sebagai Perspektif BRH dan tetap terhubung ke artikel asli.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeRepost}
-                  disabled={isRepostPending}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-container text-on-surface-variant transition hover:text-on-surface disabled:opacity-50"
-                  aria-label="Tutup"
-                >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
-                </button>
-              </header>
-
-              <div className="overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5">
-                <div className="flex items-center gap-3 rounded-2xl border border-outline-variant/25 bg-surface-container-low p-3">
-                  {repostModal.thumbnail ? (
-                    <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface-container">
-                      <Image src={repostModal.thumbnail} alt="" fill sizes="56px" className="object-cover" />
-                    </span>
-                  ) : (
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-surface-container text-on-surface-variant">
-                      <span className="material-symbols-outlined">article</span>
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-secondary">Artikel sumber</p>
-                    <p className="mt-1 line-clamp-2 text-sm font-black leading-snug text-on-surface">{repostModal.title}</p>
-                  </div>
-                </div>
-
-                <label htmlFor="repost-content" className="mt-5 block text-xs font-black uppercase tracking-wider text-on-surface-variant">
-                  Ringkasan Perspektif
-                </label>
-                <textarea
-                  ref={repostTextareaRef}
-                  id="repost-content"
-                  value={repostContent}
-                  onChange={(event) => {
-                    setRepostContent(event.target.value);
-                    setRepostMessage('');
-                  }}
-                  maxLength={2000}
-                  rows={6}
-                  disabled={isRepostPending}
-                  placeholder="Tulis ringkasan singkat yang mengundang pembaca membuka artikel..."
-                  className="mt-2 min-h-36 w-full resize-none rounded-2xl border border-outline-variant/35 bg-surface px-4 py-3 font-body text-base leading-relaxed text-on-surface outline-none transition focus:border-secondary focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
-                />
-                <div className="mt-1.5 flex items-start justify-between gap-3">
-                  <p className={`text-xs font-bold ${repostMessage ? 'text-error' : 'text-on-surface-variant/55'}`} role="status">
-                    {repostMessage || 'Bisa diedit sebelum dipublikasikan.'}
-                  </p>
-                  <span className="shrink-0 text-xs font-bold tabular-nums text-on-surface-variant/50">{repostContent.length}/2000</span>
-                </div>
-
-                {repostModal.thumbnail && (
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={includeThumbnail}
-                    onClick={() => setIncludeThumbnail((current) => !current)}
-                    disabled={isRepostPending}
-                    className="mt-4 flex min-h-13 w-full items-center gap-3 rounded-2xl border border-outline-variant/25 px-4 py-3 text-left transition hover:bg-surface-container-low disabled:opacity-60"
-                  >
-                    <span className={`relative h-7 w-12 shrink-0 rounded-full transition ${includeThumbnail ? 'bg-secondary' : 'bg-surface-container-high'}`}>
-                      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${includeThumbnail ? 'left-6' : 'left-1'}`} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-black text-on-surface">Tampilkan sampul artikel</span>
-                      <span className="mt-0.5 block text-xs text-on-surface-variant/65">Gunakan gambar artikel pada kartu Perspektif BRH.</span>
-                    </span>
-                  </button>
-                )}
-
-                <fieldset className="mt-5">
-                  <legend className="text-xs font-black uppercase tracking-wider text-on-surface-variant">Simpan sebagai</legend>
-                  <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl bg-surface-container p-1.5">
-                    {(['Published', 'Draft'] as const).map((status) => (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => setRepostStatus(status)}
-                        disabled={isRepostPending}
-                        className={`flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-black transition disabled:opacity-60 ${repostStatus === status ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-lowest'}`}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">{status === 'Published' ? 'public' : 'edit_note'}</span>
-                        {status === 'Published' ? 'Publish' : 'Draft'}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-              </div>
-
-              <footer className="border-t border-outline-variant/20 bg-surface-container-lowest px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-5">
-                <button
-                  type="button"
-                  onClick={submitRepost}
-                  disabled={isRepostPending || !repostContent.trim()}
-                  className="inline-flex h-13 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-black text-on-primary shadow-lg shadow-primary/15 transition hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-55"
-                >
-                  <span className={`material-symbols-outlined text-[20px] ${isRepostPending ? 'animate-spin' : ''}`}>{isRepostPending ? 'progress_activity' : 'repeat'}</span>
-                  {isRepostPending ? 'Menyimpan repost...' : articleReposts[repostModal.id] ? 'Perbarui repost' : 'Repost sekarang'}
-                </button>
-              </footer>
-            </motion.section>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {repostToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 18, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.96 }}
-            role="status"
-            className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-110 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-2xl bg-on-surface px-4 py-3 text-surface shadow-2xl"
-          >
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-on-secondary">
-              <span className="material-symbols-outlined text-[18px]">check</span>
-            </span>
-            <span className="text-sm font-bold leading-snug">{repostToast}</span>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

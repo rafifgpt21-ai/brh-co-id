@@ -10,16 +10,19 @@ import type { UploadReceipt } from "@/lib/uploadthing-types";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 
-const quickPostTypeSchema = z.enum(["NORMAL", "AGENDA", "QUOTE"]);
+const quickPostTypeSchema = z.enum(["AGENDA", "QUOTE"]);
+const agendaCategorySchema = z.enum(["TEACHING", "ENGAGEMENT"]);
 const agendaDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal(""));
 const agendaTimeSchema = z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal(""));
 
 const quickPostFields = {
   type: quickPostTypeSchema,
+  agendaCategory: agendaCategorySchema.optional(),
   content: z.string().trim().min(1, "Konten tidak boleh kosong").max(2000, "Konten terlalu panjang"),
   agendaDate: agendaDateSchema,
   agendaStartTime: agendaTimeSchema,
   agendaEndTime: agendaTimeSchema,
+  agendaLink: z.string().trim().max(2048, "Tautan terlalu panjang").optional().or(z.literal("")),
   locationLabel: z.string().trim().max(500, "Alamat terlalu panjang").optional().or(z.literal("")),
   locationLatitude: z.number().finite().min(-90).max(90).optional(),
   locationLongitude: z.number().finite().min(-180).max(180).optional(),
@@ -64,7 +67,55 @@ function validateAgendaFields(data: z.infer<z.ZodObject<typeof quickPostFields>>
     });
   }
 
-  if (data.type !== "AGENDA") return;
+  if (data.type !== "AGENDA") {
+    if (data.agendaCategory) {
+      context.addIssue({
+        code: "custom",
+        message: "Kategori agenda hanya berlaku untuk agenda",
+        path: ["agendaCategory"],
+      });
+    }
+    if (data.agendaLink) {
+      context.addIssue({
+        code: "custom",
+        message: "Tautan pengajaran hanya berlaku untuk agenda Pengajaran",
+        path: ["agendaLink"],
+      });
+    }
+    return;
+  }
+
+  if (!data.agendaCategory) {
+    context.addIssue({
+      code: "custom",
+      message: "Pilih kategori Pengajaran atau Pengabdian",
+      path: ["agendaCategory"],
+    });
+  }
+
+  if (data.agendaLink) {
+    let validUrl = false;
+    try {
+      const url = new URL(data.agendaLink);
+      validUrl = url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      validUrl = false;
+    }
+
+    if (!validUrl) {
+      context.addIssue({
+        code: "custom",
+        message: "Tautan harus berupa URL http atau https yang valid",
+        path: ["agendaLink"],
+      });
+    } else if (data.agendaCategory !== "TEACHING") {
+      context.addIssue({
+        code: "custom",
+        message: "Tautan hanya dapat ditambahkan pada agenda Pengajaran",
+        path: ["agendaLink"],
+      });
+    }
+  }
 
   if (!data.agendaDate) {
     context.addIssue({ code: "custom", message: "Tanggal agenda wajib diisi", path: ["agendaDate"] });
@@ -103,13 +154,6 @@ const quickPostStatusSchema = z.object({
   status: z.enum(["Published", "Draft"]),
 });
 
-const articleRepostSchema = z.object({
-  postId: z.string().min(1),
-  content: z.string().trim().min(1, "Ringkasan tidak boleh kosong").max(2000, "Ringkasan terlalu panjang"),
-  includeThumbnail: z.boolean(),
-  status: z.enum(["Published", "Draft"]),
-});
-
 const quickPostUpdateSchema = z.object({
   id: z.string().min(1),
   ...quickPostFields,
@@ -117,7 +161,9 @@ const quickPostUpdateSchema = z.object({
 }).superRefine(validateAgendaFields);
 
 export type QuickPostFormData = z.infer<typeof quickPostSchema> & { newUploads?: UploadReceipt[] };
-export type QuickPostType = z.infer<typeof quickPostTypeSchema>;
+export type ActiveQuickPostType = z.infer<typeof quickPostTypeSchema>;
+export type QuickPostType = "NORMAL" | ActiveQuickPostType;
+export type AgendaCategory = z.infer<typeof agendaCategorySchema>;
 export type QuickPostUpdateData = z.infer<typeof quickPostUpdateSchema> & { newUploads?: UploadReceipt[] };
 
 function getAgendaData(data: z.infer<z.ZodObject<typeof quickPostFields>>) {
@@ -125,6 +171,8 @@ function getAgendaData(data: z.infer<z.ZodObject<typeof quickPostFields>>) {
     return {
       startsAt: null,
       endsAt: null,
+      agendaCategory: null,
+      agendaLink: null,
       locationLabel: null,
       locationLatitude: null,
       locationLongitude: null,
@@ -137,6 +185,8 @@ function getAgendaData(data: z.infer<z.ZodObject<typeof quickPostFields>>) {
     : null;
 
   return {
+    agendaCategory: data.agendaCategory,
+    agendaLink: data.agendaCategory === "TEACHING" ? data.agendaLink || null : null,
     startsAt,
     endsAt,
     locationLabel: data.locationLabel || null,
@@ -170,6 +220,8 @@ function refreshQuickPostPaths() {
   revalidatePath("/en");
   revalidatePath("/id/catatan");
   revalidatePath("/en/catatan");
+  revalidatePath("/pengabdian");
+  revalidatePath("/en/engagement");
   updateTag("quick-posts");
 }
 
@@ -228,7 +280,7 @@ export async function createQuickPost(data: QuickPostFormData) {
       data: {
         type: validData.type,
         content: validData.content,
-        imageUrl: validData.type === "NORMAL" ? validData.imageUrl || null : null,
+        imageUrl: null,
         ...getAgendaData(validData),
         status: validData.status,
       },
@@ -241,114 +293,6 @@ export async function createQuickPost(data: QuickPostFormData) {
   } catch (error) {
     console.error("Error creating quick post:", error);
     return failWithRollback(error instanceof Error ? error.message : "Gagal menyimpan quick post");
-  }
-}
-
-export async function repostArticleToQuickPost(data: {
-  postId: string;
-  content: string;
-  includeThumbnail: boolean;
-  status: "Published" | "Draft";
-}) {
-  const session = await requireAdmin();
-  if (!session) {
-    return { success: false as const, error: "Unauthorized" };
-  }
-
-  const parsedData = articleRepostSchema.safeParse(data);
-  if (!parsedData.success) {
-    return { success: false as const, error: parsedData.error.issues[0].message };
-  }
-
-  try {
-    const prisma = await getPrisma();
-    const post = await prisma.post.findUnique({
-      where: { id: parsedData.data.postId },
-      select: { id: true, title: true, slug: true, thumbnail: true, status: true },
-    });
-
-    if (!post) {
-      return { success: false as const, error: "Artikel tidak ditemukan" };
-    }
-    if (post.status !== "Published") {
-      return { success: false as const, error: "Hanya artikel Published yang dapat direpost" };
-    }
-
-    const existingQuickPost = await prisma.quickPost.findFirst({
-      where: { sourcePostId: post.id },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, imageUrl: true },
-    });
-    const imageUrl = parsedData.data.includeThumbnail ? post.thumbnail : null;
-    const quickPostData = {
-      type: "NORMAL",
-      content: parsedData.data.content,
-      imageUrl,
-      sourcePostId: post.id,
-      sourceTitle: post.title,
-      sourceSlug: post.slug,
-      startsAt: null,
-      endsAt: null,
-      locationLabel: null,
-      locationLatitude: null,
-      locationLongitude: null,
-      status: parsedData.data.status,
-    };
-
-    const quickPost = existingQuickPost
-      ? await prisma.quickPost.update({
-          where: { id: existingQuickPost.id },
-          data: { ...quickPostData, createdAt: new Date() },
-          select: { id: true },
-        })
-      : await prisma.quickPost.create({
-          data: quickPostData,
-          select: { id: true },
-        });
-
-    if (existingQuickPost?.imageUrl && existingQuickPost.imageUrl !== imageUrl) {
-      try {
-        await deleteFilesFromStorage([existingQuickPost.imageUrl]);
-      } catch (fileError) {
-        console.error("Error deleting replaced repost image:", fileError);
-      }
-    }
-
-    refreshQuickPostPaths();
-    revalidatePath("/admin");
-    await refreshQuickPostKnowledgeIndex(quickPost.id);
-    return { success: true as const, id: quickPost.id, updated: Boolean(existingQuickPost) };
-  } catch (error) {
-    console.error("Error reposting article to quick post:", error);
-    return { success: false as const, error: "Gagal merepost artikel" };
-  }
-}
-
-export async function getArticleReposts() {
-  const session = await requireAdmin();
-  if (!session) return [];
-
-  try {
-    const prisma = await getPrisma();
-    const quickPosts = await prisma.quickPost.findMany({
-      where: { sourcePostId: { not: null } },
-      orderBy: { createdAt: "desc" },
-      select: { sourcePostId: true, content: true, imageUrl: true, status: true },
-    });
-    const seen = new Set<string>();
-    return quickPosts.flatMap((post) => {
-      if (!post.sourcePostId || seen.has(post.sourcePostId)) return [];
-      seen.add(post.sourcePostId);
-      return [{
-        sourcePostId: post.sourcePostId,
-        content: post.content,
-        includeThumbnail: Boolean(post.imageUrl),
-        status: post.status === "Published" ? "Published" as const : "Draft" as const,
-      }];
-    });
-  } catch (error) {
-    console.error("Error fetching reposted article ids:", error);
-    return [];
   }
 }
 
@@ -418,11 +362,7 @@ export async function updateQuickPost(data: QuickPostUpdateData) {
     });
     if (!existingQuickPost) return failWithRollback("Quick post tidak ditemukan");
 
-    const nextImageUrl = parsedData.data.type === "NORMAL"
-      ? parsedData.data.imageUrl === undefined
-        ? existingQuickPost.imageUrl
-        : parsedData.data.imageUrl || null
-      : null;
+    const nextImageUrl = null;
     const quickPost = await prisma.quickPost.update({
       where: { id: parsedData.data.id },
       data: {
@@ -519,12 +459,7 @@ async function getQuickPostsByTypeInternal(options: {
     const prisma = await getPrisma();
     const statusWhere = options.includeDrafts ? {} : { status: "Published" };
     const now = new Date();
-    const [normal, quote, upcomingAgenda, pastAgenda] = await Promise.all([
-      prisma.quickPost.findMany({
-        where: { ...statusWhere, type: "NORMAL" },
-        orderBy: { createdAt: "desc" },
-        take: options.limitPerType,
-      }),
+    const [quote, upcomingAgenda, pastAgenda] = await Promise.all([
       prisma.quickPost.findMany({
         where: { ...statusWhere, type: "QUOTE" },
         orderBy: { createdAt: "desc" },
@@ -545,7 +480,7 @@ async function getQuickPostsByTypeInternal(options: {
     ]);
 
     return {
-      NORMAL: normal,
+      NORMAL: [],
       AGENDA: [...upcomingAgenda, ...pastAgenda],
       QUOTE: quote,
     };
@@ -563,7 +498,10 @@ async function getQuickPostsInternal(options: { includeDrafts: boolean; limit: n
   try {
     const prisma = await getPrisma();
     return await prisma.quickPost.findMany({
-      where: options.includeDrafts ? {} : { status: "Published" },
+      where: {
+        ...(options.includeDrafts ? {} : { status: "Published" }),
+        type: { in: ["AGENDA", "QUOTE"] },
+      },
       orderBy: { createdAt: "desc" },
       take: options.limit,
     });

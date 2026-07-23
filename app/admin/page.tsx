@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { getHomeFeaturedPostIdsForAdmin, getPosts } from "@/lib/actions/post";
 import { AdminPostList } from "@/components/admin/AdminPostList";
 import { Suspense } from "react";
-import { getArticleReposts } from "@/lib/actions/quick-post";
 
 function AdminPageFallback() {
   return <div className="min-h-[50vh] animate-pulse rounded-2xl bg-surface-container-low" />;
@@ -20,10 +19,9 @@ async function AdminDashboardContent() {
     redirect("/");
   }
 
-  const [posts, homeFeaturedPostIds, articleReposts] = await Promise.all([
+  const [posts, homeFeaturedPostIds] = await Promise.all([
     getPosts(),
     getHomeFeaturedPostIdsForAdmin(),
-    getArticleReposts(),
   ]);
 
   // Serialize dates for the client component
@@ -34,16 +32,6 @@ async function AdminDashboardContent() {
     category: p.category,
     status: p.status,
     thumbnail: p.thumbnail,
-    excerpt: p.blocks
-      .find((block) => block.type === "text")
-      ?.content.replace(/<[^>]*>/g, " ")
-      .replace(/&nbsp;|&#160;/gi, " ")
-      .replace(/&amp;/gi, "&")
-      .replace(/&quot;/gi, '"')
-      .replace(/&#39;|&apos;/gi, "'")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 520) || "",
     publishedAt: p.publishedAt,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
@@ -53,7 +41,6 @@ async function AdminDashboardContent() {
     <AdminPostList
       initialPosts={serializedPosts}
       initialHomeFeaturedPostIds={homeFeaturedPostIds}
-      initialArticleReposts={articleReposts}
     />
   );
 }

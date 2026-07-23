@@ -9,21 +9,24 @@ import {
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang: rawLang } = await params;
-  if (!hasLocale(rawLang)) return { title: "Biography | BRH Insight" };
+  if (!hasLocale(rawLang)) return { title: "About | BRH Insight" };
 
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
 
   return createPageMetadata({
-    title:
-      lang === "id"
-        ? "Biografi Budi Rahman Hakim — Akademisi, Penulis & Pembina Spiritual"
-        : "Biography of Budi Rahman Hakim — Academic, Author & Spiritual Mentor",
+    title: lang === "id"
+      ? "Tentang Budi Rahman Hakim — Akademisi, Penulis & Pembina Spiritual"
+      : "About Budi Rahman Hakim — Academic, Author & Spiritual Mentor",
     description: dict.biography.sidebarCopy,
-    path: `/${lang}/biografi`,
+    path: withCanonicalAboutPath(lang),
     locale: lang,
     absoluteTitle: true,
   });
+}
+
+function withCanonicalAboutPath(lang: Locale) {
+  return lang === "id" ? "/tentang" : "/en/about";
 }
 
 export default async function BiographyLayout({

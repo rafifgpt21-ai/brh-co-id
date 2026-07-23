@@ -16,10 +16,12 @@ export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
             {dict.footer.description}
           </p>
         </div>
-        <div className="flex flex-wrap justify-center gap-8 font-label text-xs uppercase tracking-widest font-semibold md:gap-12">
-          <OptimisticLink href={withLocale("/biografi", lang)} className="text-background/70 hover:text-primary transition-colors">{dict.nav.biography}</OptimisticLink>
+        <div className="flex flex-wrap justify-center gap-6 font-label text-xs uppercase tracking-widest font-semibold md:gap-8">
+          <OptimisticLink href={withLocale("/tentang", lang)} className="text-background/70 hover:text-primary transition-colors">{dict.nav.about}</OptimisticLink>
+          <OptimisticLink href={withLocale("/publikasi", lang)} className="text-background/70 hover:text-primary transition-colors">{dict.nav.publications}</OptimisticLink>
           <OptimisticLink href={withLocale("/riset", lang)} className="text-background/70 hover:text-primary transition-colors">{dict.nav.research}</OptimisticLink>
-          <a href="mailto:budi.rahman@uinjkt.ac.id" className="text-background/70 hover:text-primary transition-colors">{dict.footer.contact}</a>
+          <OptimisticLink href={withLocale("/pengabdian", lang)} className="text-background/70 hover:text-primary transition-colors">{dict.nav.engagement}</OptimisticLink>
+          <OptimisticLink href={withLocale("/kontak", lang)} className="text-background/70 hover:text-primary transition-colors">{dict.nav.contact}</OptimisticLink>
         </div>
       </div>
       <div className="w-full px-6 md:px-12 lg:px-24 mt-16 pt-8 border-t border-background/10 text-center">

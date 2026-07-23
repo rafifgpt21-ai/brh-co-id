@@ -6,12 +6,11 @@ import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createPageMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
 const archiveTypes = {
-  pandangan: "NORMAL",
   agenda: "AGENDA",
   kutipan: "QUOTE",
 } as const satisfies Record<string, QuickPostType>;
@@ -27,9 +26,6 @@ function getArchiveCopy(
   slug: ArchiveSlug,
   dict: Awaited<ReturnType<typeof getDictionary>>,
 ) {
-  if (slug === "pandangan") {
-    return { title: dict.quickPost.normal, intro: dict.quickPost.normalIntro };
-  }
   if (slug === "agenda") {
     return { title: dict.quickPost.agenda, intro: dict.quickPost.agendaIntro };
   }
@@ -59,6 +55,11 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     viewAllQuote: dict.quickPost.viewAllQuote,
     draftBadge: dict.quickPost.draftBadge,
     completedBadge: dict.quickPost.completedBadge,
+    teaching: dict.quickPost.teaching,
+    engagement: dict.quickPost.engagement,
+    agendaCategory: dict.quickPost.agendaCategory,
+    agendaCategoryRequired: dict.quickPost.agendaCategoryRequired,
+    openTeachingLink: dict.quickPost.openTeachingLink,
     publish: dict.quickPost.publish,
     edit: dict.quickPost.edit,
     save: dict.quickPost.save,
@@ -75,6 +76,9 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
     agendaStartTime: dict.quickPost.agendaStartTime,
     agendaEndTime: dict.quickPost.agendaEndTime,
     agendaTimeZone: dict.quickPost.agendaTimeZone,
+    agendaLink: dict.quickPost.agendaLink,
+    agendaLinkPlaceholder: dict.quickPost.agendaLinkPlaceholder,
+    agendaLinkHint: dict.quickPost.agendaLinkHint,
     agendaLocation: dict.quickPost.agendaLocation,
     agendaLocationPlaceholder: dict.quickPost.agendaLocationPlaceholder,
     addressSearching: dict.quickPost.addressSearching,
@@ -135,6 +139,9 @@ function ArchiveFeedFallback() {
 
 export default async function QuickPostArchivePage({ params }: { params: ArchivePageParams }) {
   const { lang: rawLang, type: rawType } = await params;
+  if (hasLocale(rawLang) && rawType === "pandangan") {
+    permanentRedirect(withLocale("/pengabdian", rawLang));
+  }
   if (!hasLocale(rawLang) || !isArchiveSlug(rawType)) notFound();
 
   const lang: Locale = rawLang;

@@ -11,6 +11,7 @@ import { localizePost } from "@/lib/i18n/posts";
 
 type PostBlock = {
   type: string;
+  agendaCategory?: string | null;
   content?: string | null;
   contentEn?: string | null;
   title?: string | null;
@@ -71,6 +72,7 @@ function truncateTitle(value: string) {
 function quickPostToKnowledgeSource(quickPost: {
   id: string;
   type: string;
+  agendaCategory?: string | null;
   content: string;
   imageUrl?: string | null;
   startsAt?: Date | null;
@@ -80,10 +82,13 @@ function quickPostToKnowledgeSource(quickPost: {
   const content = htmlToText(quickPost.content);
   const isQuote = quickPost.type === "QUOTE";
   const isAgenda = quickPost.type === "AGENDA";
+  const agendaLabel = quickPost.agendaCategory === "TEACHING"
+    ? (locale === "en" ? "Teaching Agenda" : "Agenda Pengajaran")
+    : (locale === "en" ? "Engagement Agenda" : "Agenda Pengabdian");
   const label = isQuote
     ? (locale === "en" ? "BRH Quote" : "Kutipan BRH")
     : isAgenda
-      ? (locale === "en" ? "BRH Agenda" : "Agenda BRH")
+      ? agendaLabel
       : (locale === "en" ? "BRH Perspective" : "Pandangan BRH");
   const agendaDetails: string[] = [];
 
@@ -114,11 +119,11 @@ function quickPostToKnowledgeSource(quickPost: {
     sourceId: quickPost.id,
     locale,
     title: `${label}: ${truncateTitle(content)}`,
-    url: `${withLocale("/catatan", locale)}#quick-post-${quickPost.id}`,
+    url: `${withLocale(isAgenda ? "/pengabdian" : "/catatan/kutipan", locale)}#quick-post-${quickPost.id}`,
     category: isQuote
       ? (locale === "en" ? "Quote" : "Kutipan")
       : isAgenda
-        ? (locale === "en" ? "Agenda" : "Agenda")
+        ? agendaLabel
         : (locale === "en" ? "Perspective" : "Pandangan"),
     thumbnail: quickPost.type === "NORMAL" ? quickPost.imageUrl : null,
     content: [label, content, ...agendaDetails].join("\n"),
@@ -198,7 +203,7 @@ export async function indexPublishedPost(postId: string) {
 export async function indexPublishedQuickPost(quickPostId: string) {
   const quickPost = await prisma.quickPost.findUnique({ where: { id: quickPostId } });
 
-  if (!quickPost || quickPost.status !== "Published") {
+  if (!quickPost || quickPost.status !== "Published" || quickPost.type === "NORMAL") {
     await removeQuickPostFromKnowledgeIndex(quickPostId);
     return { sourceId: quickPostId, chunks: 0 };
   }
@@ -225,7 +230,7 @@ export async function indexAllKnowledge() {
       orderBy: { updatedAt: "desc" },
     }),
     prisma.quickPost.findMany({
-      where: { status: "Published" },
+      where: { status: "Published", type: { in: ["AGENDA", "QUOTE"] } },
       orderBy: { createdAt: "desc" },
     }),
   ]);

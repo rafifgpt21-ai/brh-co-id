@@ -215,7 +215,7 @@ export default function HomeHero({
         </div>
 
         <aside
-          className="hidden border-l border-outline-variant/25 pl-10 xl:pl-12 lg:block"
+          className="mt-8 border-t border-outline-variant/25 pt-6 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0 xl:pl-12"
           onMouseEnter={() => setIsPanelPaused(true)}
           onMouseLeave={() => setIsPanelPaused(false)}
           onFocus={() => setIsPanelPaused(true)}
@@ -293,11 +293,7 @@ export default function HomeHero({
                           </div>
                         </Link>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={scrollToLatest('#notes')}
-                          className="group flex h-full w-full flex-col text-left outline-none"
-                        >
+                        <div className="group flex h-full w-full flex-col text-left">
                           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-secondary sm:gap-3 sm:text-[11px] sm:tracking-[0.22em]">
                             <span className="shrink-0">{panelDisplay.label}</span>
                             <span className="h-px flex-1 bg-outline-variant" />
@@ -326,14 +322,7 @@ export default function HomeHero({
                             )}
                           </div>
 
-                          {panelDisplay.tone === "quote" ? (
-                            <span className="mt-4 inline-flex shrink-0 items-center gap-2 text-[11px] font-black uppercase tracking-widest text-secondary sm:text-xs">
-                              {home.readMore}
-                              <span className="material-symbols-outlined text-[20px] transition group-hover:translate-y-0.5">
-                                {panelDisplay.actionIcon}
-                              </span>
-                            </span>
-                          ) : (
+                          {panelDisplay.tone !== "quote" && (
                             <div className="mt-4 grid shrink-0 grid-cols-[82px_minmax(0,1fr)] items-end gap-3 sm:grid-cols-[98px_minmax(0,1fr)]">
                               <div className="relative aspect-square w-[82px] overflow-hidden rounded-md bg-surface-container sm:w-[98px]">
                                 {panelDisplay.imageUrl ? (
@@ -360,7 +349,7 @@ export default function HomeHero({
                               </span>
                             </div>
                           )}
-                        </button>
+                        </div>
                       )}
                     </motion.div>
                   </AnimatePresence>

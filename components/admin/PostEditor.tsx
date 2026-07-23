@@ -1090,7 +1090,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                   required
                   className="w-full rounded-2xl border border-outline-variant/20 bg-surface-container/60 px-4 py-3 text-sm font-bold text-primary outline-none transition focus:border-secondary/50"
                 />
-                <p className="mt-1.5 text-[9px] leading-relaxed text-on-surface-variant/55">Tanggal ini tampil ke publik dan menentukan urutan Latest Update.</p>
+                <p className="mt-1.5 text-[9px] leading-relaxed text-on-surface-variant/55">Tanggal ini tampil ke publik dan menentukan urutan post terbaru.</p>
               </div>
 
               {/* Thumbnail */}
@@ -1593,7 +1593,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                     required
                     className="w-full rounded-xl border border-outline-variant/20 bg-surface-container/60 px-3.5 py-2.5 text-sm font-bold text-primary outline-none transition focus:border-secondary/50"
                   />
-                  <p className="mt-1.5 text-[9px] leading-relaxed text-on-surface-variant/55">Dipakai sebagai tanggal publik dan urutan Latest Update.</p>
+                  <p className="mt-1.5 text-[9px] leading-relaxed text-on-surface-variant/55">Dipakai sebagai tanggal publik dan urutan post terbaru.</p>
                 </div>
 
                 {/* Thumbnail */}

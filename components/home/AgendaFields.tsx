@@ -8,6 +8,9 @@ export type AgendaFieldLabels = {
   agendaStartTime: string;
   agendaEndTime: string;
   agendaTimeZone: string;
+  agendaLink: string;
+  agendaLinkPlaceholder: string;
+  agendaLinkHint: string;
   agendaLocation: string;
   agendaLocationPlaceholder: string;
   addressSearching: string;
@@ -28,6 +31,8 @@ export function AgendaFields({
   date,
   startTime,
   endTime,
+  link,
+  showLink = false,
   locationLabel,
   locationLatitude,
   locationLongitude,
@@ -35,6 +40,7 @@ export function AgendaFields({
   onDateChange,
   onStartTimeChange,
   onEndTimeChange,
+  onLinkChange,
   onLocationChange,
 }: {
   labels: AgendaFieldLabels;
@@ -42,6 +48,8 @@ export function AgendaFields({
   date: string;
   startTime: string;
   endTime: string;
+  link: string;
+  showLink?: boolean;
   locationLabel: string;
   locationLatitude?: number;
   locationLongitude?: number;
@@ -49,6 +57,7 @@ export function AgendaFields({
   onDateChange: (value: string) => void;
   onStartTimeChange: (value: string) => void;
   onEndTimeChange: (value: string) => void;
+  onLinkChange: (value: string) => void;
   onLocationChange: (value: { label: string; latitude?: number; longitude?: number }) => void;
 }) {
   const [results, setResults] = useState<AddressResult[]>([]);
@@ -95,6 +104,27 @@ export function AgendaFields({
 
   return (
     <div className="mt-5 grid gap-4 rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
+      {showLink && (
+        <label className="grid gap-1.5 text-xs font-bold text-on-surface-variant">
+          {labels.agendaLink}
+          <span className="relative block">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-secondary">link</span>
+            <input
+              type="url"
+              value={link}
+              disabled={disabled}
+              maxLength={2048}
+              inputMode="url"
+              autoComplete="url"
+              placeholder={labels.agendaLinkPlaceholder}
+              onChange={(event) => onLinkChange(event.target.value)}
+              className="h-12 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest pl-10 pr-4 text-sm text-primary outline-none placeholder:text-on-surface-variant/40 focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
+            />
+          </span>
+          <span className="text-[10px] font-medium leading-relaxed text-on-surface-variant/55">{labels.agendaLinkHint}</span>
+        </label>
+      )}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="grid gap-1.5 text-xs font-bold text-on-surface-variant">
           {labels.agendaDate}
