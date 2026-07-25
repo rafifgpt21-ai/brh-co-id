@@ -44,6 +44,7 @@ type HomeCopy = {
   heroTitleA: string;
   heroTitleB: string;
   heroTitleC: string;
+  heroTaglineEnglish: string;
   mobileExplore: string;
   archiveTitleA: string;
   archiveTitleB: string;
@@ -191,6 +192,9 @@ export default function HomeHero({
           <p className="mt-4 max-w-3xl text-pretty font-headline text-lg font-bold leading-snug text-tertiary sm:text-xl md:text-2xl">
             {home.heroTitleA} {home.heroTitleB}{" "}
             <span className="italic text-secondary">{home.heroTitleC}</span>
+          </p>
+          <p className="mt-1.5 max-w-3xl text-pretty font-headline text-sm font-medium italic leading-snug text-tertiary/65 sm:text-base md:text-lg">
+            {home.heroTaglineEnglish}
           </p>
 
           <div className="mt-5 max-w-2xl sm:mt-7 lg:mt-8">

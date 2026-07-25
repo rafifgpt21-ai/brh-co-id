@@ -29,6 +29,7 @@ export const dictionary = {
     heroTitleA: "Merawat Jiwa,",
     heroTitleB: "Menata",
     heroTitleC: "Peradaban",
+    heroTaglineEnglish: "Nurturing the Soul, Shaping Civilization",
     heroLabel: "the official website of Budi Rahman Hakim",
     mobileExplore: "Jelajahi Semua Karya",
     archiveEyebrow: "ARSIP INTELEKTUAL",
