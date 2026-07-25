@@ -9,6 +9,7 @@ import {
   about,
   books,
   featuredBooks,
+  GOOGLE_SCHOLAR_URL,
   journals,
   languages,
   type FeaturedBook,
@@ -29,6 +30,7 @@ const pageLabels: Record<
     bibliography: string;
     journals: string;
     viewDocument: string;
+    googleScholar: string;
     readBook: string;
     highlights: string;
     audience: string;
@@ -46,6 +48,7 @@ const pageLabels: Record<
     bibliography: "Bibliografi Lainnya",
     journals: "Artikel Jurnal",
     viewDocument: "LIHAT DOKUMEN",
+    googleScholar: "LIHAT GOOGLE SCHOLAR",
     readBook: "BACA POST",
     highlights: "Poin Utama",
     audience: "Pembaca",
@@ -62,6 +65,7 @@ const pageLabels: Record<
     bibliography: "Additional Bibliography",
     journals: "Journal Articles",
     viewDocument: "VIEW DOCUMENT",
+    googleScholar: "VIEW GOOGLE SCHOLAR",
     readBook: "READ POST",
     highlights: "Key Points",
     audience: "Readers",
@@ -369,6 +373,15 @@ export default function PublikasiPage() {
                     <p className="mt-8 max-w-3xl font-body text-lg leading-relaxed text-on-surface/70 md:text-xl">
                       {labels.intro}
                     </p>
+                    <a
+                      href={GOOGLE_SCHOLAR_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-7 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 font-label text-[11px] font-black uppercase tracking-[0.18em] text-on-primary transition hover:bg-tertiary active:scale-[0.98]"
+                    >
+                      {labels.googleScholar}
+                      <span className="material-symbols-outlined text-[17px]">open_in_new</span>
+                    </a>
                   </motion.header>
 
                   <PublicationContent language={language} />

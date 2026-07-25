@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import LanguageTabs from "@/components/common/LanguageTabs";
 import {
   about,
+  GOOGLE_SCHOLAR_URL,
   languages,
   type LanguageCode,
 } from "@/lib/brh-content";
@@ -284,6 +285,22 @@ export default function BiografiPage() {
                     Profil Peneliti
                   </p>
                   <p className="font-body text-sm font-medium">SINTA</p>
+                </div>
+              </a>
+              <a
+                href={GOOGLE_SCHOLAR_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-secondary shadow-sm transition-all group-hover:bg-secondary group-hover:text-white">
+                  <span className="material-symbols-outlined text-lg">history_edu</span>
+                </div>
+                <div>
+                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface/40">
+                    Profil Akademik
+                  </p>
+                  <p className="font-body text-sm font-medium">Google Scholar</p>
                 </div>
               </a>
             </div>

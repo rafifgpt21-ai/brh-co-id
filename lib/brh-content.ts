@@ -4,6 +4,9 @@ export type LocalizedText = Record<LanguageCode, string[]>;
 
 export { featuredBooks, type FeaturedBook } from "./featured-books";
 
+export const GOOGLE_SCHOLAR_URL =
+  "https://scholar.google.com/citations?user=IlPBEg8AAAAJ&hl=en";
+
 export interface PublicationBook {
   year: string;
   title: Record<LanguageCode, string>;

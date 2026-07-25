@@ -174,6 +174,9 @@ export default function HomeHero({
 
       <div className="relative z-[1] mx-auto grid w-full max-w-[1600px] gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.62fr)] lg:items-center lg:gap-12 xl:gap-16 2xl:grid-cols-[minmax(0,1.2fr)_minmax(420px,0.68fr)] 2xl:gap-20">
         <div className="min-w-0">
+          <p className="mb-3 max-w-3xl font-headline text-xs font-semibold tracking-[0.16em] text-tertiary/65 sm:text-sm">
+            {home.heroLabel}
+          </p>
           <h1 className="relative aspect-[61/20] w-full max-w-[42rem] overflow-hidden">
             <span className="sr-only">Budi Rahman Hakim</span>
             <Image

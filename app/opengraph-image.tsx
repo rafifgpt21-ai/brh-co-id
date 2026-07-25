@@ -55,7 +55,7 @@ export default function Image() {
               color: "#A41F13",
             }}
           >
-            Menyemai Pemikiran, Menggerakkan Perubahan
+            Merawat Jiwa, Menata Peradaban
           </div>
           <div style={{ maxWidth: 780, fontSize: 30, lineHeight: 1.35, color: "#292F36" }}>
             Arsip intelektual, publikasi, riset, dan catatan pemikiran Budi Rahman Hakim.

@@ -148,7 +148,7 @@ export default async function OpenGraphImage({
           </div>
 
           <span style={{ color: "#8b776c", fontSize: 19, fontWeight: 600 }}>
-            {lang === "id" ? "Menyemai Pemikiran, Menggerakkan Perubahan" : "Sowing Ideas, Moving Change"}
+            Merawat Jiwa, Menata Peradaban
           </span>
         </div>
       </div>
