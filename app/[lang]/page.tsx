@@ -445,7 +445,7 @@ function HomeResearchSection({ lang }: { lang: Locale }) {
   ];
   const copy = lang === "id"
     ? {
-        title: "Riset untuk Peradaban yang Lebih Manusiawi",
+        title: "Riset untuk Peradaban Dunia yang Lebih Baik",
         intro: "Menjelajahi hubungan spiritualitas, kesejahteraan sosial, kepemimpinan moral, dan masa depan peradaban.",
         cta: "Jelajahi seluruh riset",
       }
