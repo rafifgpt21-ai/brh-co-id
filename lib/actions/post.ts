@@ -106,6 +106,14 @@ function refreshHomePaths() {
   updateTag("posts");
 }
 
+function refreshPublicationPaths() {
+  revalidatePath("/publikasi");
+  revalidatePath("/en/publications");
+  revalidatePath("/id/publikasi");
+  revalidatePath("/en/publikasi");
+  revalidatePath("/id/publications");
+}
+
 async function refreshPostKnowledgeIndex(postId: string) {
   try {
     const { indexPublishedPost } = await import("@/lib/chatbot/indexing");
@@ -215,6 +223,7 @@ export async function savePost(data: PostFormData) {
       revalidatePath(`/id/post/${post.slug}`);
       revalidatePath(`/en/post/${post.slugEn || post.slug}`);
       refreshHomePaths();
+      refreshPublicationPaths();
       updateTag(`post-${post.id}`);
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
@@ -271,6 +280,7 @@ export async function savePost(data: PostFormData) {
       });
       revalidatePath("/admin");
       refreshHomePaths();
+      refreshPublicationPaths();
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     }
@@ -322,6 +332,7 @@ export async function deletePost(id: string) {
     
     revalidatePath("/admin");
     refreshHomePaths();
+    refreshPublicationPaths();
     updateTag(`post-${id}`);
     
     return { success: true };

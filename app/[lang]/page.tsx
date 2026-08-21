@@ -337,7 +337,7 @@ async function HomeLatestUpdatesSection({ lang, dict }: { lang: Locale; dict: Aw
     <section id="arsip" className="flex min-h-[100svh] w-full items-center bg-surface px-4 py-10 sm:px-6 md:px-12 lg:min-h-[calc(100svh-3.5rem)] lg:px-16 lg:py-12 xl:px-24">
       <div className="mx-auto w-full max-w-[1600px]">
         <ScrollReveal className="mb-6 flex justify-end sm:mb-8">
-          <OptimisticLink href={withLocale("/publikasi", lang)} className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary">
+          <OptimisticLink href={withLocale("/explore", lang)} className="tap-target inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary">
             {dict.home.viewAll}
             <span className="material-symbols-outlined text-[19px]">east</span>
           </OptimisticLink>
