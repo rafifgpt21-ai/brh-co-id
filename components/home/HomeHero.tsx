@@ -6,8 +6,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import HeroSearch from '@/components/HeroSearch';
+import { ShareActions, type ShareLabels } from '@/components/common/ShareActions';
 import { formatLocalizedDate, withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
+import { buildAbsoluteUrl, getSocialPreviewVersion } from '@/lib/share-url';
 
 const HERO_LOGO_URL =
   "https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2pBzMPp7NKm4gFlpP1SBy2k6nIHaZW9OfGqEz7";
@@ -19,6 +21,7 @@ type HeroPanelItem =
       content: string;
       imageUrl?: string | null;
       createdAt: Date | string;
+      updatedAt?: Date | string;
     }
   | {
       kind: "article";
@@ -51,6 +54,11 @@ type HomeCopy = {
   readMore: string;
   quoteAuthor?: string;
   latestShort?: string;
+};
+
+type QuoteActions = {
+  viewAll: string;
+  shareLabels: ShareLabels;
 };
 
 function truncateText(value: string, limit: number) {
@@ -120,12 +128,14 @@ export default function HomeHero({
   search,
   heroPanelItems,
   heroPanelLabels,
+  quoteActions,
 }: {
   lang: Locale;
   home: HomeCopy;
   search: Dictionary["search"];
   heroPanelItems: HeroPanelItem[];
   heroPanelLabels: HeroPanelLabels;
+  quoteActions: QuoteActions;
 }) {
   const lenis = useLenis();
   const shouldReduceMotion = useReducedMotion();
@@ -138,6 +148,12 @@ export default function HomeHero({
     ? getHeroPanelDisplay({ item: heroPanelItem, lang, labels: heroPanelLabels })
     : null;
   const hasMultiplePanelItems = visiblePanelItems.length > 1;
+  const quoteShareUrl = heroPanelItem?.kind === "quote"
+    ? buildAbsoluteUrl(withLocale(`/catatan/kutipan/${heroPanelItem.id}`, lang))
+    : "";
+  const quoteShareVersion = heroPanelItem?.kind === "quote"
+    ? getSocialPreviewVersion(heroPanelItem.updatedAt || heroPanelItem.createdAt)
+    : "";
 
   useEffect(() => {
     if (!hasMultiplePanelItems || isPanelPaused) return;
@@ -228,7 +244,7 @@ export default function HomeHero({
           onFocus={() => setIsPanelPaused(true)}
           onBlur={() => setIsPanelPaused(false)}
         >
-          <div className="flex h-[292px] flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low/45 p-4 sm:h-[300px] sm:p-5 md:h-[312px] lg:h-[324px]">
+          <div className="flex h-[340px] flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low/45 p-4 shadow-[0_22px_60px_-42px_rgba(55,34,28,0.45)] sm:h-[348px] sm:p-5 md:h-[356px] lg:h-[368px]">
             {panelDisplay && heroPanelItem ? (
               <>
                 <div className="relative min-h-0 flex-1">
@@ -328,6 +344,27 @@ export default function HomeHero({
                               </p>
                             )}
                           </div>
+
+                          {panelDisplay.tone === "quote" && heroPanelItem.kind === "quote" && (
+                            <div className="mt-3 flex shrink-0 items-center justify-between gap-3 border-t border-outline-variant/25 pt-3">
+                              <Link
+                                href={withLocale("/catatan/kutipan", lang)}
+                                className="inline-flex h-9 min-w-0 items-center gap-1.5 rounded-full px-1 text-[10px] font-black uppercase tracking-wider text-secondary transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/35"
+                              >
+                                <span className="material-symbols-outlined text-[17px]">format_quote</span>
+                                <span className="truncate">{quoteActions.viewAll}</span>
+                                <span className="material-symbols-outlined text-[16px]">east</span>
+                              </Link>
+                              <ShareActions
+                                url={quoteShareUrl}
+                                facebookShareUrl={`${quoteShareUrl}?share=facebook&v=${quoteShareVersion}`}
+                                whatsappShareUrl={`${quoteShareUrl}?share=whatsapp&v=${quoteShareVersion}`}
+                                title={`“${heroPanelItem.content}”\n— BRH`}
+                                labels={quoteActions.shareLabels}
+                                variant="hero"
+                              />
+                            </div>
+                          )}
 
                           {panelDisplay.tone !== "quote" && (
                             <div className="mt-4 grid shrink-0 grid-cols-[82px_minmax(0,1fr)] items-end gap-3 sm:grid-cols-[98px_minmax(0,1fr)]">

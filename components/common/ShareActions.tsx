@@ -16,7 +16,7 @@ type ShareActionsProps = {
   whatsappShareUrl?: string;
   title: string;
   labels: ShareLabels;
-  variant?: "post" | "quick";
+  variant?: "post" | "quick" | "hero";
   className?: string;
 };
 
@@ -33,7 +33,7 @@ export function ShareActions({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const encodedFacebookUrl = encodeURIComponent(facebookShareUrl || url);
-  const shareText = `${title} ${whatsappShareUrl || url}`.trim();
+  const shareText = `${title}\n\n${whatsappShareUrl || url}`.trim();
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedFacebookUrl}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -73,15 +73,20 @@ export function ShareActions({
   };
 
   const isQuick = variant === "quick";
-  const wrapperClass = isQuick
+  const isHero = variant === "hero";
+  const wrapperClass = isQuick || isHero
     ? "relative flex justify-end"
     : "relative flex justify-center";
   const triggerClass = isQuick
     ? "inline-flex h-8 items-center gap-1.5 rounded-full border border-outline-variant/25 bg-surface-container-lowest px-2.5 text-[10px] font-black uppercase tracking-wider text-on-surface-variant transition hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/35"
-    : "inline-flex h-10 items-center gap-2 rounded-full border border-outline-variant/25 bg-surface-container-lowest/85 px-4 text-[11px] font-black uppercase tracking-wider text-on-surface-variant shadow-sm shadow-primary/5 transition hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/35";
+    : isHero
+      ? "inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[10px] font-black uppercase tracking-wider text-on-primary shadow-[0_7px_18px_rgba(164,31,19,0.16)] transition hover:-translate-y-px hover:bg-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/35 active:translate-y-0 active:scale-[0.98]"
+      : "inline-flex h-10 items-center gap-2 rounded-full border border-outline-variant/25 bg-surface-container-lowest/85 px-4 text-[11px] font-black uppercase tracking-wider text-on-surface-variant shadow-sm shadow-primary/5 transition hover:border-secondary/35 hover:bg-secondary/10 hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/35";
   const menuClass = isQuick
     ? "absolute right-0 top-10 z-30 w-48 overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-1.5 shadow-2xl shadow-primary/12"
-    : "absolute left-1/2 top-12 z-30 w-56 -translate-x-1/2 overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-1.5 shadow-2xl shadow-primary/12";
+    : isHero
+      ? "absolute bottom-11 right-0 z-30 w-52 overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-1.5 shadow-2xl shadow-primary/12"
+      : "absolute left-1/2 top-12 z-30 w-56 -translate-x-1/2 overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-1.5 shadow-2xl shadow-primary/12";
   const menuItemClass = "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-black uppercase tracking-wider text-on-surface-variant transition hover:bg-secondary/10 hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/35";
 
   return (

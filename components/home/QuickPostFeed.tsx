@@ -5,7 +5,7 @@ import { ShareActions } from "@/components/common/ShareActions";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { deleteQuickPost, updateQuickPost, updateQuickPostStatus, type ActiveQuickPostType, type AgendaCategory, type QuickPostType } from "@/lib/actions/quick-post";
 import { formatLocalizedDate, getDateLocale, withLocale, type Locale } from "@/lib/i18n/config";
-import { buildAbsoluteUrl } from "@/lib/share-url";
+import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -31,6 +31,7 @@ export type QuickPostItem = {
   locationLongitude?: number | null;
   status: string;
   createdAt: Date | string;
+  updatedAt?: Date | string;
 };
 
 export type QuickPostColumns = Record<QuickPostType, QuickPostItem[]>;
@@ -84,7 +85,7 @@ function truncate(content: string, length: number) {
 
 function getQuickPostShareTitle(post: QuickPostItem, agendaLabel: string) {
   const content = truncate(post.content.replace(/\s+/g, " ").trim(), 180);
-  if (post.type === "QUOTE") return `"${content}"`;
+  if (post.type === "QUOTE") return `“${content}”\n— BRH`;
   if (post.type === "AGENDA") return `${agendaLabel}: ${content}`;
   return content;
 }
@@ -478,8 +479,13 @@ export function QuickPostFeed({
                   const visibleContent = isExpanded || (isPreview && isQuote) ? post.content : truncate(post.content, previewLimit);
                   const completionTime = post.endsAt || post.startsAt;
                   const isCompleted = isAgenda && completionTime ? new Date(completionTime) < new Date() : false;
-                  const sharePath = isAgenda ? withLocale("/pengabdian", lang) : withLocale("/catatan", lang);
-                  const shareUrl = buildAbsoluteUrl(`${sharePath}#quick-post-${post.id}`);
+                  const sharePath = isAgenda
+                    ? `${withLocale("/pengabdian", lang)}#quick-post-${post.id}`
+                    : withLocale(`/catatan/kutipan/${post.id}`, lang);
+                  const shareUrl = buildAbsoluteUrl(sharePath);
+                  const shareVersion = getSocialPreviewVersion(post.updatedAt || post.createdAt);
+                  const facebookShareUrl = isQuote ? `${shareUrl}?share=facebook&v=${shareVersion}` : undefined;
+                  const whatsappShareUrl = isQuote ? `${shareUrl}?share=whatsapp&v=${shareVersion}` : undefined;
                   const showPostMeta = true;
 
                   return (
@@ -596,7 +602,14 @@ export function QuickPostFeed({
                             <span className="material-symbols-outlined text-[16px]">{isExpanded ? "keyboard_arrow_up" : "keyboard_arrow_down"}</span>
                           </button>
                         ) : <span />}
-                        <ShareActions url={shareUrl} title={getQuickPostShareTitle(post, labels.agenda)} labels={shareLabels} variant="quick" />
+                        <ShareActions
+                          url={shareUrl}
+                          facebookShareUrl={facebookShareUrl}
+                          whatsappShareUrl={whatsappShareUrl}
+                          title={getQuickPostShareTitle(post, labels.agenda)}
+                          labels={shareLabels}
+                          variant="quick"
+                        />
                       </div>
 
                       {isAdmin && post.status === "Draft" && (

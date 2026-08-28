@@ -171,3 +171,19 @@ export async function getLatestPublishedQuickPostByType(type: "AGENDA" | "QUOTE"
     orderBy: { createdAt: "desc" },
   });
 }
+
+export async function getPublishedQuoteById(id: string) {
+  "use cache";
+  cacheTag("quick-posts", `quote-${id}`);
+  cacheLife("minutes");
+
+  if (!/^[a-f\d]{24}$/i.test(id)) return null;
+
+  return prisma.quickPost.findFirst({
+    where: {
+      id,
+      status: "Published",
+      type: "QUOTE",
+    },
+  });
+}

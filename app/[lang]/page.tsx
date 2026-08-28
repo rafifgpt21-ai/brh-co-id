@@ -79,6 +79,7 @@ type HeroPanelItem =
       content: string;
       imageUrl?: string | null;
       createdAt: Date | string;
+      updatedAt?: Date | string;
     }
   | {
       kind: "article";
@@ -171,6 +172,7 @@ async function getHeroPanelItems(lang: Locale, dict: Awaited<ReturnType<typeof g
       id: latestQuote.id,
       content: latestQuote.content,
       createdAt: latestQuote.createdAt,
+      updatedAt: latestQuote.updatedAt,
     }];
   }
 
@@ -589,6 +591,16 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           search={dict.search}
           heroPanelItems={heroPanelItems}
           heroPanelLabels={dict.home.heroPanel}
+          quoteActions={{
+            viewAll: dict.quickPost.viewAllQuote,
+            shareLabels: {
+              share: dict.quickPost.share,
+              shareToFacebook: dict.quickPost.shareToFacebook,
+              shareToWhatsapp: dict.quickPost.shareToWhatsapp,
+              copyLink: dict.quickPost.copyLink,
+              linkCopied: dict.quickPost.linkCopied,
+            },
+          }}
         />
         <Suspense fallback={<RouteSkeleton />}>
           <HomeStreamedContent lang={lang} dict={dict} />
