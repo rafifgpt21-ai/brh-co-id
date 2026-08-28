@@ -153,11 +153,11 @@ export default async function QuickPostArchivePage({ params }: { params: Archive
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 border-b border-outline-variant/30 pb-6 sm:mb-10 sm:pb-8">
           <OptimisticLink
-            href={withLocale("/catatan", lang)}
+            href={withLocale("/", lang)}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-outline-variant/30 bg-surface-container-lowest px-4 text-[11px] font-black uppercase tracking-wider text-on-surface-variant transition hover:border-secondary/40 hover:bg-secondary/10 hover:text-secondary active:scale-[0.98]"
           >
             <span className="material-symbols-outlined text-[17px]">west</span>
-            {dict.quickPost.backToAll}
+            {dict.quickPost.backHome}
           </OptimisticLink>
 
           <div className="mt-8 max-w-3xl">

@@ -485,7 +485,6 @@ export function QuickPostFeed({
                   const shareUrl = buildAbsoluteUrl(sharePath);
                   const shareVersion = getSocialPreviewVersion(post.updatedAt || post.createdAt);
                   const facebookShareUrl = isQuote ? `${shareUrl}?share=facebook&v=${shareVersion}` : undefined;
-                  const whatsappShareUrl = isQuote ? `${shareUrl}?share=whatsapp&v=${shareVersion}` : undefined;
                   const showPostMeta = true;
 
                   return (
@@ -605,7 +604,6 @@ export function QuickPostFeed({
                         <ShareActions
                           url={shareUrl}
                           facebookShareUrl={facebookShareUrl}
-                          whatsappShareUrl={whatsappShareUrl}
                           title={getQuickPostShareTitle(post, labels.agenda)}
                           labels={shareLabels}
                           variant="quick"

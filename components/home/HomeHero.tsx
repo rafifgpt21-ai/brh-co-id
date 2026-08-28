@@ -358,7 +358,6 @@ export default function HomeHero({
                               <ShareActions
                                 url={quoteShareUrl}
                                 facebookShareUrl={`${quoteShareUrl}?share=facebook&v=${quoteShareVersion}`}
-                                whatsappShareUrl={`${quoteShareUrl}?share=whatsapp&v=${quoteShareVersion}`}
                                 title={`“${heroPanelItem.content}”\n— BRH`}
                                 labels={quoteActions.shareLabels}
                                 variant="hero"

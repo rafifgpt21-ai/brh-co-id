@@ -143,7 +143,6 @@ async function QuoteContent({ params }: { params: QuotePageParams }) {
             <ShareActions
               url={shareUrl}
               facebookShareUrl={`${shareUrl}?share=facebook&v=${version}`}
-              whatsappShareUrl={`${shareUrl}?share=whatsapp&v=${version}`}
               title={shareTitle}
               labels={{
                 share: dict.quickPost.share,
