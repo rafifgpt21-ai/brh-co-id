@@ -37,18 +37,18 @@ const nextConfig: BrhNextConfig = {
   },
   /* config options here */
   images: {
+    minimumCacheTTL: 2678400,
+    formats: ["image/webp"],
+    qualities: [75],
+    deviceSizes: [640, 828, 1080, 1440, 1920, 2400],
+    imageSizes: [96, 128, 160, 256, 384, 512],
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "utfs.io",
-      },
-      {
-        protocol: "https",
-        hostname: "**.ufs.sh",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
+        hostname: "m0mix0w8bt.ufs.sh",
+        port: "",
+        pathname: "/f/**",
+        search: "",
       },
     ],
   },

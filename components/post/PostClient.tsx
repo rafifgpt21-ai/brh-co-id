@@ -104,6 +104,7 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 alt={post.title}
                 fill
                 priority
+                sizes="100vw"
                 unoptimized={isLocalBookCover(post.thumbnail)}
                 className="h-full w-full scale-110 object-cover opacity-80 blur-md"
               />

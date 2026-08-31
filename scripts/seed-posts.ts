@@ -32,22 +32,21 @@ function generateRandomTitle(index: number) {
   return `${adjective} ${theme} ${subject} #${index + 1}`
 }
 
-const unsplashImages = [
-  'https://images.unsplash.com/photo-1499750310107-5fef28a66643',
-  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b',
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa',
-  'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
-  'https://images.unsplash.com/photo-1454165833221-d7d176b7c20',
-  'https://images.unsplash.com/photo-1432821596592-e2c18b78144f',
-  'https://images.unsplash.com/photo-1504384308090-c894fdcc538d',
-  'https://images.unsplash.com/photo-1518770660439-4636190af475',
-  'https://images.unsplash.com/photo-1496181133206-80ce9b88a853',
-  'https://images.unsplash.com/photo-1507413245164-6160d8298b31'
+const seedImages = [
+  '/book-cover/actualization-of-neo-sufism.jpeg',
+  '/book-cover/akhlaq-tasawuf.jpeg',
+  '/book-cover/pengantar-ilmu-tasawuf.jpeg',
+  '/book-cover/resurgensi-islam-sufi.jpeg',
+  '/book-cover/selayang-pandang-tasawuf-tarekat-sufi.jpeg',
+  '/book-cover/sufinomic.jpeg',
+  '/images/research-spirituality.webp',
+  '/images/research-social-welfare.webp',
+  '/images/research-civilization.webp',
+  '/budi-rahman-hakim.jpg',
 ]
 
 function getRandomImage() {
-  const base = unsplashImages[Math.floor(Math.random() * unsplashImages.length)]
-  return `${base}?w=1200&auto=format&fit=crop`
+  return seedImages[Math.floor(Math.random() * seedImages.length)]
 }
 
 function slugify(text: string) {

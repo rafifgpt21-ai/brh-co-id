@@ -21,6 +21,10 @@ import {
   serializeStructuredData,
 } from '@/lib/structured-data';
 import { researchAreas } from '@/lib/brh-content';
+import budiRahmanHakim from '@/public/budi-rahman-hakim.jpg';
+import researchSpirituality from '@/public/images/research-spirituality.webp';
+import researchSocialWelfare from '@/public/images/research-social-welfare.webp';
+import researchCivilization from '@/public/images/research-civilization.webp';
 
 export const unstable_instant = {
   prefetch: "runtime",
@@ -382,7 +386,7 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
           <ScrollReveal>
               <div className="relative aspect-square overflow-hidden rounded-lg bg-surface-container shadow-[0_14px_45px_rgba(41,47,54,0.08)]">
               <Image
-                src="/budi-rahman-hakim.jpg"
+                src={budiRahmanHakim}
                 alt="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
                 fill
                 sizes="(max-width: 1024px) 100vw, 320px"
@@ -441,9 +445,9 @@ function HomeBiographySection({ lang, dict }: { lang: Locale; dict: Awaited<Retu
 
 function HomeResearchSection({ lang }: { lang: Locale }) {
   const researchImages = [
-    "https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2pdC7ufxL4JvU5zpxi8TNk9KHEBeslZ2LVRMoy",
-    "https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2pb6ajnC71dZjpRBisoNvfwOK7agXYk8LE9PC0",
-    "https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2p5TOThnFamTrS9QJwj87LXRqnOyvNV1uhzFWH",
+    researchSpirituality,
+    researchSocialWelfare,
+    researchCivilization,
   ];
   const copy = lang === "id"
     ? {

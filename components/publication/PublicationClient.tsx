@@ -144,7 +144,7 @@ function BookCard({
                   src={book.thumbnail}
                   alt={localizedBook.title}
                   fill
-                  sizes="(max-width: 640px) 88px, 136px"
+                  sizes="(max-width: 640px) 104px, 156px"
                   className="object-contain transition duration-700 group-hover:scale-[1.035]"
                 />
               </div>

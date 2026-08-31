@@ -11,6 +11,7 @@ import {
   languages,
   type LanguageCode,
 } from "@/lib/brh-content";
+import budiRahmanHakim from "@/public/budi-rahman-hakim.jpg";
 
 const expertise = [
   "Spiritualitas & Tasawuf",
@@ -147,7 +148,7 @@ export default function BiografiPage() {
             <div className="absolute -inset-4 rounded-full bg-secondary/10 blur-2xl transition-all duration-700 group-hover:bg-secondary/20" />
             <div className="relative h-64 w-64 overflow-hidden rounded-full border-8 border-white shadow-2xl md:h-80 md:w-80">
               <Image
-                src="/budi-rahman-hakim.jpg"
+                src={budiRahmanHakim}
                 alt="Assoc. Prof. Budi Rahman Hakim, S.Ag., M.S.W., Ph.D."
                 fill
                 priority

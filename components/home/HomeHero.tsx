@@ -10,9 +10,7 @@ import { ShareActions, type ShareLabels } from '@/components/common/ShareActions
 import { formatLocalizedDate, withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { buildAbsoluteUrl, getSocialPreviewVersion } from '@/lib/share-url';
-
-const HERO_LOGO_URL =
-  "https://m0mix0w8bt.ufs.sh/f/4o6HWCjH0s2pBzMPp7NKm4gFlpP1SBy2k6nIHaZW9OfGqEz7";
+import heroLogo from '@/public/images/hero-logo.png';
 
 type HeroPanelItem =
   | {
@@ -197,7 +195,7 @@ export default function HomeHero({
           <h1 className="relative aspect-[61/20] w-full max-w-[42rem] overflow-hidden">
             <span className="sr-only">Budi Rahman Hakim</span>
             <Image
-              src={HERO_LOGO_URL}
+              src={heroLogo}
               alt=""
               fill
               preload
@@ -296,7 +294,7 @@ export default function HomeHero({
                                   src={panelDisplay.imageUrl}
                                   alt=""
                                   fill
-                                  sizes="120px"
+                                  sizes="(max-width: 639px) 82px, 98px"
                                   className="object-contain p-1 transition duration-700 group-hover:scale-[1.03]"
                                 />
                               ) : (
@@ -373,7 +371,7 @@ export default function HomeHero({
                                     src={panelDisplay.imageUrl}
                                     alt=""
                                     fill
-                                    sizes="120px"
+                                    sizes="(max-width: 639px) 82px, 98px"
                                     className="object-contain p-1 transition duration-700 group-hover:scale-[1.03]"
                                   />
                                 ) : (
