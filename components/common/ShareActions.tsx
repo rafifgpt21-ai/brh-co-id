@@ -12,7 +12,9 @@ export type ShareLabels = {
 
 type ShareActionsProps = {
   url: string;
+  copyShareUrl?: string;
   facebookShareUrl?: string;
+  whatsappShareUrl?: string;
   title: string;
   labels: ShareLabels;
   variant?: "post" | "quick" | "hero";
@@ -21,7 +23,9 @@ type ShareActionsProps = {
 
 export function ShareActions({
   url,
+  copyShareUrl,
   facebookShareUrl,
+  whatsappShareUrl,
   title,
   labels,
   variant = "post",
@@ -31,7 +35,7 @@ export function ShareActions({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const encodedFacebookUrl = encodeURIComponent(facebookShareUrl || url);
-  const shareText = `${title}\n\n${url}`.trim();
+  const shareText = `${title}\n\n${whatsappShareUrl || url}`.trim();
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedFacebookUrl}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
@@ -61,7 +65,7 @@ export function ShareActions({
 
   const copyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(copyShareUrl || url);
       setCopied(true);
       setOpen(false);
       window.setTimeout(() => setCopied(false), 1800);

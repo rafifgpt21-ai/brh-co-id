@@ -63,16 +63,15 @@ export async function generateMetadata({
   const openGraphUrl = shareTarget
     ? `${canonicalUrl}?share=${shareTarget}&v=${shareVersion}`
     : canonicalUrl;
-  const isWhatsappShare = shareTarget === "whatsapp" && Boolean(post.thumbnail);
-  const socialImageUrl = isWhatsappShare
-    ? buildAbsoluteUrl(`/api/share-image/${encodeURIComponent(localizedPost.slug)}.jpg?v=${shareVersion}`)
-    : buildAbsoluteUrl(`${withLocale(`/post/${localizedPost.slug}/opengraph-image`, lang)}?v=${shareVersion}`);
+  const socialImageUrl = buildAbsoluteUrl(
+    `/api/share-image/${encodeURIComponent(localizedPost.slug)}.jpg?v=${shareVersion}`,
+  );
   const socialImage = {
     url: socialImageUrl,
     secureUrl: socialImageUrl,
-    width: isWhatsappShare ? 600 : 1200,
-    height: isWhatsappShare ? 315 : 630,
-    type: isWhatsappShare ? "image/jpeg" : "image/png",
+    width: 1200,
+    height: 630,
+    type: "image/jpeg",
     alt: localizedPost.title,
   };
 
