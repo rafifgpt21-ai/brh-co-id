@@ -602,8 +602,8 @@ function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<Retur
       }>
         <HomeQuickPostsSection lang={lang} dict={dict} />
       </Suspense>
-      <HomeContactSection lang={lang} />
       <LearningMediaEntry lang={lang} />
+      <HomeContactSection lang={lang} />
     </>
   );
 }
