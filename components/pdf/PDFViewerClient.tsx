@@ -18,8 +18,22 @@ const FullPDFViewer = dynamic(
 interface PDFViewerClientProps {
   url: string;
   title?: string;
+  allowDownload?: boolean;
+  showWatermark?: boolean;
 }
 
-export default function PDFViewerClient({ url, title }: PDFViewerClientProps) {
-  return <FullPDFViewer url={url} title={title} />;
+export default function PDFViewerClient({
+  url,
+  title,
+  allowDownload = false,
+  showWatermark = true,
+}: PDFViewerClientProps) {
+  return (
+    <FullPDFViewer
+      url={url}
+      title={title}
+      allowDownload={allowDownload}
+      showWatermark={showWatermark}
+    />
+  );
 }

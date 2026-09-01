@@ -12,6 +12,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 interface FullPDFViewerProps {
   url: string;
   title?: string;
+  allowDownload?: boolean;
+  showWatermark?: boolean;
 }
 
 type LoadedPdfDocument = Parameters<NonNullable<ComponentProps<typeof Document>["onLoadSuccess"]>>[0];
@@ -35,6 +37,7 @@ interface LazyPageProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   setCurrentPage: (page: number) => void;
   setPageInput: (input: string) => void;
+  showWatermark: boolean;
 }
 
 // Optimized Page Component with Lazy Loading moved outside to prevent re-mounting on every scroll
@@ -45,7 +48,8 @@ const LazyPage = ({
   isTypingPage, 
   containerRef,
   setCurrentPage,
-  setPageInput
+  setPageInput,
+  showWatermark,
 }: LazyPageProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -85,7 +89,7 @@ const LazyPage = ({
     >
       {isVisible ? (
         <>
-          <WatermarkOverlay />
+          {showWatermark && <WatermarkOverlay />}
           <div className="absolute top-4 right-4 z-30 bg-surface-container-lowest/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity border border-outline-variant/10 shadow-sm">
             Halaman {index + 1}
           </div>
@@ -118,7 +122,12 @@ const LazyPage = ({
   );
 };
 
-export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
+export const FullPDFViewer = ({
+  url,
+  title,
+  allowDownload = false,
+  showWatermark = true,
+}: FullPDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>();
   const [scale, setScale] = useState<number>(1.2);
   const [searchInput, setSearchInput] = useState("");
@@ -137,6 +146,10 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
   const proxiedUrl = url.startsWith('http') && !url.includes(window.location.hostname)
     ? `/api/proxy-pdf?url=${encodeURIComponent(url)}`
     : url;
+  const safeDownloadTitle = (title || "dokumen").replace(/[\\/:*?"<>|]+/g, "-");
+  const downloadFilename = safeDownloadTitle.toLowerCase().endsWith(".pdf")
+    ? safeDownloadTitle
+    : `${safeDownloadTitle}.pdf`;
 
   useEffect(() => {
     if (!containerRef.current || !numPages) return;
@@ -340,6 +353,22 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
 
           <div className="h-8 w-px bg-outline-variant/20 hidden sm:block"></div>
 
+          {allowDownload && (
+            <>
+              <a
+                href={proxiedUrl}
+                download={downloadFilename}
+                className="flex h-10 w-10 md:h-12 md:w-auto md:px-5 items-center justify-center gap-2 rounded-2xl bg-secondary text-on-secondary shadow-lg transition-all hover:bg-secondary/90 active:scale-95"
+                title="Unduh PDF"
+                aria-label="Unduh PDF"
+              >
+                <span className="material-symbols-outlined text-xl md:text-2xl">download</span>
+                <span className="hidden lg:inline text-xs font-black uppercase tracking-widest">Unduh</span>
+              </a>
+              <div className="h-8 w-px bg-outline-variant/20 hidden md:block"></div>
+            </>
+          )}
+
           {/* Page Indicator / Jump */}
           <form
             onSubmit={(e) => {
@@ -516,6 +545,7 @@ export const FullPDFViewer = ({ url, title }: FullPDFViewerProps) => {
               containerRef={containerRef}
               setCurrentPage={setCurrentPage}
               setPageInput={setPageInput}
+              showWatermark={showWatermark}
             />
           ))}
         </Document>

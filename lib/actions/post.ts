@@ -577,10 +577,10 @@ export async function getPostByFileUrl(url: string) {
     if (!post) return { authorized: true };
 
     if (post.status !== "Published" && !isAdmin) {
-      return { authorized: false, status: post.status };
+      return { authorized: false, status: post.status, category: post.category };
     }
 
-    return { authorized: true, status: post.status };
+    return { authorized: true, status: post.status, category: post.category };
   } catch (error) {
     console.error("Error checking file authorization:", error);
     return { authorized: false };

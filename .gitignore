@@ -52,6 +52,9 @@ note.txt
 
 /public/book-cover
 
+# Local database seeding scripts
+/scripts/seed-*.ts
+
 .agent/*
 !.agent/tools/
 .agent/tools/*

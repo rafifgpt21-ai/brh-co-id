@@ -343,7 +343,7 @@ export const BlockItem = memo(function BlockItem({
                   : 'Unggah Dokumen PDF'}
               </p>
               <p className="text-on-surface-variant/70 text-xs mb-4">
-                {block.type === 'image' ? 'atau pilih file · sumber maks. 20MB, hasil 1MB' : 'Maks: 16MB'}
+                {block.type === 'image' ? 'atau pilih file · sumber maks. 20MB, hasil 1MB' : 'Maks: 32MB'}
               </p>
               <button
                 type="button"

@@ -4,6 +4,7 @@ import { getPostByFileUrl } from "@/lib/actions/post";
 import PDFViewerClient from "@/components/pdf/PDFViewerClient";
 import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 import { notFound } from "next/navigation";
 
 export default async function PDFViewerPage({
@@ -43,7 +44,7 @@ export default async function PDFViewerPage({
 
   // Security Check: is this file part of a draft post?
   const decodedUrl = decodeURIComponent(url);
-  const { authorized } = await getPostByFileUrl(decodedUrl);
+  const { authorized, category } = await getPostByFileUrl(decodedUrl);
 
   if (!authorized) {
     return (
@@ -75,6 +76,8 @@ export default async function PDFViewerPage({
       <PDFViewerClient 
         url={decodedUrl} 
         title={typeof title === 'string' ? decodeURIComponent(title) : "Dokumen"} 
+        allowDownload={category === LEARNING_MEDIA_CATEGORY}
+        showWatermark={category !== LEARNING_MEDIA_CATEGORY}
       />
     </Suspense>
   );
