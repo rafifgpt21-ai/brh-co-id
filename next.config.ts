@@ -10,6 +10,12 @@ type BrhNextConfig = NextConfig & {
 
 const nextConfig: BrhNextConfig = {
   cacheComponents: true,
+  outputFileTracingIncludes: {
+    "/api/share-image/*": [
+      "./node_modules/pdfjs-dist/standard_fonts/LiberationSans-Regular.ttf",
+      "./node_modules/pdfjs-dist/standard_fonts/LiberationSans-Bold.ttf",
+    ],
+  },
   async redirects() {
     return [
       {
