@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { deletePost, resetHomeFeaturedPostIds, saveHomeFeaturedPostIds } from '@/lib/actions/post';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePublishProgress } from './PublishProgressProvider';
+import { LEARNING_MEDIA_CATEGORY } from '@/lib/post-categories';
 
 type Post = {
   id: string;
@@ -91,12 +92,15 @@ export function AdminPostList({
   });
 
   const publishedPosts = [...posts]
-    .filter((post) => post.status === 'Published')
+    .filter((post) => post.status === 'Published' && post.category !== LEARNING_MEDIA_CATEGORY)
     .sort((a, b) =>
       new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime()
     );
   const featuredPostMap = new Map(posts.map((post) => [post.id, post]));
-  const visibleHomeFeaturedPostIds = homeFeaturedPostIds.filter((id) => featuredPostMap.get(id)?.status === 'Published');
+  const visibleHomeFeaturedPostIds = homeFeaturedPostIds.filter((id) => {
+    const post = featuredPostMap.get(id);
+    return post?.status === 'Published' && post.category !== LEARNING_MEDIA_CATEGORY;
+  });
   const selectedFeaturedPosts = visibleHomeFeaturedPostIds
     .map((id) => featuredPostMap.get(id))
     .filter((post): post is Post => Boolean(post));

@@ -2,11 +2,12 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 
 type PublishedPostOptions = {
   search?: string;
   category?: string;
-  excludeCategory?: string;
+  collection?: "standard" | "learning-media";
   limit?: number;
 };
 
@@ -63,10 +64,12 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
     status: "Published",
   };
 
-  if (options?.category) {
+  if (options?.collection === "learning-media") {
+    where.category = LEARNING_MEDIA_CATEGORY;
+  } else if (options?.category && options.category !== LEARNING_MEDIA_CATEGORY) {
     where.category = options.category;
-  } else if (options?.excludeCategory) {
-    where.category = { not: options.excludeCategory };
+  } else {
+    where.category = { not: LEARNING_MEDIA_CATEGORY };
   }
 
   const posts = await prisma.post.findMany({
@@ -99,6 +102,7 @@ export async function getHomeFeaturedPosts(limit = 3) {
         where: {
           id: { in: manualPostIds },
           status: "Published",
+          category: { not: LEARNING_MEDIA_CATEGORY },
         },
       })
     : [];

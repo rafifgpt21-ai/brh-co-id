@@ -8,6 +8,7 @@ import { localizePost } from "@/lib/i18n/posts";
 import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
 import { Suspense } from "react";
 import { RouteSkeleton } from "@/components/ui/RouteSkeleton";
+import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 
 export const unstable_instant = {
   prefetch: "runtime",
@@ -118,11 +119,13 @@ async function SinglePostContent({ params }: { params: Promise<{ lang: string; s
   }
   const localizedPost = localizePost(post, lang);
 
-  const relatedPosts = (await getRelatedPublishedPosts({
-    category: post.category,
-    excludeId: post.id,
-    limit: 3,
-  })).map((item) => localizePost(item, lang));
+  const relatedPosts = post.category === LEARNING_MEDIA_CATEGORY
+    ? []
+    : (await getRelatedPublishedPosts({
+        category: post.category,
+        excludeId: post.id,
+        limit: 3,
+      })).map((item) => localizePost(item, lang));
 
   return <PostClient post={localizedPost} relatedPosts={relatedPosts} lang={lang} dict={dict} />;
 }

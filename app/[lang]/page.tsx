@@ -545,6 +545,41 @@ function HomeContactSection({ lang }: { lang: Locale }) {
   );
 }
 
+function LearningMediaEntry({ lang }: { lang: Locale }) {
+  const copy = lang === "id"
+    ? {
+        eyebrow: "RUANG BELAJAR",
+        title: "Media Pembelajaran",
+        intro: "Akses materi pembelajaran BRH yang dihimpun dalam ruang khusus.",
+        cta: "Media Pembelajaran",
+      }
+    : {
+        eyebrow: "LEARNING SPACE",
+        title: "Learning Media",
+        intro: "Access BRH learning materials collected in a dedicated space.",
+        cta: "Learning Media",
+      };
+
+  return (
+    <section className="w-full border-t border-outline-variant/25 bg-surface-container-low px-4 py-12 sm:px-6 md:px-12 lg:px-24 lg:py-16">
+      <ScrollReveal className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-6 sm:p-8 md:flex-row md:items-center lg:p-10">
+        <div>
+          <span className="font-label text-[10px] font-black uppercase tracking-[0.28em] text-secondary sm:text-xs">{copy.eyebrow}</span>
+          <h2 className="mt-3 font-headline text-3xl font-black tracking-tight text-primary md:text-4xl">{copy.title}</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant/75 sm:text-base">{copy.intro}</p>
+        </div>
+        <OptimisticLink
+          href={withLocale("/media-pembelajaran", lang)}
+          className="tap-target inline-flex shrink-0 items-center gap-3 rounded-full bg-primary px-6 text-sm font-black text-on-primary transition hover:bg-tertiary active:scale-[0.98]"
+        >
+          {copy.cta}
+          <span className="material-symbols-outlined text-[19px]">school</span>
+        </OptimisticLink>
+      </ScrollReveal>
+    </section>
+  );
+}
+
 function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
   return (
     <>
@@ -568,6 +603,7 @@ function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<Retur
         <HomeQuickPostsSection lang={lang} dict={dict} />
       </Suspense>
       <HomeContactSection lang={lang} />
+      <LearningMediaEntry lang={lang} />
     </>
   );
 }

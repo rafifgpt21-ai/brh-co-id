@@ -8,6 +8,7 @@ import {
 } from "@/lib/chatbot/content";
 import { withLocale, type Locale } from "@/lib/i18n/config";
 import { localizePost } from "@/lib/i18n/posts";
+import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 
 type PostBlock = {
   type: string;
@@ -190,7 +191,7 @@ export async function removeQuickPostFromKnowledgeIndex(quickPostId: string) {
 export async function indexPublishedPost(postId: string) {
   const post = await prisma.post.findUnique({ where: { id: postId } });
 
-  if (!post || post.status !== "Published") {
+  if (!post || post.status !== "Published" || post.category === LEARNING_MEDIA_CATEGORY) {
     await removePostFromKnowledgeIndex(postId);
     return { sourceId: postId, chunks: 0 };
   }
@@ -226,7 +227,10 @@ export async function indexStaticKnowledge() {
 export async function indexAllKnowledge() {
   const [posts, quickPosts] = await Promise.all([
     prisma.post.findMany({
-      where: { status: "Published" },
+      where: {
+        status: "Published",
+        category: { not: LEARNING_MEDIA_CATEGORY },
+      },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.quickPost.findMany({

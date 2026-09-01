@@ -153,6 +153,7 @@ export const dictionary = {
       Jurnal: "Journals",
       Artikel: "Articles",
       Opini: "Opinions",
+      "Media Pembelajaran": "Learning Media",
     },
     found: "Works Found",
     resetFilter: "Reset Filter",

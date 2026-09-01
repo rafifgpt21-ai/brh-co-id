@@ -89,7 +89,7 @@ model Post {
   titleEn   String?
   slug      String   @unique
   slugEn    String?  @unique
-  category  String   // 'Buku', 'Jurnal', 'Artikel', 'Opini'
+  category  String   // 'Buku', 'Jurnal', 'Artikel', 'Opini', 'Media Pembelajaran'
   status    String   @default("Draft") // 'Published' | 'Draft'
   thumbnail String?
   blocks    Block[]

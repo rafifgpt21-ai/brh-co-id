@@ -8,6 +8,7 @@ import {
   validateUploadReceipts,
 } from "@/lib/uploadthing-server";
 import type { UploadReceipt } from "@/lib/uploadthing-types";
+import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 import { z } from "zod";
 
 // Helper: generate slug from title
@@ -112,6 +113,12 @@ function refreshPublicationPaths() {
   revalidatePath("/id/publikasi");
   revalidatePath("/en/publikasi");
   revalidatePath("/id/publications");
+}
+
+function refreshLearningMediaPaths() {
+  revalidatePath("/media-pembelajaran");
+  revalidatePath("/id/media-pembelajaran");
+  revalidatePath("/en/media-pembelajaran");
 }
 
 async function refreshPostKnowledgeIndex(postId: string) {
@@ -224,6 +231,7 @@ export async function savePost(data: PostFormData) {
       revalidatePath(`/en/post/${post.slugEn || post.slug}`);
       refreshHomePaths();
       refreshPublicationPaths();
+      refreshLearningMediaPaths();
       updateTag(`post-${post.id}`);
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
@@ -281,6 +289,7 @@ export async function savePost(data: PostFormData) {
       revalidatePath("/admin");
       refreshHomePaths();
       refreshPublicationPaths();
+      refreshLearningMediaPaths();
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     }
@@ -333,6 +342,7 @@ export async function deletePost(id: string) {
     revalidatePath("/admin");
     refreshHomePaths();
     refreshPublicationPaths();
+    refreshLearningMediaPaths();
     updateTag(`post-${id}`);
     
     return { success: true };
@@ -381,6 +391,7 @@ export async function saveHomeFeaturedPostIds(postIds: string[]) {
       where: {
         id: { in: parsedPostIds.data },
         status: "Published",
+        category: { not: LEARNING_MEDIA_CATEGORY },
       },
       select: { id: true },
     });
@@ -462,6 +473,7 @@ async function getPostsInternal(options?: {
 
     if (!isAdmin) {
       where.status = "Published";
+      where.category = { not: LEARNING_MEDIA_CATEGORY };
     } else if (options?.status) {
       where.status = options.status;
     }
@@ -472,7 +484,7 @@ async function getPostsInternal(options?: {
         { titleEn: { contains: options.search, mode: "insensitive" } },
       ];
     }
-    if (options?.category) {
+    if (options?.category && (isAdmin || options.category !== LEARNING_MEDIA_CATEGORY)) {
       where.category = options.category;
     }
 

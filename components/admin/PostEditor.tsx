@@ -12,6 +12,7 @@ import { compressImage, formatFileSize, type ImageCompressionResult } from '@/li
 import { createUploadReceipt, type UploadReceipt } from '@/lib/uploadthing-types';
 import { rollbackUploadedFiles } from '@/lib/actions/uploadthing';
 import { usePublishProgress, type PublishedPostSummary } from './PublishProgressProvider';
+import { POST_CATEGORIES } from '@/lib/post-categories';
 
 export type EditorBlock = {
   id: string;
@@ -41,8 +42,6 @@ type PostEditorInitialData = {
 };
 
 type UploadEndpoint = "imageUploader" | "pdfUploader";
-
-const CATEGORIES = ['Buku', 'Jurnal', 'Artikel', 'Opini'];
 
 function toDateInputValue(value?: Date | string | null) {
   const date = value ? new Date(value) : new Date();
@@ -1060,7 +1059,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-2xl px-4 py-3 text-primary text-sm font-medium focus:outline-none focus:border-secondary/50 transition-all appearance-none cursor-pointer"
                   >
-                    {CATEGORIES.map((c) => (
+                    {POST_CATEGORIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -1561,7 +1560,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
                       onChange={(e) => setCategory(e.target.value)}
                       className="w-full bg-surface-container/60 border border-outline-variant/20 rounded-xl px-3.5 py-2.5 text-primary text-sm font-medium focus:outline-none focus:border-secondary/50 transition-all appearance-none cursor-pointer"
                     >
-                      {CATEGORIES.map((c) => (
+                      {POST_CATEGORIES.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>

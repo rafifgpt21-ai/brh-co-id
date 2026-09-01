@@ -9,6 +9,7 @@ import { getCategoryLabel } from "@/lib/i18n/posts";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
 import { ShareActions } from "@/components/common/ShareActions";
 import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
+import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 
 type PostBlock = {
   id: string;
@@ -49,6 +50,12 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
     damping: 30,
     restDelta: 0.001
   });
+  const catalogHref = post.category === LEARNING_MEDIA_CATEGORY
+    ? withLocale("/media-pembelajaran", lang)
+    : withLocale("/explore", lang);
+  const catalogLabel = post.category === LEARNING_MEDIA_CATEGORY
+    ? (lang === "id" ? "Media Pembelajaran" : "Learning Media")
+    : dict.post.catalog;
 
   const formatDate = (date: Date | string) => {
     return formatLocalizedDate(date, lang);
@@ -124,11 +131,11 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
             className="flex flex-col items-center"
           >
             <OptimisticLink
-              href={withLocale("/explore", lang)}
+              href={catalogHref}
               className="group mb-8 inline-flex items-center gap-2 rounded-full border border-outline-variant/25 bg-surface-container-lowest/85 px-5 py-2.5 font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant backdrop-blur-md transition hover:border-secondary/35 hover:text-secondary"
             >
               <span className="material-symbols-outlined text-[16px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-              {dict.post.catalog}
+              {catalogLabel}
             </OptimisticLink>
 
             <motion.div
@@ -423,10 +430,10 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
               {dict.post.home}
             </OptimisticLink>
             <OptimisticLink
-              href={withLocale("/explore", lang)}
+              href={catalogHref}
               className="px-8 py-3 rounded-full bg-surface-container-high text-primary font-headline font-bold text-sm hover:translate-y-[-2px] transition-all border border-outline-variant/20 active:scale-[0.98]"
             >
-              {dict.post.catalog}
+              {catalogLabel}
             </OptimisticLink>
           </div>
         </motion.div>
