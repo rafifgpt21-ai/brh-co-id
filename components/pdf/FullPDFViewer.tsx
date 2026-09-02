@@ -29,10 +29,19 @@ const WatermarkOverlay = () => (
   </div>
 );
 
+interface PageSize {
+  width: number;
+  height: number;
+}
+
+const FALLBACK_PAGE_SIZE: PageSize = { width: 595.28, height: 841.89 };
+const MAX_BASE_PAGE_WIDTH = 900;
+
 interface LazyPageProps {
   index: number;
   scale: number;
-  containerWidth: number;
+  baseFit: number;
+  pageSize: PageSize;
   isTypingPage: boolean;
   containerRef: React.RefObject<HTMLDivElement | null>;
   setCurrentPage: (page: number) => void;
@@ -44,7 +53,8 @@ interface LazyPageProps {
 const LazyPage = ({ 
   index, 
   scale, 
-  containerWidth, 
+  baseFit, 
+  pageSize, 
   isTypingPage, 
   containerRef,
   setCurrentPage,
@@ -54,8 +64,9 @@ const LazyPage = ({
   const [isVisible, setIsVisible] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
 
-  // Calculate responsive width
-  const pageWidth = containerWidth > 0 ? Math.min(800 * scale, containerWidth) : 800 * scale;
+  // Size follows the real page dimensions; baseFit scales PDF points to CSS pixels
+  const pageWidth = Math.max(120, Math.round(pageSize.width * baseFit * scale));
+  const pageHeight = Math.max(160, Math.round(pageSize.height * baseFit * scale));
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -84,7 +95,7 @@ const LazyPage = ({
       className="relative shadow-2xl border border-outline-variant/10 bg-white group transition-opacity duration-500"
       style={{
         width: pageWidth,
-        minHeight: pageWidth * 1.3,
+        minHeight: pageHeight,
       }}
     >
       {isVisible ? (
@@ -102,7 +113,7 @@ const LazyPage = ({
             loading={
               <div
                 className="bg-surface-container-low animate-pulse flex items-center justify-center"
-                style={{ width: pageWidth, height: pageWidth * 1.3 }}
+                style={{ width: pageWidth, height: pageHeight }}
               >
                 <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Memuat Halaman {index + 1}...</span>
               </div>
@@ -141,6 +152,7 @@ export const FullPDFViewer = ({
   const [pageInput, setPageInput] = useState("1");
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [isTypingPage, setIsTypingPage] = useState(false);
+  const [pageSizes, setPageSizes] = useState<PageSize[]>([]);
 
   // Use proxy for external URLs to bypass CORS
   const proxiedUrl = url.startsWith('http') && !url.includes(window.location.hostname)
@@ -215,17 +227,26 @@ export const FullPDFViewer = ({
   const onDocumentLoadSuccess = async (pdf: LoadedPdfDocument) => {
     setNumPages(pdf.numPages);
 
-    // Extract text from all pages for search index in background
     try {
-      const textContent: string[] = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const text = content.items
-          .map((item) => ("str" in item ? item.str : ""))
-          .join(" ");
-        textContent.push(text);
-      }
+      const pages = await Promise.all(
+        Array.from({ length: pdf.numPages }, (_, i) => pdf.getPage(i + 1))
+      );
+
+      setPageSizes(
+        pages.map((page) => {
+          const viewport = page.getViewport({ scale: 1 });
+          return { width: viewport.width, height: viewport.height };
+        })
+      );
+
+      const textContent = await Promise.all(
+        pages.map(async (page) => {
+          const content = await page.getTextContent();
+          return content.items
+            .map((item) => ("str" in item ? item.str : ""))
+            .join(" ");
+        })
+      );
       setAllPagesText(textContent);
     } catch (err) {
       console.error("Error extracting text for search:", err);
@@ -290,6 +311,17 @@ export const FullPDFViewer = ({
   const handleZoom = (delta: number) => {
     setScale(prev => Math.min(Math.max(0.5, prev + delta), 3));
   };
+
+  const widestPagePt = useMemo(
+    () => pageSizes.reduce((max, size) => Math.max(max, size.width), FALLBACK_PAGE_SIZE.width),
+    [pageSizes]
+  );
+
+  // Pixels per PDF point at 100% zoom: the widest page fits the container (capped for readability)
+  const baseFit = useMemo(() => {
+    const available = containerWidth > 0 ? Math.min(containerWidth, MAX_BASE_PAGE_WIDTH) : 800;
+    return available / widestPagePt;
+  }, [containerWidth, widestPagePt]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -521,13 +553,13 @@ export const FullPDFViewer = ({
       <div
         ref={containerRef}
         data-lenis-prevent
-        className="flex-1 overflow-y-auto bg-surface-dim/30 p-4 md:p-8 flex flex-col items-center gap-8 scrollbar-thin scrollbar-thumb-outline-variant selection:bg-secondary/20"
+        className="flex-1 overflow-auto bg-surface-dim/30 p-4 md:p-8 flex flex-col items-center gap-8 scrollbar-thin scrollbar-thumb-outline-variant selection:bg-secondary/20"
         onContextMenu={(e) => e.preventDefault()}
       >
         <Document
           file={proxiedUrl}
           onLoadSuccess={onDocumentLoadSuccess}
-          className="flex flex-col gap-8"
+          className="mx-auto flex w-fit min-w-full flex-col items-center gap-8"
           loading={
             <div className="flex flex-col items-center justify-center p-20 gap-4">
               <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
@@ -540,7 +572,8 @@ export const FullPDFViewer = ({
               key={`page_${index + 1}`}
               index={index}
               scale={scale}
-              containerWidth={containerWidth}
+              baseFit={baseFit}
+              pageSize={pageSizes[index] ?? FALLBACK_PAGE_SIZE}
               isTypingPage={isTypingPage}
               containerRef={containerRef}
               setCurrentPage={setCurrentPage}
