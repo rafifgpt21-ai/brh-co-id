@@ -66,6 +66,8 @@ export default async function PDFViewerPage({
     );
   }
 
+  const allowDownload = category === LEARNING_MEDIA_CATEGORY || category === "Artikel";
+
   return (
     <Suspense fallback={
       <div className="h-screen flex flex-col items-center justify-center bg-surface-container-lowest animate-pulse">
@@ -76,7 +78,7 @@ export default async function PDFViewerPage({
       <PDFViewerClient 
         url={decodedUrl} 
         title={typeof title === 'string' ? decodeURIComponent(title) : "Dokumen"} 
-        allowDownload={category === LEARNING_MEDIA_CATEGORY}
+        allowDownload={allowDownload}
         showWatermark={category !== LEARNING_MEDIA_CATEGORY}
       />
     </Suspense>

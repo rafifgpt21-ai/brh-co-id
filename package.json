@@ -12,7 +12,11 @@
     "migrate:engagement": "npx tsx scripts/migrate-engagement-structure.ts",
     "reset:content": "npx tsx scripts/reset-database.ts",
     "delete:posts": "npx tsx scripts/delete-all-posts.ts",
-    "index:chatbot": "npx tsx scripts/index-chatbot.ts"
+    "index:chatbot": "npx tsx scripts/index-chatbot.ts",
+    "export:published-articles": "npx tsx scripts/export-published-articles.ts",
+    "validate:seri-ii-september-2026": "npx tsx scripts/seed-seri-ii-september-2026.ts",
+    "seed:seri-ii-september-2026": "npx tsx scripts/seed-seri-ii-september-2026.ts --apply",
+    "upload:seri-ii-september-images": "npx tsx scripts/upload-seri-ii-september-images.ts --apply"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
