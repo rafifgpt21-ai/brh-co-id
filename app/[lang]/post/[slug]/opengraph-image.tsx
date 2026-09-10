@@ -1,6 +1,7 @@
 import { getPublishedPostBySlug } from "@/lib/data/public-content";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
 import { localizePost } from "@/lib/i18n/posts";
+import { normalizePostCategory } from "@/lib/post-categories";
 import { ImageResponse } from "next/og";
 
 export const alt = "Artikel BRH Insight";
@@ -40,7 +41,10 @@ export default async function OpenGraphImage({
     || post?.blocks.find((block) => block.type === "image" && block.url)?.url;
   const thumbnailDataUrl = await getImageDataUrl(thumbnailUrl);
   const title = localizedPost?.title || "BRH Insight";
-  const category = post?.category || (lang === "id" ? "Pemikiran" : "Perspectives");
+  const normalizedCategory = post ? normalizePostCategory(post.category) : null;
+  const category = normalizedCategory === "Publikasi Ilmiah" && lang === "en"
+    ? "Scientific Publications"
+    : normalizedCategory || (lang === "id" ? "Pemikiran" : "Perspectives");
   const titleSize = title.length > 80 ? 46 : title.length > 50 ? 54 : 64;
 
   return new ImageResponse(

@@ -1,4 +1,5 @@
 import type { Locale } from "./config";
+import { normalizePostCategory } from "@/lib/post-categories";
 
 type LocalizableBlock = {
   content?: string | null;
@@ -48,5 +49,6 @@ export function getCategoryLabel(
   category: string,
   labels: Record<string, string>,
 ) {
-  return labels[category] || category;
+  const normalizedCategory = normalizePostCategory(category);
+  return labels[normalizedCategory] || normalizedCategory;
 }

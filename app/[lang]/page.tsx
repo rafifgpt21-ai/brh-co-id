@@ -21,6 +21,7 @@ import {
   serializeStructuredData,
 } from '@/lib/structured-data';
 import { researchAreas } from '@/lib/brh-content';
+import { SCIENTIFIC_PUBLICATION_CATEGORY } from '@/lib/post-categories';
 import budiRahmanHakim from '@/public/budi-rahman-hakim.jpg';
 import researchSpirituality from '@/public/images/research-spirituality.webp';
 import researchSocialWelfare from '@/public/images/research-social-welfare.webp';
@@ -510,6 +511,87 @@ function HomeResearchSection({ lang }: { lang: Locale }) {
   );
 }
 
+async function HomeScientificPublicationsSection({ lang }: { lang: Locale }) {
+  const posts = (await getPublishedPosts({
+    category: SCIENTIFIC_PUBLICATION_CATEGORY,
+    limit: 5,
+  })).map((post) => localizePost(post, lang) as LocalizedHomePost);
+  const copy = lang === "id"
+    ? {
+        eyebrow: "OUTPUT AKADEMIK",
+        title: "Publikasi Ilmiah",
+        intro: "Karya akademik terpilih yang dapat dibaca dan diunduh.",
+        viewAll: "Lihat semua publikasi ilmiah",
+        read: "Baca publikasi",
+      }
+    : {
+        eyebrow: "ACADEMIC OUTPUT",
+        title: "Scientific Publications",
+        intro: "Selected academic works available to read and download.",
+        viewAll: "View all scientific publications",
+        read: "Read publication",
+      };
+  const archiveHref = `${withLocale("/explore", lang)}?category=${encodeURIComponent(SCIENTIFIC_PUBLICATION_CATEGORY)}`;
+
+  return (
+    <section id="publikasi-ilmiah" className="w-full border-t border-background/12 bg-tertiary px-4 pb-14 pt-10 text-background sm:px-6 md:px-12 lg:px-24 lg:pb-24 lg:pt-14">
+      <div className="mx-auto max-w-7xl">
+        <ScrollReveal className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <span className="font-label text-[10px] font-black uppercase tracking-[0.28em] text-secondary-fixed sm:text-xs">{copy.eyebrow}</span>
+            <h2 className="mt-2 font-headline text-2xl font-black tracking-tight text-background sm:text-3xl">{copy.title}</h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-background/65">{copy.intro}</p>
+          </div>
+          <OptimisticLink href={archiveHref} className="inline-flex w-fit items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-secondary-fixed transition hover:text-background">
+            {copy.viewAll}
+            <span className="material-symbols-outlined text-[16px]">east</span>
+          </OptimisticLink>
+        </ScrollReveal>
+
+        {posts.length > 0 ? (
+          <div className="-mx-4 grid snap-x snap-mandatory auto-cols-[64vw] grid-flow-col gap-3 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:auto-cols-[36vw] sm:px-6 md:auto-cols-[28vw] lg:mx-0 lg:grid-flow-row lg:grid-cols-5 lg:overflow-visible lg:px-0 lg:pb-0">
+            {posts.map((post, index) => (
+              <ScrollReveal key={post.id} delay={index * 0.04} className="h-full snap-start">
+                <OptimisticLink href={withLocale(`/post/${post.slug}`, lang)} className="group flex h-full flex-col overflow-hidden rounded-xl border border-background/14 bg-background/6 transition duration-300 hover:-translate-y-1 hover:border-secondary-fixed/40 hover:bg-background/10">
+                  <div className="relative aspect-square w-full overflow-hidden bg-background/10">
+                    {post.thumbnail ? (
+                      <Image
+                        src={post.thumbnail}
+                        alt={post.title}
+                        fill
+                        sizes="(max-width: 639px) 64vw, (max-width: 767px) 36vw, (max-width: 1023px) 28vw, 240px"
+                        className="object-cover transition duration-500 group-hover:scale-[1.035]"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-linear-to-br from-background/5 to-secondary-fixed/10">
+                        <span className="material-symbols-outlined text-4xl text-secondary-fixed/45">science</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-3.5">
+                    <span className="font-label text-[9px] font-black uppercase tracking-[0.14em] text-secondary-fixed/80">
+                      {formatLocalizedDate(post.publishedAt || post.createdAt, lang)}
+                    </span>
+                    <h3 className="mt-2 line-clamp-3 text-pretty font-headline text-sm font-black leading-snug text-background sm:text-base">{post.title}</h3>
+                    <span className="mt-auto flex items-center gap-1.5 pt-4 text-[9px] font-black uppercase tracking-[0.14em] text-background/55 transition group-hover:text-secondary-fixed">
+                      {copy.read}
+                      <span className="material-symbols-outlined text-[14px] transition group-hover:translate-x-1">east</span>
+                    </span>
+                  </div>
+                </OptimisticLink>
+              </ScrollReveal>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-background/20 px-6 py-10 text-center text-sm text-background/55">
+            {lang === "id" ? "Belum ada publikasi ilmiah." : "No scientific publications yet."}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function HomeContactSection({ lang }: { lang: Locale }) {
   const copy = lang === "id"
     ? {
@@ -593,6 +675,9 @@ function HomeStreamedContent({ lang, dict }: { lang: Locale; dict: Awaited<Retur
         <HomeHighlightSection lang={lang} dict={dict} />
       </Suspense>
       <HomeResearchSection lang={lang} />
+      <Suspense fallback={<section className="h-96 w-full bg-tertiary" />}>
+        <HomeScientificPublicationsSection lang={lang} />
+      </Suspense>
       <Suspense fallback={
         <section className="flex w-full px-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-3 sm:px-6 sm:pb-8 sm:pt-5 md:px-12 lg:min-h-[calc(100svh-3.5rem)] lg:items-center lg:py-10 xl:px-16 2xl:px-24">
           <div className="mx-auto w-full max-w-[1600px]">

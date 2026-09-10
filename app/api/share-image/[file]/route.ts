@@ -1,5 +1,6 @@
 import { PostShareCard } from "@/components/social/PostShareCard";
 import { getPublishedPostBySlug } from "@/lib/data/public-content";
+import { normalizePostCategory } from "@/lib/post-categories";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
@@ -123,9 +124,12 @@ export async function GET(
 
     const isEnglish = Boolean(post.slugEn && slug === post.slugEn && post.slugEn !== post.slug);
     const title = isEnglish ? post.titleEn || post.title : post.title;
-    const category = isEnglish && post.category === "Media Pembelajaran"
+    const normalizedCategory = normalizePostCategory(post.category);
+    const category = isEnglish && normalizedCategory === "Media Pembelajaran"
       ? "Learning Media"
-      : post.category;
+      : isEnglish && normalizedCategory === "Publikasi Ilmiah"
+        ? "Scientific Publications"
+        : normalizedCategory;
     const image = await createPostShareImage({ source, title, category });
 
     return new Response(new Uint8Array(image), {

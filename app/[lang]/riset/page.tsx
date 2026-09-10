@@ -10,6 +10,7 @@ import {
   researchAreas,
   type LanguageCode,
 } from "@/lib/brh-content";
+import { SCIENTIFIC_PUBLICATION_CATEGORY } from "@/lib/post-categories";
 
 type ActiveLanguage = Extract<LanguageCode, "id" | "en">;
 
@@ -139,10 +140,10 @@ const ResearchContent = ({ language }: { language: LanguageCode }) => {
                 <span className="material-symbols-outlined text-[18px]">east</span>
               </OptimisticLink>
               <OptimisticLink
-                href={`/${language}/explore?category=Jurnal`}
+                href={`/${language}/explore?category=${encodeURIComponent(SCIENTIFIC_PUBLICATION_CATEGORY)}`}
                 className="tap-target inline-flex items-center justify-center gap-2 rounded-full border border-outline-variant/50 bg-surface px-5 text-sm font-black text-primary transition hover:border-secondary hover:bg-secondary/10"
               >
-                {language === "id" ? "Jelajahi Jurnal" : "Explore Journals"}
+                {language === "id" ? "Jelajahi Publikasi Ilmiah" : "Explore Scientific Publications"}
                 <span className="material-symbols-outlined text-[18px]">travel_explore</span>
               </OptimisticLink>
             </div>

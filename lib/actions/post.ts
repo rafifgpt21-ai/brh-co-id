@@ -8,7 +8,12 @@ import {
   validateUploadReceipts,
 } from "@/lib/uploadthing-server";
 import type { UploadReceipt } from "@/lib/uploadthing-types";
-import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
+import {
+  LEARNING_MEDIA_CATEGORY,
+  SCIENTIFIC_PUBLICATION_CATEGORY_VALUES,
+  isScientificPublicationCategory,
+  normalizePostCategory,
+} from "@/lib/post-categories";
 import { z } from "zod";
 
 // Helper: generate slug from title
@@ -63,7 +68,7 @@ const postFormSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1, "Judul tidak boleh kosong"),
   titleEn: z.string().optional(),
-  category: z.string().min(1, "Kategori tidak boleh kosong"),
+  category: z.string().min(1, "Kategori tidak boleh kosong").transform(normalizePostCategory),
   thumbnail: z.string().optional(),
   status: z.enum(["Published", "Draft"]),
   publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal terbit tidak valid"),
@@ -485,7 +490,9 @@ async function getPostsInternal(options?: {
       ];
     }
     if (options?.category && (isAdmin || options.category !== LEARNING_MEDIA_CATEGORY)) {
-      where.category = options.category;
+      where.category = isScientificPublicationCategory(options.category)
+        ? { in: [...SCIENTIFIC_PUBLICATION_CATEGORY_VALUES] }
+        : options.category;
     }
 
     const posts = await prisma.post.findMany({

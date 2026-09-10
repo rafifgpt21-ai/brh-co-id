@@ -12,7 +12,7 @@ import { compressImage, formatFileSize, type ImageCompressionResult } from '@/li
 import { createUploadReceipt, type UploadReceipt } from '@/lib/uploadthing-types';
 import { rollbackUploadedFiles } from '@/lib/actions/uploadthing';
 import { usePublishProgress, type PublishedPostSummary } from './PublishProgressProvider';
-import { POST_CATEGORIES } from '@/lib/post-categories';
+import { POST_CATEGORIES, normalizePostCategory } from '@/lib/post-categories';
 
 export type EditorBlock = {
   id: string;
@@ -91,7 +91,8 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
   // Base states
   const [title, setTitle] = useState(initialData?.title || '');
   const [titleEn, setTitleEn] = useState(initialData?.titleEn || '');
-  const [category, setCategory] = useState(initialData?.category || 'Buku');
+  const initialCategory = normalizePostCategory(initialData?.category || 'Buku');
+  const [category, setCategory] = useState(initialCategory);
   const [publishedAt, setPublishedAt] = useState(() =>
     toDateInputValue(initialData?.publishedAt || initialData?.createdAt)
   );
@@ -160,7 +161,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
   const isDirty =
     title !== (initialData?.title || '') ||
     titleEn !== (initialData?.titleEn || '') ||
-    category !== (initialData?.category || 'Buku') ||
+    category !== initialCategory ||
     publishedAt !== toDateInputValue(initialData?.publishedAt || initialData?.createdAt) ||
     thumbnail !== (initialData?.thumbnail || '') ||
     Object.keys(stagedFiles).length > 0 ||
@@ -208,7 +209,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
       try {
         const parsed = JSON.parse(saved);
         const hasEdits = parsed.title !== (initialData?.title || '') ||
-                        parsed.category !== (initialData?.category || 'Buku') ||
+                        normalizePostCategory(parsed.category || 'Buku') !== initialCategory ||
                         parsed.publishedAt !== toDateInputValue(initialData?.publishedAt || initialData?.createdAt) ||
                         JSON.stringify(parsed.blocks) !== JSON.stringify(initialData?.blocks || []);
         if (hasEdits) {
@@ -219,7 +220,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
         console.error("Autosave load error:", e);
       }
     }
-  }, [initialData]);
+  }, [initialData, initialCategory]);
 
   useEffect(() => {
     if (!isDirty) {
@@ -689,7 +690,7 @@ export const PostEditor = ({ initialData }: { initialData?: PostEditorInitialDat
     if (autosavedData) {
       setTitle(autosavedData.title || '');
       setTitleEn(autosavedData.titleEn || '');
-      setCategory(autosavedData.category || 'Buku');
+      setCategory(normalizePostCategory(autosavedData.category || 'Buku'));
       setPublishedAt(autosavedData.publishedAt
         ? toDateInputValue(autosavedData.publishedAt)
         : toDateInputValue(initialData?.publishedAt || initialData?.createdAt));

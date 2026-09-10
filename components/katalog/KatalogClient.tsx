@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { withLocale, type Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { useNavigationFeedback } from "@/components/navigation/NavigationFeedback";
+import { SCIENTIFIC_PUBLICATION_CATEGORY, normalizePostCategory } from "@/lib/post-categories";
 
 interface KatalogClientProps {
   initialPosts: Post[];
@@ -15,7 +16,7 @@ interface KatalogClientProps {
   dict: Dictionary;
 }
 
-const categories = ["Semua", "Buku", "Jurnal", "Artikel", "Opini"];
+const categories = ["Semua", "Buku", SCIENTIFIC_PUBLICATION_CATEGORY, "Artikel", "Opini"];
 
 export default function KatalogClient({ initialPosts, lang, dict }: KatalogClientProps) {
   const searchParams = useSearchParams();
@@ -24,7 +25,7 @@ export default function KatalogClient({ initialPosts, lang, dict }: KatalogClien
   const { startNavigation } = useNavigationFeedback();
 
   const searchFromUrl = searchParams.get("search") || "";
-  const categoryFromUrl = searchParams.get("category") || "Semua";
+  const categoryFromUrl = normalizePostCategory(searchParams.get("category") || "Semua");
 
   // Real-time input value
   const [inputValue, setInputValue] = useState(searchFromUrl);

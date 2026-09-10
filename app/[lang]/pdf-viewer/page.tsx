@@ -4,7 +4,10 @@ import { getPostByFileUrl } from "@/lib/actions/post";
 import PDFViewerClient from "@/components/pdf/PDFViewerClient";
 import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
+import {
+  LEARNING_MEDIA_CATEGORY,
+  isScientificPublicationCategory,
+} from "@/lib/post-categories";
 import { notFound } from "next/navigation";
 
 export default async function PDFViewerPage({
@@ -66,7 +69,7 @@ export default async function PDFViewerPage({
     );
   }
 
-  const allowDownload = category === LEARNING_MEDIA_CATEGORY || category === "Jurnal";
+  const allowDownload = category === LEARNING_MEDIA_CATEGORY || isScientificPublicationCategory(category);
 
   return (
     <Suspense fallback={

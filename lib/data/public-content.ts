@@ -2,7 +2,11 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
+import {
+  LEARNING_MEDIA_CATEGORY,
+  SCIENTIFIC_PUBLICATION_CATEGORY_VALUES,
+  isScientificPublicationCategory,
+} from "@/lib/post-categories";
 
 type PublishedPostOptions = {
   search?: string;
@@ -67,7 +71,9 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
   if (options?.collection === "learning-media") {
     where.category = LEARNING_MEDIA_CATEGORY;
   } else if (options?.category && options.category !== LEARNING_MEDIA_CATEGORY) {
-    where.category = options.category;
+    where.category = isScientificPublicationCategory(options.category)
+      ? { in: [...SCIENTIFIC_PUBLICATION_CATEGORY_VALUES] }
+      : options.category;
   } else {
     where.category = { not: LEARNING_MEDIA_CATEGORY };
   }
@@ -143,7 +149,9 @@ export async function getRelatedPublishedPosts({
   const posts = await prisma.post.findMany({
     where: {
       status: "Published",
-      category,
+      category: isScientificPublicationCategory(category)
+        ? { in: [...SCIENTIFIC_PUBLICATION_CATEGORY_VALUES] }
+        : category,
       id: { not: excludeId },
     },
   });

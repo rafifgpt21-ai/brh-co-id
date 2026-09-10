@@ -124,7 +124,7 @@ function buildStaticSources(locale: Locale): KnowledgeSource[] {
       locale,
       title: journal.title,
       url: journal.url,
-      category: locale === "en" ? "Journal" : "Jurnal",
+      category: locale === "en" ? "Scientific Publications" : "Publikasi Ilmiah",
       content: `${journal.year}. ${journal.title}. ${journal.reference}`,
     })),
   ];

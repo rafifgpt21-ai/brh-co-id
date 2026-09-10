@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { deletePost, resetHomeFeaturedPostIds, saveHomeFeaturedPostIds } from '@/lib/actions/post';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePublishProgress } from './PublishProgressProvider';
-import { LEARNING_MEDIA_CATEGORY } from '@/lib/post-categories';
+import {
+  LEARNING_MEDIA_CATEGORY,
+  isScientificPublicationCategory,
+  normalizePostCategory,
+} from '@/lib/post-categories';
 
 type Post = {
   id: string;
@@ -66,7 +70,7 @@ export function AdminPostList({
     const { key, direction } = sortConfig;
 
     const getSortValue = (post: Post) => {
-      const value = post[key];
+      const value = key === 'category' ? normalizePostCategory(post.category) : post[key];
       if (key === 'publishedAt' || key === 'createdAt' || key === 'updatedAt') {
         return value ? new Date(value as Date).getTime() : 0;
       }
@@ -245,8 +249,8 @@ export function AdminPostList({
       </div>
 
       <div className="mb-5 rounded-3xl border border-outline-variant/30 bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="min-w-0">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-on-primary">
                 <span className="material-symbols-outlined text-[22px]">star</span>
@@ -260,12 +264,12 @@ export function AdminPostList({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
             <select
               value=""
               onChange={(event) => addFeaturedPost(event.target.value)}
               disabled={!canAddFeaturedPost || isPending}
-              className="h-11 min-w-0 rounded-full border border-outline-variant/40 bg-surface px-4 text-sm font-bold text-on-surface outline-none transition focus:border-on-surface/50 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-72"
+              className="h-11 w-full min-w-0 rounded-full border border-outline-variant/40 bg-surface px-4 text-sm font-bold text-on-surface outline-none transition focus:border-on-surface/50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-72"
             >
               <option value="">
                 {selectedFeaturedPosts.length >= 3 ? 'Karya Pilihan sudah lengkap' : `Tambah karya (${selectedFeaturedPosts.length}/3)`}
@@ -279,7 +283,7 @@ export function AdminPostList({
             <Button
               onClick={saveFeaturedPosts}
               disabled={isPending || selectedFeaturedPosts.length !== 3}
-              className="h-11 rounded-full! bg-primary px-5 text-sm font-black text-on-primary hover:bg-primary/90 disabled:opacity-60"
+              className="h-11 shrink-0 rounded-full! bg-primary px-5 text-sm font-black text-on-primary hover:bg-primary/90 disabled:opacity-60"
             >
               Simpan
             </Button>
@@ -287,7 +291,7 @@ export function AdminPostList({
               onClick={resetFeaturedPosts}
               disabled={isPending}
               variant="outline"
-              className="h-11 rounded-full! border-outline-variant/40 px-5 text-sm font-black text-on-surface-variant hover:bg-surface-container-high disabled:opacity-60"
+              className="h-11 shrink-0 rounded-full! border-outline-variant/40 px-5 text-sm font-black text-on-surface-variant hover:bg-surface-container-high disabled:opacity-60"
             >
               Reset
             </Button>
@@ -310,7 +314,7 @@ export function AdminPostList({
                   <>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-2 text-sm font-black leading-snug text-on-surface">{post.title}</p>
-                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-secondary">{post.category}</p>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-secondary">{normalizePostCategory(post.category)}</p>
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">
                       <button
@@ -438,7 +442,7 @@ export function AdminPostList({
               <div className="col-span-1 lg:col-span-4 flex items-start sm:items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center shrink-0 text-on-surface-variant/80">
                   <span className="material-symbols-outlined text-[24px]">
-                    {post.category === 'Buku' ? 'auto_stories' : post.category === 'Jurnal' ? 'science' : post.category === 'Opini' ? 'forum' : 'article'}
+                    {post.category === 'Buku' ? 'auto_stories' : isScientificPublicationCategory(post.category) ? 'science' : post.category === 'Opini' ? 'forum' : 'article'}
                   </span>
                 </div>
 
@@ -456,7 +460,7 @@ export function AdminPostList({
                   )}
                   {/* Mobile meta */}
                   <div className="flex lg:hidden flex-wrap items-center gap-2 mt-1.5 text-xs text-on-surface-variant/80 font-medium">
-                    <span className="bg-surface-container-low px-2 py-0.5 rounded-md">{post.category}</span>
+                    <span className="bg-surface-container-low px-2 py-0.5 rounded-md">{normalizePostCategory(post.category)}</span>
                     <span className="w-1 h-1 rounded-full bg-outline-variant/60"></span>
                     <span>Terbit {post.publishedAt ? formatDate(post.publishedAt) : '—'}</span>
                     <span className="w-1 h-1 rounded-full bg-outline-variant/60"></span>
@@ -474,7 +478,7 @@ export function AdminPostList({
 
               {/* Kolom 2: Kategori */}
               <div className="hidden lg:block col-span-1 text-sm font-semibold text-on-surface-variant/80">
-                {post.category}
+                {normalizePostCategory(post.category)}
               </div>
 
               {/* Kolom 3: Tanggal Terbit */}

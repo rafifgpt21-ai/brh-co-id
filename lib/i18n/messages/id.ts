@@ -150,7 +150,8 @@ export const dictionary = {
     categories: {
       all: "Semua",
       Buku: "Buku",
-      Jurnal: "Jurnal",
+      Jurnal: "Publikasi Ilmiah",
+      "Publikasi Ilmiah": "Publikasi Ilmiah",
       Artikel: "Artikel",
       Opini: "Opini",
       "Media Pembelajaran": "Media Pembelajaran",
