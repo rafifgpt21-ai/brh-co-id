@@ -66,7 +66,7 @@ export default async function PDFViewerPage({
     );
   }
 
-  const allowDownload = category === LEARNING_MEDIA_CATEGORY || category === "Artikel";
+  const allowDownload = category === LEARNING_MEDIA_CATEGORY || category === "Jurnal";
 
   return (
     <Suspense fallback={
