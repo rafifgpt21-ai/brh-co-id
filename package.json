@@ -9,6 +9,8 @@
     "lint": "eslint",
     "upload:material-book-covers": "npx tsx scripts/upload-material-book-covers.ts",
     "storage:audit": "npx tsx scripts/audit-uploadthing-storage.ts",
+    "analytics:indexes": "npx tsx scripts/setup-analytics-indexes.ts",
+    "test:analytics": "npx tsx scripts/test-analytics.ts",
     "migrate:engagement": "npx tsx scripts/migrate-engagement-structure.ts",
     "reset:content": "npx tsx scripts/reset-database.ts",
     "delete:posts": "npx tsx scripts/delete-all-posts.ts",

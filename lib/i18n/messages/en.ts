@@ -24,6 +24,18 @@ export const dictionary = {
       "A platform dedicated to contemporary intellectual and spiritual development.",
     contact: "Contact",
     copyright: "Curated for the Academic Mind.",
+    analyticsPrivacy: {
+      trigger: "Analytics Privacy",
+      title: "Analytics Privacy",
+      description: "BRH Insight uses first-party analytics to understand which pages are useful. We do not store raw IP addresses or account data. Anonymous events are removed after 13 months.",
+      enabled: "Anonymous analytics is currently enabled.",
+      disabled: "Anonymous analytics is disabled in this browser.",
+      disable: "Disable analytics",
+      enable: "Enable analytics",
+      close: "Close",
+      dnt: "Do Not Track is enabled in this browser, so analytics is not running.",
+      error: "Your preference could not be saved. Please try again.",
+    },
   },
   home: {
     heroTitleA: "Merawat Jiwa,",

@@ -98,5 +98,25 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **SSRF Protection**: Secure proxying for external content (PDFs, etc.).
 - **Build Optimization**: Heavy client-side components are dynamically imported to minimize initial bundle size.
 
+## First-party analytics
+
+Analytics is stored in the existing MongoDB database and does not require Vercel Analytics. It is disabled by default. To enable it in production, set:
+
+```bash
+ANALYTICS_ENABLED=true
+ANALYTICS_HASH_SECRET=use-a-long-random-secret-that-is-not-auth-secret
+```
+
+After updating the Prisma schema, prepare the database in this order:
+
+```bash
+npx prisma generate
+npm run analytics:indexes
+```
+
+The index setup command is idempotent, creates the analytics collections when needed, and installs all required indexes—including the TTL index that removes anonymous raw page-view events after 13 months. Lifetime page totals remain available. Run `npx prisma db push` separately only when synchronizing the repository's complete schema, because it may surface unrelated drift in existing collections. MongoDB must run as a replica set so the event and lifetime counter can be committed atomically.
+
+The tracker stores pseudonymous visitor/session hashes, coarse device information, sanitized campaign fields, and limited referrer data. It does not store raw IP addresses or authenticated user data. The built-in privacy control and Do Not Track support do not replace a review of the site's privacy policy and applicable requirements.
+
 ---
 Built with ❤️ for the Intellectual Community.

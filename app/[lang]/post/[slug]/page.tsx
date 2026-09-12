@@ -9,6 +9,7 @@ import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
 import { Suspense } from "react";
 import { RouteSkeleton } from "@/components/ui/RouteSkeleton";
 import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
+import { AdminViewCount } from "@/components/analytics/AdminViewCount";
 
 export const unstable_instant = {
   prefetch: "runtime",
@@ -126,7 +127,19 @@ async function SinglePostContent({ params }: { params: Promise<{ lang: string; s
         limit: 3,
       })).map((item) => localizePost(item, lang));
 
-  return <PostClient post={localizedPost} relatedPosts={relatedPosts} lang={lang} dict={dict} />;
+  return (
+    <PostClient
+      post={localizedPost}
+      relatedPosts={relatedPosts}
+      lang={lang}
+      dict={dict}
+      adminViewCount={
+        <Suspense fallback={null}>
+          <AdminViewCount pageKey={`post:${post.id}`} locale={lang} />
+        </Suspense>
+      }
+    />
+  );
 }
 
 export default function SinglePostPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {

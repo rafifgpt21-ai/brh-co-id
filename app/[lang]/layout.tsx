@@ -7,6 +7,8 @@ import { defaultLocale, hasLocale, locales, withLocale, type Locale } from "@/li
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { isAnalyticsEnabled } from "@/lib/analytics/server";
 
 export async function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
@@ -30,7 +32,7 @@ async function LocalizedHeader({ params }: { params: PublicLayoutParams }) {
 
 async function LocalizedFooter({ params }: { params: PublicLayoutParams }) {
   const { lang, dict } = await resolvePublicLocale(params);
-  return <Footer lang={lang} dict={dict} />;
+  return <Footer lang={lang} dict={dict} analyticsEnabled={isAnalyticsEnabled()} />;
 }
 
 async function LocalizedFloatingActions({ params }: { params: PublicLayoutParams }) {
@@ -126,6 +128,11 @@ export default function PublicLayout({
   return (
     <NavigationFeedbackProvider>
       <LenisProvider>
+        {isAnalyticsEnabled() && (
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
+        )}
         <Suspense fallback={<HeaderFallback />}>
           <LocalizedHeader params={params} />
         </Suspense>

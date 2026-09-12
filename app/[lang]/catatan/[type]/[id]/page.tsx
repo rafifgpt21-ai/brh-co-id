@@ -8,6 +8,7 @@ import { buildAbsoluteUrl, getSocialPreviewVersion } from "@/lib/share-url";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AdminViewCount } from "@/components/analytics/AdminViewCount";
 
 type QuotePageParams = Promise<{ lang: string; type: string; id: string }>;
 
@@ -118,6 +119,9 @@ async function QuoteContent({ params }: { params: QuotePageParams }) {
               <time className="tracking-normal text-on-surface-variant/55" dateTime={quote.createdAt.toISOString()}>
                 {formatLocalizedDate(quote.createdAt, lang)}
               </time>
+              <Suspense fallback={null}>
+                <AdminViewCount pageKey={`quote:${quote.id}`} locale={lang} />
+              </Suspense>
             </div>
           </div>
 

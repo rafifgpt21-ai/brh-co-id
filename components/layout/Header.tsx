@@ -57,10 +57,16 @@ async function AccountControls({ dict, variant = "topbar" }: { dict: Dictionary;
         </div>
         <div className="flex flex-col gap-1">
           {isAdmin && (
-            <OptimisticLink href="/admin" className="flex items-center justify-between rounded-md py-2 font-headline text-sm font-semibold text-primary transition-colors hover:text-primary/80">
-              <span>{dict.nav.admin}</span>
-              <span className="material-symbols-outlined text-[18px]">dashboard</span>
-            </OptimisticLink>
+            <>
+              <OptimisticLink href="/admin" className="flex items-center justify-between rounded-md py-2 font-headline text-sm font-semibold text-primary transition-colors hover:text-primary/80">
+                <span>{dict.nav.admin}</span>
+                <span className="material-symbols-outlined text-[18px]">dashboard</span>
+              </OptimisticLink>
+              <OptimisticLink href="/admin/analytics" className="flex items-center justify-between rounded-md py-2 font-headline text-sm font-semibold text-tertiary/80 transition-colors hover:text-primary">
+                <span>Analytics</span>
+                <span className="material-symbols-outlined text-[18px]">analytics</span>
+              </OptimisticLink>
+            </>
           )}
           {isSuperAdmin && (
             <OptimisticLink href="/admin/settings" className="flex items-center justify-between rounded-md py-2 font-headline text-sm font-semibold text-tertiary/80 transition-colors hover:text-primary">
@@ -98,10 +104,16 @@ async function AccountControls({ dict, variant = "topbar" }: { dict: Dictionary;
           <div className="px-2 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-widest">{dict.nav.account}</div>
           <div className="h-px bg-gray-100 my-1 mx-2"></div>
           {isAdmin && (
-            <OptimisticLink href="/admin" className="w-full text-left font-headline font-medium px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">dashboard</span>
-              {dict.nav.admin}
-            </OptimisticLink>
+            <>
+              <OptimisticLink href="/admin" className="w-full text-left font-headline font-medium px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">dashboard</span>
+                {dict.nav.admin}
+              </OptimisticLink>
+              <OptimisticLink href="/admin/analytics" className="w-full text-left font-headline font-medium px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">analytics</span>
+                Analytics
+              </OptimisticLink>
+            </>
           )}
           {isSuperAdmin && (
             <OptimisticLink href="/admin/settings" className="w-full text-left font-headline font-medium px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-2">

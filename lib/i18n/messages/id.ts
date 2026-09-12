@@ -24,6 +24,18 @@ export const dictionary = {
       "Platform dedikasi untuk pengembangan pemikiran intelektual dan spiritual kontemporer.",
     contact: "Kontak",
     copyright: "Curated for the Academic Mind.",
+    analyticsPrivacy: {
+      trigger: "Privasi Analytics",
+      title: "Privasi Analytics",
+      description: "BRH Insight memakai analytics pihak pertama untuk memahami halaman yang bermanfaat. Kami tidak menyimpan alamat IP mentah atau data akun. Event anonim dihapus setelah 13 bulan.",
+      enabled: "Analytics anonim sedang aktif.",
+      disabled: "Analytics anonim dinonaktifkan pada browser ini.",
+      disable: "Nonaktifkan analytics",
+      enable: "Aktifkan analytics",
+      close: "Tutup",
+      dnt: "Do Not Track aktif di browser; analytics tidak dijalankan.",
+      error: "Preferensi belum dapat disimpan. Silakan coba lagi.",
+    },
   },
   home: {
     heroTitleA: "Merawat Jiwa,",

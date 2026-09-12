@@ -25,18 +25,18 @@ enum AgendaCategory {
 }
 
 model User {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
-  username      String?         @unique
-  email         String?         @unique
+  username      String?   @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role            @default(USER)
+  role          Role      @default(USER)
   phone         String?
   accounts      Account[]
   sessions      Session[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -84,28 +84,28 @@ model VerificationToken {
 }
 
 model Post {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  title     String
-  titleEn   String?
-  slug      String   @unique
-  slugEn    String?  @unique
-  category  String   // 'Buku', 'Publikasi Ilmiah', 'Artikel', 'Opini', 'Media Pembelajaran'
-  status    String   @default("Draft") // 'Published' | 'Draft'
-  thumbnail String?
-  blocks    Block[]
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  titleEn     String?
+  slug        String    @unique
+  slugEn      String?   @unique
+  category    String // 'Buku', 'Publikasi Ilmiah', 'Artikel', 'Opini', 'Media Pembelajaran'
+  status      String    @default("Draft") // 'Published' | 'Draft'
+  thumbnail   String?
+  blocks      Block[]
   publishedAt DateTime?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model QuickPost {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  type              String   // Legacy: 'NORMAL'; active: 'AGENDA' | 'QUOTE'
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  type              String // Legacy: 'NORMAL'; active: 'AGENDA' | 'QUOTE'
   agendaCategory    AgendaCategory?
   content           String
   imageUrl          String?
-  sourcePostId      String?  @db.ObjectId
+  sourcePostId      String?         @db.ObjectId
   sourceTitle       String?
   sourceSlug        String?
   agendaLink        String?
@@ -114,7 +114,7 @@ model QuickPost {
   locationLabel     String?
   locationLatitude  Float?
   locationLongitude Float?
-  status            String   @default("Draft") // 'Published' | 'Draft'
+  status            String          @default("Draft") // 'Published' | 'Draft'
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -151,16 +151,16 @@ model KnowledgeChunk {
 }
 
 type Block {
-  id       String
-  type     String // 'text', 'image', 'video', 'pdf', 'link'
-  content  String
+  id        String
+  type      String // 'text', 'image', 'video', 'pdf', 'link'
+  content   String
   contentEn String?
-  url      String?
-  title    String?
-  titleEn  String?
-  caption  String?
+  url       String?
+  title     String?
+  titleEn   String?
+  caption   String?
   captionEn String?
-  isLocked Boolean? @default(false)
+  isLocked  Boolean? @default(false)
 }
 
 model RateLimit {
@@ -171,4 +171,52 @@ model RateLimit {
   createdAt  DateTime @default(now())
 
   @@index([expiresAt]) // Indeks ini akan berguna untuk cleanup
+}
+
+model AnalyticsPageView {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventId       String   @unique
+  dedupeKey     String   @unique
+  occurredAt    DateTime @default(now())
+  expiresAt     DateTime
+  pageKey       String
+  pathname      String
+  canonicalPath String
+  pageType      String
+  contentId     String?
+  locale        String
+  visitorHash   String
+  sessionHash   String
+  referrerHost  String?
+  referrerPath  String?
+  source        String
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  deviceType    String
+  browser       String
+  os            String
+
+  @@index([occurredAt])
+  @@index([pageKey, occurredAt])
+  @@index([visitorHash, occurredAt])
+  @@index([sessionHash, occurredAt])
+  @@index([source, occurredAt])
+}
+
+model AnalyticsPageTotal {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  pageKey       String   @unique
+  pageType      String
+  contentId     String?
+  canonicalPath String
+  totalViews    Int      @default(0)
+  firstViewedAt DateTime
+  lastViewedAt  DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([pageType])
+  @@index([contentId])
+  @@index([totalViews])
 }

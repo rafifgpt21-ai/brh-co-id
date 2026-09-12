@@ -37,13 +37,14 @@ interface PostClientProps {
   relatedPosts: PublicPost[];
   lang: Locale;
   dict: Dictionary;
+  adminViewCount?: React.ReactNode;
 }
 
 function isLocalBookCover(src?: string | null) {
   return Boolean(src?.startsWith("/book-cover/") || src?.startsWith("/api/book-cover/"));
 }
 
-export default function PostClient({ post, relatedPosts, lang, dict }: PostClientProps) {
+export default function PostClient({ post, relatedPosts, lang, dict, adminViewCount }: PostClientProps) {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -175,6 +176,8 @@ export default function PostClient({ post, relatedPosts, lang, dict }: PostClien
                 <span className="material-symbols-outlined text-[18px] opacity-70">schedule</span>
                 {getReadingTime(post.blocks)} {dict.post.minutesRead}
               </div>
+              {adminViewCount && <div className="w-1.5 h-1.5 rounded-full bg-outline-variant/30" />}
+              {adminViewCount}
             </motion.div>
 
             <motion.div

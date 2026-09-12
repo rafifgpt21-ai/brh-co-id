@@ -3,8 +3,9 @@ import { Suspense } from 'react';
 import { withLocale, type Locale } from '@/lib/i18n/config';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
+import { AnalyticsPrivacyControl } from '@/components/analytics/AnalyticsPrivacyControl';
 
-export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
+export const Footer = ({ lang, dict, analyticsEnabled = false }: { lang: Locale; dict: Dictionary; analyticsEnabled?: boolean }) => {
   return (
     <footer className="w-full py-16 mt-24 bg-tertiary">
       <div className="w-full px-6 md:px-12 lg:px-24 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -28,6 +29,7 @@ export const Footer = ({ lang, dict }: { lang: Locale; dict: Dictionary }) => {
         <p className="font-label text-[10px] uppercase tracking-[0.2em] text-background/40">
           &copy; <Suspense fallback={<span>2026</span>}><CurrentYear /></Suspense> BRH Insight. {dict.footer.copyright}
         </p>
+        {analyticsEnabled && <AnalyticsPrivacyControl labels={dict.footer.analyticsPrivacy} />}
       </div>
     </footer>
   );
