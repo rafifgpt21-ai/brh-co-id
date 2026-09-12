@@ -357,6 +357,11 @@ export default function BiografiPage() {
               <RoleItem role="Pendiri & Pengasuh" organization="Pesantren Peradaban Dunia JAGAT 'ARSY" />
               <RoleItem role="Penasehat Keruhanian" organization="Keraton Kacirebonan & Sumedang Larang" years="2021-Sekarang" />
               <RoleItem role="Ketua Penasehat" organization="Zawiyah Pusat Roudloh TQN Suryalaya Sirnarasa" years="2019-Sekarang" />
+              <RoleItem
+                role="Bendahara Umum"
+                organization="Persatuan Wartawan Indonesia (PWI) Pusat"
+                years="2008–2013 dan 2013–2018"
+              />
               <RoleItem role="Staf Khusus" organization="Menteri Negara BUMN" years="2010-2014" />
               <RoleItem role="Konsultan Komunikasi Politik" organization="Presiden Republik Indonesia" years="2009" />
               <RoleItem role="Wartawan Senior" organization="Rakyat Merdeka Media Group" />
