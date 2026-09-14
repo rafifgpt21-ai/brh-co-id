@@ -117,14 +117,15 @@ export function QuickPostComposer({
   }
 
   const typeSelector = (
-    <div className="grid grid-cols-2 rounded-full bg-surface-container p-1 text-[11px] font-bold">
+    <div className="grid grid-cols-2 gap-1 rounded-2xl bg-surface-container p-1 text-xs font-black">
       {([
-        ["AGENDA", labels.agenda],
-        ["QUOTE", labels.quote],
-      ] as const).map(([value, label]) => (
+        ["AGENDA", labels.agenda, "event"],
+        ["QUOTE", labels.quote, "format_quote"],
+      ] as const).map(([value, label, icon]) => (
         <button
           key={value}
           type="button"
+          aria-pressed={type === value}
           onClick={() => {
             setType(value);
             setMessage("");
@@ -133,27 +134,31 @@ export function QuickPostComposer({
               setAgendaLink("");
             }
           }}
-          className={`h-9 rounded-full px-4 transition-all ${
+          className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-3 transition-all ${
             type === value ? "bg-primary text-on-primary shadow-sm" : "text-on-surface-variant"
           }`}
         >
-          {label}
+          <span className="material-symbols-outlined shrink-0 text-[18px]">{icon}</span>
+          <span className="truncate">{label}</span>
         </button>
       ))}
     </div>
   );
 
   return (
-    <section className={`w-full overflow-hidden bg-surface-container-lowest ${hideHeader ? "" : "rounded-3xl border border-outline-variant/20 shadow-sm"}`}>
+    <section className={`flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-surface-container-lowest ${hideHeader ? "" : "rounded-3xl border border-outline-variant/20 shadow-sm"}`}>
       {!hideHeader && (
-        <div className="flex flex-col gap-4 border-b border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex shrink-0 flex-col gap-4 border-b border-outline-variant/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <h2 className="font-headline text-lg font-black text-primary">{labels.composeTitle}</h2>
           {typeSelector}
         </div>
       )}
 
-      <div className="p-4 sm:p-5">
-        {hideHeader && <div className="mb-4">{typeSelector}</div>}
+      <div
+        data-lenis-prevent
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-5"
+      >
+        {hideHeader && <div className="mb-4 sm:mb-5">{typeSelector}</div>}
 
         {isAgenda && (
           <fieldset className="mb-4">
@@ -174,14 +179,14 @@ export function QuickPostComposer({
                     if (value !== "TEACHING") setAgendaLink("");
                     setMessage("");
                   }}
-                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-black transition ${
+                  className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-black transition sm:px-3 ${
                     agendaCategory === value
                       ? "border-primary bg-primary text-on-primary"
                       : "border-outline-variant/30 bg-surface text-on-surface-variant hover:border-secondary/50"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[19px]">{icon}</span>
-                  {label}
+                  <span className="material-symbols-outlined shrink-0 text-[19px]">{icon}</span>
+                  <span className="min-w-0 leading-tight">{label}</span>
                 </button>
               ))}
             </div>
@@ -198,63 +203,68 @@ export function QuickPostComposer({
           rows={isQuote ? 5 : 4}
           maxLength={2000}
           className={`w-full resize-none rounded-xl border border-outline-variant/25 bg-surface px-4 py-3 text-primary placeholder:text-on-surface-variant/35 focus:border-secondary focus:outline-none focus:ring-4 focus:ring-secondary/10 ${
-            isQuote ? "font-headline text-xl font-semibold italic" : "font-body text-base"
+            isQuote ? "min-h-40 font-headline text-xl font-semibold italic leading-relaxed" : "min-h-32 font-body text-base leading-relaxed"
           }`}
         />
 
         {isAgenda && (
-          <div className="mt-4">
-            <AgendaFields
-              labels={labels}
-              lang={lang}
-              date={agendaDate}
-              startTime={agendaStartTime}
-              endTime={agendaEndTime}
-              link={agendaLink}
-              showLink={agendaCategory === "TEACHING"}
-              locationLabel={locationLabel}
-              locationLatitude={locationLatitude}
-              locationLongitude={locationLongitude}
-              onDateChange={setAgendaDate}
-              onStartTimeChange={setAgendaStartTime}
-              onEndTimeChange={setAgendaEndTime}
-              onLinkChange={(value) => {
-                setAgendaLink(value);
-                setMessage("");
-              }}
-              onLocationChange={(value) => {
-                setLocationLabel(value.label);
-                setLocationLatitude(value.latitude);
-                setLocationLongitude(value.longitude);
-              }}
-            />
-          </div>
+          <AgendaFields
+            labels={labels}
+            lang={lang}
+            date={agendaDate}
+            startTime={agendaStartTime}
+            endTime={agendaEndTime}
+            link={agendaLink}
+            showLink={agendaCategory === "TEACHING"}
+            locationLabel={locationLabel}
+            locationLatitude={locationLatitude}
+            locationLongitude={locationLongitude}
+            disabled={isSubmitting}
+            onDateChange={(value) => {
+              setAgendaDate(value);
+              setMessage("");
+            }}
+            onStartTimeChange={(value) => {
+              setAgendaStartTime(value);
+              setMessage("");
+            }}
+            onEndTimeChange={setAgendaEndTime}
+            onLinkChange={(value) => {
+              setAgendaLink(value);
+              setMessage("");
+            }}
+            onLocationChange={(value) => {
+              setLocationLabel(value.label);
+              setLocationLatitude(value.latitude);
+              setLocationLongitude(value.longitude);
+            }}
+          />
         )}
 
+      </div>
+
+      <div className="z-20 grid shrink-0 grid-cols-2 gap-3 border-t border-outline-variant/20 bg-surface-container-lowest/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 shadow-[0_-12px_30px_-24px_rgba(41,47,54,0.45)] backdrop-blur-xl sm:px-5 sm:pb-5">
         {message && (
-          <p className="mt-4 text-sm font-bold text-on-surface-variant" role="status" aria-live="polite">
+          <p className="col-span-2 text-sm font-bold text-on-surface-variant" role="status" aria-live="polite">
             {message}
           </p>
         )}
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => submit("Draft")}
-            className="h-11 rounded-full border border-outline-variant/40 text-sm font-black text-on-surface-variant transition hover:bg-surface-container disabled:opacity-50"
-          >
-            {isSubmitting ? labels.posting : labels.draft}
-          </button>
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => submit("Published")}
-            className="h-11 rounded-full bg-primary text-sm font-black text-on-primary transition hover:bg-tertiary disabled:opacity-50"
-          >
-            {isSubmitting ? labels.posting : labels.publish}
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => submit("Draft")}
+          className="min-h-12 rounded-xl border border-outline-variant/40 text-sm font-black text-on-surface-variant transition hover:bg-surface-container disabled:opacity-50 sm:rounded-full"
+        >
+          {isSubmitting ? labels.posting : labels.draft}
+        </button>
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => submit("Published")}
+          className="min-h-12 rounded-xl bg-primary text-sm font-black text-on-primary shadow-sm transition hover:bg-tertiary disabled:opacity-50 sm:rounded-full"
+        >
+          {isSubmitting ? labels.posting : labels.publish}
+        </button>
       </div>
     </section>
   );

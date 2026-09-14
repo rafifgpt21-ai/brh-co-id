@@ -103,7 +103,7 @@ export function AgendaFields({
   }, [lang, labels.addressSearchError, locationLabel, locationLatitude, locationLongitude]);
 
   return (
-    <div className="mt-5 grid gap-4 rounded-2xl border border-outline-variant/20 bg-surface-container-low p-4">
+    <div className="mt-4 grid gap-3 rounded-2xl border border-outline-variant/20 bg-surface-container-low p-3.5 sm:mt-5 sm:gap-4 sm:p-4">
       {showLink && (
         <label className="grid gap-1.5 text-xs font-bold text-on-surface-variant">
           {labels.agendaLink}
@@ -118,42 +118,42 @@ export function AgendaFields({
               autoComplete="url"
               placeholder={labels.agendaLinkPlaceholder}
               onChange={(event) => onLinkChange(event.target.value)}
-              className="h-12 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest pl-10 pr-4 text-sm text-primary outline-none placeholder:text-on-surface-variant/40 focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
+              className="h-12 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest pl-10 pr-4 text-base text-primary outline-none placeholder:text-on-surface-variant/40 focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60 sm:text-sm"
             />
           </span>
           <span className="text-[10px] font-medium leading-relaxed text-on-surface-variant/55">{labels.agendaLinkHint}</span>
         </label>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="grid gap-1.5 text-xs font-bold text-on-surface-variant">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <label className="col-span-2 grid min-w-0 gap-1.5 text-xs font-bold text-on-surface-variant sm:col-span-1">
           {labels.agendaDate}
           <input
             type="date"
             value={date}
             disabled={disabled}
             onChange={(event) => onDateChange(event.target.value)}
-            className="h-11 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 text-sm text-primary outline-none focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
+            className="h-12 min-w-0 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 text-base text-primary outline-none focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60 sm:h-11 sm:text-sm"
           />
         </label>
-        <label className="grid gap-1.5 text-xs font-bold text-on-surface-variant">
+        <label className="grid min-w-0 gap-1.5 text-xs font-bold text-on-surface-variant">
           {labels.agendaStartTime}
           <input
             type="time"
             value={startTime}
             disabled={disabled}
             onChange={(event) => onStartTimeChange(event.target.value)}
-            className="h-11 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 text-sm text-primary outline-none focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
+            className="h-12 min-w-0 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-2 text-base text-primary outline-none focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60 sm:h-11 sm:px-3 sm:text-sm"
           />
         </label>
-        <label className="grid gap-1.5 text-xs font-bold text-on-surface-variant">
+        <label className="grid min-w-0 gap-1.5 text-xs font-bold text-on-surface-variant">
           {labels.agendaEndTime}
           <input
             type="time"
             value={endTime}
             disabled={disabled}
             onChange={(event) => onEndTimeChange(event.target.value)}
-            className="h-11 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 text-sm text-primary outline-none focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
+            className="h-12 min-w-0 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-2 text-base text-primary outline-none focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60 sm:h-11 sm:px-3 sm:text-sm"
           />
         </label>
       </div>
@@ -175,13 +175,13 @@ export function AgendaFields({
               autoComplete="off"
               placeholder={labels.agendaLocationPlaceholder}
               onChange={(event) => onLocationChange({ label: event.target.value })}
-              className="h-12 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest pl-10 pr-4 text-sm text-primary outline-none placeholder:text-on-surface-variant/40 focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60"
+              className="h-12 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest pl-10 pr-4 text-base text-primary outline-none placeholder:text-on-surface-variant/40 focus:border-secondary/60 focus:ring-4 focus:ring-secondary/10 disabled:opacity-60 sm:text-sm"
             />
           </div>
         </label>
 
         {(isSearching || searchError || results.length > 0 || (locationLabel.trim().length >= 3 && typeof locationLatitude !== "number" && !isSearching)) && (
-          <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-outline-variant/25 bg-surface-container-lowest shadow-2xl shadow-primary/15">
+          <div className="relative z-30 mt-2 max-h-64 overflow-y-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest shadow-2xl shadow-primary/15 sm:absolute sm:left-0 sm:right-0 sm:top-full">
             {isSearching && <p className="px-4 py-3 text-xs font-bold text-on-surface-variant">{labels.addressSearching}</p>}
             {!isSearching && searchError && <p className="px-4 py-3 text-xs font-bold text-error">{searchError}</p>}
             {!isSearching && !searchError && results.length === 0 && (
