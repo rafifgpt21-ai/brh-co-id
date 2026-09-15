@@ -1,10 +1,16 @@
 "use client";
 
 import { AgendaFields, type AgendaFieldLabels } from "@/components/home/AgendaFields";
-import { createQuickPost, type ActiveQuickPostType, type AgendaCategory } from "@/lib/actions/quick-post";
+import {
+  createQuickPost,
+  createRecurringQuickPosts,
+  type ActiveQuickPostType,
+  type AgendaCategory,
+} from "@/lib/actions/quick-post";
 import type { Locale } from "@/lib/i18n/config";
+import { getRecurringAgendaDates, type RecurrenceError } from "@/lib/quick-post-recurrence";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type QuickPostLabels = AgendaFieldLabels & {
   composeTitle: string;
@@ -16,6 +22,17 @@ type QuickPostLabels = AgendaFieldLabels & {
   agendaCategoryRequired: string;
   placeholderAgenda: string;
   agendaRequired: string;
+  scheduleMode: string;
+  scheduleSingle: string;
+  scheduleRecurring: string;
+  recurrenceHint: string;
+  recurrenceSummary: string;
+  recurrenceRequired: string;
+  recurrenceInvalidRange: string;
+  recurrenceRangeTooLong: string;
+  recurrenceTooMany: string;
+  recurrenceNoDates: string;
+  successRecurring: string;
   placeholderQuote: string;
   publish: string;
   draft: string;
@@ -42,6 +59,10 @@ export function QuickPostComposer({
   const [agendaCategory, setAgendaCategory] = useState<AgendaCategory | "">("");
   const [content, setContent] = useState("");
   const [agendaDate, setAgendaDate] = useState("");
+  const [scheduleMode, setScheduleMode] = useState<"single" | "recurring">("single");
+  const [rangeStartDate, setRangeStartDate] = useState("");
+  const [rangeEndDate, setRangeEndDate] = useState("");
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([]);
   const [agendaStartTime, setAgendaStartTime] = useState("");
   const [agendaEndTime, setAgendaEndTime] = useState("");
   const [agendaLink, setAgendaLink] = useState("");
@@ -53,11 +74,37 @@ export function QuickPostComposer({
 
   const isAgenda = type === "AGENDA";
   const isQuote = type === "QUOTE";
+  const isRecurring = isAgenda && scheduleMode === "recurring";
+  const recurrenceSchedule = useMemo(
+    () => getRecurringAgendaDates(rangeStartDate, rangeEndDate, recurrenceWeekdays),
+    [rangeEndDate, rangeStartDate, recurrenceWeekdays],
+  );
+
+  const recurrenceErrorLabels: Record<RecurrenceError, string> = {
+    "invalid-range": labels.recurrenceInvalidRange,
+    "range-too-long": labels.recurrenceRangeTooLong,
+    "too-many": labels.recurrenceTooMany,
+  };
+  const visibleRecurrenceError = rangeStartDate && rangeEndDate && recurrenceSchedule.error
+    ? recurrenceErrorLabels[recurrenceSchedule.error]
+    : recurrenceWeekdays.length > 0 && rangeStartDate && rangeEndDate && recurrenceSchedule.dates.length === 0
+      ? labels.recurrenceNoDates
+      : "";
+  const recurrenceCount = recurrenceSchedule.error ? 0 : recurrenceSchedule.dates.length;
+  const recurrenceSummary = recurrenceCount > 0
+    ? labels.recurrenceSummary.replace("{count}", String(recurrenceCount))
+    : !rangeStartDate || !rangeEndDate || recurrenceWeekdays.length === 0
+      ? labels.recurrenceHint
+      : "";
 
   function resetForm() {
     setContent("");
     setAgendaCategory("");
     setAgendaDate("");
+    setScheduleMode("single");
+    setRangeStartDate("");
+    setRangeEndDate("");
+    setRecurrenceWeekdays([]);
     setAgendaStartTime("");
     setAgendaEndTime("");
     setAgendaLink("");
@@ -75,8 +122,20 @@ export function QuickPostComposer({
       setMessage(labels.agendaCategoryRequired);
       return;
     }
-    if (isAgenda && (!agendaDate || !agendaStartTime)) {
+    if (isAgenda && !agendaStartTime) {
       setMessage(labels.agendaRequired);
+      return;
+    }
+    if (isAgenda && !isRecurring && !agendaDate) {
+      setMessage(labels.agendaRequired);
+      return;
+    }
+    if (isRecurring && (!rangeStartDate || !rangeEndDate || recurrenceWeekdays.length === 0)) {
+      setMessage(labels.recurrenceRequired);
+      return;
+    }
+    if (isRecurring && visibleRecurrenceError) {
+      setMessage(visibleRecurrenceError);
       return;
     }
 
@@ -84,30 +143,49 @@ export function QuickPostComposer({
     setMessage("");
     onSubmitStart?.(status);
 
-    const result = await createQuickPost({
-      type,
-      content,
-      status,
-      ...(isAgenda
-        ? {
-            agendaCategory: agendaCategory || undefined,
-            agendaDate,
-            agendaStartTime,
-            agendaEndTime,
-            agendaLink: agendaCategory === "TEACHING" ? agendaLink : "",
-            locationLabel,
-            ...(typeof locationLatitude === "number" && typeof locationLongitude === "number"
-              ? { locationLatitude, locationLongitude }
-              : {}),
-          }
-        : {}),
-    });
+    const location = typeof locationLatitude === "number" && typeof locationLongitude === "number"
+      ? { locationLatitude, locationLongitude }
+      : {};
+    const result = isRecurring
+      ? await createRecurringQuickPosts({
+          type: "AGENDA",
+          content,
+          status,
+          agendaCategory: agendaCategory as AgendaCategory,
+          rangeStartDate,
+          rangeEndDate,
+          weekdays: recurrenceWeekdays,
+          agendaStartTime,
+          agendaEndTime,
+          agendaLink: agendaCategory === "TEACHING" ? agendaLink : "",
+          locationLabel,
+          ...location,
+        })
+      : await createQuickPost({
+          type,
+          content,
+          status,
+          ...(isAgenda
+            ? {
+                agendaCategory: agendaCategory || undefined,
+                agendaDate,
+                agendaStartTime,
+                agendaEndTime,
+                agendaLink: agendaCategory === "TEACHING" ? agendaLink : "",
+                locationLabel,
+                ...location,
+              }
+            : {}),
+        });
 
     if (result.success) {
+      const successMessage = "count" in result
+        ? labels.successRecurring.replace("{count}", String(result.count))
+        : labels.success;
       resetForm();
-      setMessage(labels.success);
+      setMessage(successMessage);
       router.refresh();
-      onSubmitResult?.({ success: true, message: labels.success, status });
+      onSubmitResult?.({ success: true, message: successMessage, status });
     } else {
       const errorMessage = result.error || labels.saveError;
       setMessage(errorMessage);
@@ -161,26 +239,57 @@ export function QuickPostComposer({
         {hideHeader && <div className="mb-4 sm:mb-5">{typeSelector}</div>}
 
         {isAgenda && (
-          <fieldset className="mb-4">
-            <legend className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-secondary">
-              {labels.agendaCategory}
-            </legend>
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                ["TEACHING", labels.teaching, "school"],
-                ["ENGAGEMENT", labels.engagement, "diversity_3"],
-              ] as const).map(([value, label, icon]) => (
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+            <fieldset>
+              <legend className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-secondary">
+                {labels.agendaCategory}
+              </legend>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  ["TEACHING", labels.teaching, "school"],
+                  ["ENGAGEMENT", labels.engagement, "diversity_3"],
+                ] as const).map(([value, label, icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={agendaCategory === value}
+                    onClick={() => {
+                      setAgendaCategory(value);
+                      if (value !== "TEACHING") setAgendaLink("");
+                      setMessage("");
+                    }}
+                    className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-black transition sm:px-3 ${
+                      agendaCategory === value
+                        ? "border-primary bg-primary text-on-primary"
+                        : "border-outline-variant/30 bg-surface text-on-surface-variant hover:border-secondary/50"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined shrink-0 text-[19px]">{icon}</span>
+                    <span className="min-w-0 leading-tight">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-secondary">
+                {labels.scheduleMode}
+              </legend>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  ["single", labels.scheduleSingle, "event_available"],
+                  ["recurring", labels.scheduleRecurring, "event_repeat"],
+                ] as const).map(([value, label, icon]) => (
                 <button
                   key={value}
                   type="button"
-                  aria-pressed={agendaCategory === value}
+                  aria-pressed={scheduleMode === value}
                   onClick={() => {
-                    setAgendaCategory(value);
-                    if (value !== "TEACHING") setAgendaLink("");
+                    setScheduleMode(value);
                     setMessage("");
                   }}
                   className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-black transition sm:px-3 ${
-                    agendaCategory === value
+                    scheduleMode === value
                       ? "border-primary bg-primary text-on-primary"
                       : "border-outline-variant/30 bg-surface text-on-surface-variant hover:border-secondary/50"
                   }`}
@@ -189,8 +298,9 @@ export function QuickPostComposer({
                   <span className="min-w-0 leading-tight">{label}</span>
                 </button>
               ))}
-            </div>
-          </fieldset>
+              </div>
+            </fieldset>
+          </div>
         )}
 
         <textarea
@@ -220,6 +330,28 @@ export function QuickPostComposer({
             locationLatitude={locationLatitude}
             locationLongitude={locationLongitude}
             disabled={isSubmitting}
+            recurrence={isRecurring ? {
+              startDate: rangeStartDate,
+              endDate: rangeEndDate,
+              weekdays: recurrenceWeekdays,
+              count: recurrenceCount,
+              summary: recurrenceSummary,
+              error: visibleRecurrenceError,
+              onStartDateChange: (value) => {
+                setRangeStartDate(value);
+                setMessage("");
+              },
+              onEndDateChange: (value) => {
+                setRangeEndDate(value);
+                setMessage("");
+              },
+              onWeekdayToggle: (weekday) => {
+                setRecurrenceWeekdays((current) => current.includes(weekday)
+                  ? current.filter((value) => value !== weekday)
+                  : [...current, weekday].sort((a, b) => a - b));
+                setMessage("");
+              },
+            } : undefined}
             onDateChange={(value) => {
               setAgendaDate(value);
               setMessage("");
@@ -228,7 +360,10 @@ export function QuickPostComposer({
               setAgendaStartTime(value);
               setMessage("");
             }}
-            onEndTimeChange={setAgendaEndTime}
+            onEndTimeChange={(value) => {
+              setAgendaEndTime(value);
+              setMessage("");
+            }}
             onLinkChange={(value) => {
               setAgendaLink(value);
               setMessage("");
@@ -255,7 +390,7 @@ export function QuickPostComposer({
           onClick={() => submit("Draft")}
           className="min-h-12 rounded-xl border border-outline-variant/40 text-sm font-black text-on-surface-variant transition hover:bg-surface-container disabled:opacity-50 sm:rounded-full"
         >
-          {isSubmitting ? labels.posting : labels.draft}
+          {isSubmitting ? labels.posting : `${labels.draft}${isRecurring && recurrenceCount > 0 ? ` ${recurrenceCount}` : ""}`}
         </button>
         <button
           type="button"
@@ -263,7 +398,7 @@ export function QuickPostComposer({
           onClick={() => submit("Published")}
           className="min-h-12 rounded-xl bg-primary text-sm font-black text-on-primary shadow-sm transition hover:bg-tertiary disabled:opacity-50 sm:rounded-full"
         >
-          {isSubmitting ? labels.posting : labels.publish}
+          {isSubmitting ? labels.posting : `${labels.publish}${isRecurring && recurrenceCount > 0 ? ` ${recurrenceCount}` : ""}`}
         </button>
       </div>
     </section>

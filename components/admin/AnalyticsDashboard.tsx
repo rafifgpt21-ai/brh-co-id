@@ -98,9 +98,7 @@ export function AnalyticsDashboard({ report }: { report: AnalyticsReport }) {
     <div className="mx-auto w-full max-w-[1500px] px-3 pb-16 sm:px-4 lg:px-8">
       <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <span className="font-label text-[10px] font-black uppercase tracking-[0.25em] text-secondary">First-party analytics</span>
-          <h1 className="mt-2 font-headline text-3xl font-black tracking-tight text-primary sm:text-4xl">Analytics BRH Insight</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-on-surface-variant">Data anonim, tanpa IP mentah, dikelompokkan berdasarkan zona waktu Asia/Jakarta.</p>
+          <h1 className="font-headline text-3xl font-black tracking-tight text-primary sm:text-4xl">Analytics BRH Insight</h1>
         </div>
         <Link href="/admin" className="inline-flex h-11 items-center gap-2 self-start rounded-full border border-outline-variant/30 px-5 text-sm font-bold text-primary transition hover:bg-surface-container-low lg:self-auto">
           <span className="material-symbols-outlined text-[18px]">arrow_back</span> Kelola konten

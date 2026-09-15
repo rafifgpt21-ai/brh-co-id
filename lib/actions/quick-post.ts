@@ -7,7 +7,14 @@ import {
   validateUploadReceipts,
 } from "@/lib/uploadthing-server";
 import type { UploadReceipt } from "@/lib/uploadthing-types";
+import {
+  getRecurringAgendaDates,
+  MAX_RECURRING_AGENDA_OCCURRENCES,
+  MAX_RECURRING_AGENDA_RANGE_DAYS,
+} from "@/lib/quick-post-recurrence";
+import { randomBytes } from "node:crypto";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 
 const quickPostTypeSchema = z.enum(["AGENDA", "QUOTE"]);
@@ -149,6 +156,22 @@ const quickPostSchema = z.object({
   status: z.enum(["Published", "Draft"]),
 }).superRefine(validateAgendaFields);
 
+const recurringQuickPostSchema = z.object({
+  type: z.literal("AGENDA"),
+  agendaCategory: agendaCategorySchema,
+  content: quickPostFields.content,
+  rangeStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal mulai rentang tidak valid"),
+  rangeEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal akhir rentang tidak valid"),
+  weekdays: z.array(z.number().int().min(0).max(6)).min(1, "Pilih minimal satu hari").max(7),
+  agendaStartTime: agendaTimeSchema,
+  agendaEndTime: agendaTimeSchema,
+  agendaLink: quickPostFields.agendaLink,
+  locationLabel: quickPostFields.locationLabel,
+  locationLatitude: quickPostFields.locationLatitude,
+  locationLongitude: quickPostFields.locationLongitude,
+  status: z.enum(["Published", "Draft"]),
+});
+
 const quickPostStatusSchema = z.object({
   id: z.string().min(1),
   status: z.enum(["Published", "Draft"]),
@@ -161,6 +184,7 @@ const quickPostUpdateSchema = z.object({
 }).superRefine(validateAgendaFields);
 
 export type QuickPostFormData = z.infer<typeof quickPostSchema> & { newUploads?: UploadReceipt[] };
+export type RecurringQuickPostFormData = z.infer<typeof recurringQuickPostSchema>;
 export type ActiveQuickPostType = z.infer<typeof quickPostTypeSchema>;
 export type QuickPostType = "NORMAL" | ActiveQuickPostType;
 export type AgendaCategory = z.infer<typeof agendaCategorySchema>;
@@ -293,6 +317,109 @@ export async function createQuickPost(data: QuickPostFormData) {
   } catch (error) {
     console.error("Error creating quick post:", error);
     return failWithRollback(error instanceof Error ? error.message : "Gagal menyimpan quick post");
+  }
+}
+
+export async function createRecurringQuickPosts(data: RecurringQuickPostFormData) {
+  const session = await requireAdmin();
+  if (!session) {
+    return { success: false as const, error: "Unauthorized" };
+  }
+
+  const parsedData = recurringQuickPostSchema.safeParse(data);
+  if (!parsedData.success) {
+    return { success: false as const, error: parsedData.error.issues[0].message };
+  }
+
+  const validData = parsedData.data;
+  const schedule = getRecurringAgendaDates(
+    validData.rangeStartDate,
+    validData.rangeEndDate,
+    validData.weekdays,
+  );
+
+  if (schedule.error === "invalid-range") {
+    return { success: false as const, error: "Rentang tanggal tidak valid" };
+  }
+  if (schedule.error === "range-too-long") {
+    return {
+      success: false as const,
+      error: `Rentang jadwal maksimal ${MAX_RECURRING_AGENDA_RANGE_DAYS} hari`,
+    };
+  }
+  if (schedule.error === "too-many") {
+    return {
+      success: false as const,
+      error: `Maksimal ${MAX_RECURRING_AGENDA_OCCURRENCES} agenda dalam sekali posting`,
+    };
+  }
+  if (schedule.dates.length === 0) {
+    return { success: false as const, error: "Tidak ada hari terpilih dalam rentang tanggal" };
+  }
+
+  const firstOccurrence = quickPostSchema.safeParse({
+    type: "AGENDA",
+    agendaCategory: validData.agendaCategory,
+    content: validData.content,
+    agendaDate: schedule.dates[0],
+    agendaStartTime: validData.agendaStartTime,
+    agendaEndTime: validData.agendaEndTime,
+    agendaLink: validData.agendaLink,
+    locationLabel: validData.locationLabel,
+    locationLatitude: validData.locationLatitude,
+    locationLongitude: validData.locationLongitude,
+    imageUrl: "",
+    status: validData.status,
+  });
+  if (!firstOccurrence.success) {
+    return { success: false as const, error: firstOccurrence.error.issues[0].message };
+  }
+
+  try {
+    const prisma = await getPrisma();
+    const ids = schedule.dates.map(() => randomBytes(12).toString("hex"));
+    await prisma.quickPost.createMany({
+      data: schedule.dates.map((agendaDate, index) => {
+        const agendaData = getAgendaData({
+          type: "AGENDA",
+          agendaCategory: validData.agendaCategory,
+          content: validData.content,
+          agendaDate,
+          agendaStartTime: validData.agendaStartTime,
+          agendaEndTime: validData.agendaEndTime,
+          agendaLink: validData.agendaLink,
+          locationLabel: validData.locationLabel,
+          locationLatitude: validData.locationLatitude,
+          locationLongitude: validData.locationLongitude,
+        });
+
+        return {
+          id: ids[index],
+          type: "AGENDA",
+          content: validData.content,
+          imageUrl: null,
+          ...agendaData,
+          status: validData.status,
+        };
+      }),
+    });
+
+    refreshQuickPostPaths();
+    if (validData.status === "Published") {
+      after(async () => {
+        for (let index = 0; index < ids.length; index += 4) {
+          await Promise.all(ids.slice(index, index + 4).map(refreshQuickPostKnowledgeIndex));
+        }
+      });
+    }
+
+    return { success: true as const, count: schedule.dates.length };
+  } catch (error) {
+    console.error("Error creating recurring quick posts:", error);
+    return {
+      success: false as const,
+      error: error instanceof Error ? error.message : "Gagal menyimpan agenda berulang",
+    };
   }
 }
 

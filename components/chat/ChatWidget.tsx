@@ -192,20 +192,16 @@ export function ChatWidget({
               lang={lang}
               hideHeader
               onSubmitStart={(status) => {
-                setActivePanel(null);
                 setNotice({
                   tone: "loading",
                   message: status === "Published" ? "Publishing note..." : "Saving draft...",
                 });
               }}
               onSubmitResult={(result) => {
+                if (result.success) setActivePanel(null);
                 setNotice({
                   tone: result.success ? "success" : "error",
-                  message: result.success
-                    ? result.status === "Published"
-                      ? "Note published."
-                      : "Draft saved."
-                    : result.message,
+                  message: result.message,
                 });
               }}
             />
