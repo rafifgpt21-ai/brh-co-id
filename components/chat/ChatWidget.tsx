@@ -169,7 +169,7 @@ export function ChatWidget({
             role="dialog"
             aria-modal="true"
             aria-labelledby="quick-post-composer-title"
-            className="relative z-10 flex h-[100dvh] max-h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-surface-container-lowest shadow-[0_24px_90px_rgba(41,47,54,0.28)] sm:h-auto sm:max-h-[min(800px,calc(100dvh-3rem))] sm:rounded-2xl"
+            className="relative z-10 flex h-[100dvh] max-h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-surface-container-lowest shadow-[0_24px_90px_rgba(41,47,54,0.28)] sm:h-auto sm:max-h-[min(800px,calc(100dvh-3rem))] sm:max-w-2xl sm:rounded-2xl lg:max-w-3xl"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-outline-variant/20 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-5 sm:py-3">
               <div className="flex min-w-0 items-center gap-2">

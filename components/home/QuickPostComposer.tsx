@@ -239,12 +239,12 @@ export function QuickPostComposer({
         {hideHeader && <div className="mb-4 sm:mb-5">{typeSelector}</div>}
 
         {isAgenda && (
-          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+          <div className="mb-5 grid gap-5 md:grid-cols-2 md:gap-8">
             <fieldset>
               <legend className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-secondary">
                 {labels.agendaCategory}
               </legend>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {([
                   ["TEACHING", labels.teaching, "school"],
                   ["ENGAGEMENT", labels.engagement, "diversity_3"],
@@ -258,7 +258,7 @@ export function QuickPostComposer({
                       if (value !== "TEACHING") setAgendaLink("");
                       setMessage("");
                     }}
-                    className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-black transition sm:px-3 ${
+                    className={`flex min-h-12 min-w-0 items-center justify-center gap-2.5 rounded-xl border px-2 text-sm font-black transition sm:px-4 ${
                       agendaCategory === value
                         ? "border-primary bg-primary text-on-primary"
                         : "border-outline-variant/30 bg-surface text-on-surface-variant hover:border-secondary/50"
@@ -275,7 +275,7 @@ export function QuickPostComposer({
               <legend className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-secondary">
                 {labels.scheduleMode}
               </legend>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {([
                   ["single", labels.scheduleSingle, "event_available"],
                   ["recurring", labels.scheduleRecurring, "event_repeat"],
@@ -288,7 +288,7 @@ export function QuickPostComposer({
                     setScheduleMode(value);
                     setMessage("");
                   }}
-                  className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-black transition sm:px-3 ${
+                  className={`flex min-h-12 min-w-0 items-center justify-center gap-2.5 rounded-xl border px-2 text-sm font-black transition sm:px-4 ${
                     scheduleMode === value
                       ? "border-primary bg-primary text-on-primary"
                       : "border-outline-variant/30 bg-surface text-on-surface-variant hover:border-secondary/50"
