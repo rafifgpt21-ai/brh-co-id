@@ -20,6 +20,7 @@ interface PDFViewerClientProps {
   title?: string;
   allowDownload?: boolean;
   showWatermark?: boolean;
+  directDelivery?: boolean;
 }
 
 export default function PDFViewerClient({
@@ -27,6 +28,7 @@ export default function PDFViewerClient({
   title,
   allowDownload = false,
   showWatermark = true,
+  directDelivery = false,
 }: PDFViewerClientProps) {
   return (
     <FullPDFViewer
@@ -34,6 +36,7 @@ export default function PDFViewerClient({
       title={title}
       allowDownload={allowDownload}
       showWatermark={showWatermark}
+      directDelivery={directDelivery}
     />
   );
 }

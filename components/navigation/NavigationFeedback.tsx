@@ -107,6 +107,7 @@ export function OptimisticLink({
   onFocus,
   onPointerEnter,
   active,
+  prefetch: prefetchMode,
   className,
   ...props
 }: OptimisticLinkProps) {
@@ -117,8 +118,9 @@ export function OptimisticLink({
   const isPending = pendingHref === hrefString;
 
   const prefetch = useCallback(() => {
+    if (prefetchMode === false) return;
     router.prefetch(hrefString);
-  }, [hrefString, router]);
+  }, [hrefString, router, prefetchMode]);
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
@@ -131,6 +133,9 @@ export function OptimisticLink({
     <Link
       {...props}
       href={normalizedHref}
+      // Default to intent-based prefetch. Lists opt out explicitly; callers may
+      // still opt in to viewport prefetch with true.
+      prefetch={prefetchMode ?? false}
       data-active={active ? "" : undefined}
       data-pending={isPending ? "" : undefined}
       aria-current={active ? "page" : props["aria-current"]}

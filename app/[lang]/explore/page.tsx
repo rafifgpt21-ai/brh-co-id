@@ -1,8 +1,7 @@
-import { getPublishedPosts } from "@/lib/data/public-content";
+import { getPublishedPostCards } from "@/lib/data/public-content";
 import KatalogClient from "@/components/katalog/KatalogClient";
 import { hasLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { localizePost } from "@/lib/i18n/posts";
 import { notFound } from "next/navigation";
 import { createPageMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -31,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 export const unstable_instant = {
-  prefetch: "runtime",
+  prefetch: "static",
   samples: [
     {
       params: { lang: "en" },
@@ -64,16 +63,15 @@ async function ExploreResults({
   searchParams: Promise<{ search?: string; category?: string }>;
 }) {
   const { search, category } = await searchParams;
-  const posts = await getPublishedPosts({
+  const posts = await getPublishedPostCards({
     search: search || undefined,
     category: category && category !== "Semua" ? category : undefined,
-  });
-  const localizedPosts = posts.map((post) => localizePost(post, lang));
+  }, lang);
 
   return (
     <KatalogClient
       key={`${search || ""}-${category || ""}`}
-      initialPosts={localizedPosts}
+      initialPosts={posts}
       lang={lang}
       dict={dict}
     />

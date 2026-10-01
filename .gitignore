@@ -52,6 +52,7 @@ note.txt
 !/material/artikel/
 /material/artikel/*
 !/material/artikel/PANDUAN_GAYA_ARTIKEL.md
+!/material/artikel/PANDUAN_OTOMASI_SERI_RENUNGAN.md
 !/material/artikel/Published/
 /material/artikel/Published/*
 !/material/artikel/Published/published-articles.json
@@ -60,12 +61,16 @@ note.txt
 /material/artikel/Planned/*
 !/material/artikel/Planned/seri-ii-september-2026/
 !/material/artikel/Planned/seri-ii-september-2026/*.md
+!/material/artikel/Planned/artikel4.md
+!/material/artikel/Planned/seri-iii-september-oktober-2026/
+!/material/artikel/Planned/seri-iii-september-oktober-2026/*.md
 
 /public/book-cover
 
 # Local database seeding scripts
 /scripts/seed-*.ts
 !/scripts/seed-seri-ii-september-2026.ts
+!/scripts/seed-seri-iii-september-oktober-2026.ts
 
 .agent/*
 !.agent/tools/

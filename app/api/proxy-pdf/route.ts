@@ -1,48 +1,52 @@
+import { getPostByFileUrl } from "@/lib/actions/post";
+import { isUploadThingFileUrl } from "@/lib/pdf-delivery";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const targetUrl = searchParams.get("url");
-
-  if (!targetUrl) {
-    return new NextResponse("Missing URL parameter", { status: 400 });
-  }
-
-  // SSRF Protection: Validate target URL
-  try {
-    const parsedUrl = new URL(targetUrl);
-    const allowedDomains = ["utfs.io", "ufs.sh"];
-    const isAllowed = allowedDomains.some(domain => 
-      parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
-    );
-
-    if (!isAllowed) {
-      console.error(`Blocked SSRF attempt to unauthorized domain: ${parsedUrl.hostname}`);
-      return new NextResponse("Unauthorized domain", { status: 403 });
-    }
-  } catch {
-    return new NextResponse("Invalid URL format", { status: 400 });
-  }
+async function servePdf(request: NextRequest) {
+  const url = request.nextUrl.searchParams.get("url");
+  if (!url) return new NextResponse("Missing URL parameter", { status: 400 });
+  if (!isUploadThingFileUrl(url)) return new NextResponse("Unauthorized URL", { status: 403 });
 
   try {
-    const response = await fetch(targetUrl);
-    
-    if (!response.ok) {
-      return new NextResponse(`Failed to fetch PDF: ${response.statusText}`, { status: response.status });
+    const access = await getPostByFileUrl(url);
+    if (!access.authorized) return new NextResponse("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    const headers = new Headers();
+    for (const name of ["range", "if-range", "if-none-match", "if-modified-since"]) {
+      const value = request.headers.get(name);
+      if (value) headers.set(name, value);
     }
-
-    const contentType = response.headers.get("content-type");
-    const buffer = await response.arrayBuffer();
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": contentType || "application/pdf",
-        "Cache-Control": "public, max-age=3600",
-        "Access-Control-Allow-Origin": "*", // Allow browser to read this via proxy
-      },
+    const response = await fetch(url, {
+      method: request.method === "HEAD" ? "HEAD" : "GET",
+      headers,
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
+    });
+    const output = new Headers({
+      "Content-Type": response.headers.get("content-type") || "application/pdf",
+      "X-Content-Type-Options": "nosniff",
+      // Access may change when a post is unpublished. Always recheck it for
+      // fallback requests; public PDFs use storage delivery and its own cache.
+      "Cache-Control": "private, no-store",
+    });
+    for (const name of ["content-range", "accept-ranges", "etag", "last-modified"]) {
+      const value = response.headers.get(name);
+      if (value) output.set(name, value);
+    }
+    // Fetch may decompress the upstream body; do not forward an encoded length.
+    if (!response.headers.get("content-encoding")) {
+      const length = response.headers.get("content-length");
+      if (length) output.set("content-length", length);
+    }
+    return new Response(request.method === "HEAD" || response.status === 304 ? null : response.body, {
+      status: response.status,
+      headers: output,
     });
   } catch (error) {
-    console.error("Proxy error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error("PDF proxy failed", error);
+    return new NextResponse("Unable to fetch PDF", { status: 502, headers: { "Cache-Control": "no-store" } });
   }
 }
+
+export const GET = servePdf;
+export const HEAD = servePdf;

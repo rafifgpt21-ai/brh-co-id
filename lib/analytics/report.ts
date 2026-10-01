@@ -3,6 +3,7 @@ import "server-only";
 import { getStaticPageLabel } from "@/lib/analytics/shared";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { cacheLife } from "next/cache";
 
 const WIB_TIMEZONE = "Asia/Jakarta";
 const MAX_RANGE_DAYS = 396;
@@ -164,6 +165,9 @@ async function resolveTopPageTitles(topPages: AnalyticsReport["topPages"]) {
 }
 
 export async function getAnalyticsReport(filters: AnalyticsFilters): Promise<AnalyticsReport> {
+  "use cache";
+  // Only invoked after admin authorization; never a publicly cacheable response.
+  cacheLife({ stale: 60, revalidate: 120, expire: 300 });
   const start = startOfWibDay(filters.from);
   const end = startOfWibDay(shiftDateKey(filters.to, 1));
   const duration = end.getTime() - start.getTime();
@@ -232,5 +236,7 @@ export async function getAnalyticsReport(filters: AnalyticsFilters): Promise<Ana
 }
 
 export async function getLifetimeViewCount(pageKey: string) {
+  "use cache";
+  cacheLife({ stale: 60, revalidate: 120, expire: 300 });
   return (await prisma.analyticsPageTotal.findUnique({ where: { pageKey }, select: { totalViews: true } }))?.totalViews || 0;
 }

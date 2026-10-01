@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { getPublicBaseUrl } from "@/lib/share-url";
 import "./globals.css";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const appUrl = getPublicBaseUrl();
 const siteTitle = "Budi Rahman Hakim";
@@ -84,7 +85,7 @@ export default function RootLayout({
         className="bg-background font-body text-on-surface selection:bg-secondary-fixed min-h-screen flex flex-col"
         suppressHydrationWarning
       >
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

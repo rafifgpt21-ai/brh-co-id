@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition } from "react";
-import type { Post } from "@prisma/client";
+import type { PostCard } from "@/lib/post-cards";
 import ArchiveCard from "./ArchiveCard";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +11,7 @@ import { useNavigationFeedback } from "@/components/navigation/NavigationFeedbac
 import { SCIENTIFIC_PUBLICATION_CATEGORY, normalizePostCategory } from "@/lib/post-categories";
 
 interface KatalogClientProps {
-  initialPosts: Post[];
+  initialPosts: PostCard[];
   lang: Locale;
   dict: Dictionary;
 }

@@ -1,11 +1,9 @@
-import { auth } from "@/auth";
-import { QuickPostFeed } from "@/components/home/QuickPostFeed";
+import { PublicQuickPostFeed } from "@/components/home/PublicQuickPostFeed";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
-import { getQuickPostsByType } from "@/lib/actions/quick-post";
+import { getPublicQuickPostsByType } from "@/lib/data/public-quick-posts";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { createPageMetadata } from "@/lib/seo";
-import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -106,16 +104,12 @@ function getQuickPostFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>)
 }
 
 async function CatatanFeed({ dict, lang }: { dict: Awaited<ReturnType<typeof getDictionary>>; lang: Locale }) {
-  await connection();
 
-  const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  const quickPosts = await getQuickPostsByType({ includeDrafts: isAdmin, limitPerType: 60 });
+  const quickPosts = await getPublicQuickPostsByType({ limitPerType: 60 });
 
   return (
-    <QuickPostFeed
+    <PublicQuickPostFeed
       quickPosts={quickPosts}
-      isAdmin={isAdmin}
       lang={lang}
       labels={getQuickPostFeedLabels(dict)}
       variant="full"

@@ -11,6 +11,9 @@
     "storage:audit": "npx tsx scripts/audit-uploadthing-storage.ts",
     "analytics:indexes": "npx tsx scripts/setup-analytics-indexes.ts",
     "test:analytics": "npx tsx scripts/test-analytics.ts",
+    "test:usage": "npx tsx scripts/test-usage-optimizations.ts",
+    "usage:audit": "npx tsx scripts/audit-usage-optimizations.ts",
+    "cache:revalidate": "npx tsx scripts/revalidate-content.ts --revalidate",
     "migrate:engagement": "npx tsx scripts/migrate-engagement-structure.ts",
     "reset:content": "npx tsx scripts/reset-database.ts",
     "delete:posts": "npx tsx scripts/delete-all-posts.ts",
@@ -18,7 +21,10 @@
     "export:published-articles": "npx tsx scripts/export-published-articles.ts",
     "validate:seri-ii-september-2026": "npx tsx scripts/seed-seri-ii-september-2026.ts",
     "seed:seri-ii-september-2026": "npx tsx scripts/seed-seri-ii-september-2026.ts --apply",
-    "upload:seri-ii-september-images": "npx tsx scripts/upload-seri-ii-september-images.ts --apply"
+    "upload:seri-ii-september-images": "npx tsx scripts/upload-seri-ii-september-images.ts --apply",
+    "validate:seri-iii-september-oktober-2026": "npx tsx scripts/seed-seri-iii-september-oktober-2026.ts",
+    "seed:seri-iii-september-oktober-2026": "npx tsx scripts/seed-seri-iii-september-oktober-2026.ts --apply",
+    "upload:seri-iii-september-oktober-images": "npx tsx scripts/upload-seri-iii-september-oktober-images.ts --apply"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

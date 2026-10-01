@@ -34,7 +34,7 @@ type PublicPost = {
 
 interface PostClientProps {
   post: PublicPost;
-  relatedPosts: PublicPost[];
+  relatedPosts: Pick<PublicPost, "id" | "title" | "slug" | "category" | "thumbnail">[];
   lang: Locale;
   dict: Dictionary;
   adminViewCount?: React.ReactNode;
@@ -476,6 +476,7 @@ export default function PostClient({ post, relatedPosts, lang, dict, adminViewCo
                 >
                   <OptimisticLink
                     href={withLocale(`/post/${rPost.slug}`, lang)}
+                    prefetch={false}
                     className="group flex flex-col h-full bg-surface-container-lowest rounded-3xl overflow-hidden border border-outline-variant/10 hover:border-secondary/30 transition-all duration-500 hover:shadow-xl hover:shadow-secondary/5"
                   >
                     {rPost.thumbnail ? (

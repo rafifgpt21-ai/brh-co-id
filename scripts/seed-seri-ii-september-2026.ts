@@ -1,3 +1,4 @@
+import { revalidateImportedContent } from "./revalidate-content";
 import "dotenv/config";
 
 import { randomUUID } from "node:crypto";
@@ -288,6 +289,7 @@ async function main() {
   }
 
   await applyPosts(articles);
+  await revalidateImportedContent();
 }
 
 main()
