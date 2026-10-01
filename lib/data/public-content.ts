@@ -2,6 +2,9 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { HOME_FEATURED_TAG, POST_CONTENT_TAG, POST_FILES_TAG, POST_LISTS_TAG, RELATED_POSTS_TAG, relatedPostsTag } from "@/lib/content-cache";
+import { normalizePostSearch, postSearchText, toPostCard } from "@/lib/post-cards";
+import type { Locale } from "@/lib/i18n/config";
 import {
   LEARNING_MEDIA_CATEGORY,
   SCIENTIFIC_PUBLICATION_CATEGORY_VALUES,
@@ -61,8 +64,8 @@ function postMatchesSearch(
 
 export async function getPublishedPosts(options?: PublishedPostOptions) {
   "use cache";
-  cacheTag("posts");
-  cacheLife("minutes");
+  cacheTag(POST_LISTS_TAG);
+  cacheLife("hours");
 
   const where: Record<string, unknown> = {
     status: "Published",
@@ -94,8 +97,8 @@ export async function getPublishedPosts(options?: PublishedPostOptions) {
 
 export async function getHomeFeaturedPosts(limit = 3) {
   "use cache";
-  cacheTag("posts");
-  cacheLife("minutes");
+  cacheTag(HOME_FEATURED_TAG);
+  cacheLife("hours");
 
   const setting = await prisma.siteSetting.findUnique({
     where: { key: HOME_SITE_SETTING_KEY },
@@ -117,13 +120,14 @@ export async function getHomeFeaturedPosts(limit = 3) {
   const orderedManualPosts = manualPostIds
     .map((id) => manualPostById.get(id))
     .filter((post): post is NonNullable<typeof post> => Boolean(post));
+  for (const id of manualPostIds) cacheTag(`post-${id}`);
   return orderedManualPosts;
 }
 
 export async function getPublishedPostBySlug(slug: string) {
   "use cache";
-  cacheTag("posts", `post-slug-${slug}`);
-  cacheLife("minutes");
+  cacheTag(POST_CONTENT_TAG, `post-slug-${slug}`);
+  cacheLife("hours");
 
   return prisma.post.findFirst({
     where: {
@@ -143,8 +147,8 @@ export async function getRelatedPublishedPosts({
   limit?: number;
 }) {
   "use cache";
-  cacheTag("posts");
-  cacheLife("minutes");
+  cacheTag(RELATED_POSTS_TAG, relatedPostsTag(category));
+  cacheLife("hours");
 
   const posts = await prisma.post.findMany({
     where: {
@@ -154,6 +158,7 @@ export async function getRelatedPublishedPosts({
         : category,
       id: { not: excludeId },
     },
+    select: { id: true, title: true, titleEn: true, slug: true, slugEn: true, category: true, thumbnail: true, publishedAt: true, createdAt: true },
   });
   return sortByPublicationDate(posts).slice(0, limit);
 }
@@ -161,7 +166,7 @@ export async function getRelatedPublishedPosts({
 export async function getPublishedQuickPosts(limit = 12) {
   "use cache";
   cacheTag("quick-posts");
-  cacheLife("minutes");
+  cacheLife("hours");
 
   return prisma.quickPost.findMany({
     where: { status: "Published" },
@@ -173,7 +178,7 @@ export async function getPublishedQuickPosts(limit = 12) {
 export async function getLatestPublishedQuickPostByType(type: "AGENDA" | "QUOTE") {
   "use cache";
   cacheTag("quick-posts");
-  cacheLife("minutes");
+  cacheLife("hours");
 
   return prisma.quickPost.findFirst({
     where: {
@@ -187,7 +192,7 @@ export async function getLatestPublishedQuickPostByType(type: "AGENDA" | "QUOTE"
 export async function getPublishedQuoteById(id: string) {
   "use cache";
   cacheTag("quick-posts", `quote-${id}`);
-  cacheLife("minutes");
+  cacheLife("hours");
 
   if (!/^[a-f\d]{24}$/i.test(id)) return null;
 
@@ -197,5 +202,49 @@ export async function getPublishedQuoteById(id: string) {
       status: "Published",
       type: "QUOTE",
     },
+  });
+}
+
+async function getPublishedCardIndex(collection: "standard" | "learning-media") {
+  "use cache";
+  cacheTag(POST_LISTS_TAG);
+  cacheLife("hours");
+  const posts = sortByPublicationDate(await prisma.post.findMany({
+    where: {
+      status: "Published",
+      category: collection === "learning-media" ? LEARNING_MEDIA_CATEGORY : { not: LEARNING_MEDIA_CATEGORY },
+    },
+    orderBy: { createdAt: "desc" },
+  }));
+  // Search text stays server-side. Each query reuses this bounded cache instead
+  // of caching another copy of full articles for every search string.
+  return posts.map((post) => ({
+    search: postSearchText(post),
+    id: toPostCard(post, "id"),
+    en: toPostCard(post, "en"),
+  }));
+}
+
+export async function getPublishedPostCards(options: PublishedPostOptions | undefined, locale: Locale) {
+  const index = await getPublishedCardIndex(options?.collection || "standard");
+  const query = normalizePostSearch(options?.search || "");
+  const category = options?.category;
+  const cards = index.filter((entry) => {
+    if (query && !entry.search.includes(query)) return false;
+    if (!category || category === LEARNING_MEDIA_CATEGORY) return true;
+    return isScientificPublicationCategory(category)
+      ? isScientificPublicationCategory(entry.id.category)
+      : entry.id.category === category;
+  }).map((entry) => entry[locale]);
+  return typeof options?.limit === "number" ? cards.slice(0, options.limit) : cards;
+}
+
+export async function getFilePostMetadata(url: string) {
+  "use cache";
+  cacheTag(POST_FILES_TAG);
+  cacheLife("hours");
+  return prisma.post.findFirst({
+    where: { blocks: { some: { url: { equals: url } } } },
+    select: { status: true, category: true },
   });
 }

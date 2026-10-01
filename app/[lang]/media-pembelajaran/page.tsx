@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ArchiveCard from "@/components/katalog/ArchiveCard";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
-import { getPublishedPosts } from "@/lib/data/public-content";
+import { getPublishedPostCards } from "@/lib/data/public-content";
 import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { localizePost } from "@/lib/i18n/posts";
 import { createPageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -38,8 +37,7 @@ export default async function LearningMediaPage({
 
   const lang: Locale = rawLang;
   const dict = await getDictionary(lang);
-  const posts = (await getPublishedPosts({ collection: "learning-media" }))
-    .map((post) => localizePost(post, lang));
+  const posts = await getPublishedPostCards({ collection: "learning-media" }, lang);
   const copy = lang === "id"
     ? {
         eyebrow: "RUANG BELAJAR",

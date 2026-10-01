@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ComponentProps } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isUploadThingFileUrl, pdfProxyUrl } from "@/lib/pdf-delivery";
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -14,6 +15,7 @@ interface FullPDFViewerProps {
   title?: string;
   allowDownload?: boolean;
   showWatermark?: boolean;
+  directDelivery?: boolean;
 }
 
 type LoadedPdfDocument = Parameters<NonNullable<ComponentProps<typeof Document>["onLoadSuccess"]>>[0];
@@ -138,6 +140,7 @@ export const FullPDFViewer = ({
   title,
   allowDownload = false,
   showWatermark = true,
+  directDelivery = false,
 }: FullPDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>();
   const [scale, setScale] = useState<number>(1.2);
@@ -154,10 +157,15 @@ export const FullPDFViewer = ({
   const [isTypingPage, setIsTypingPage] = useState(false);
   const [pageSizes, setPageSizes] = useState<PageSize[]>([]);
 
-  // Use proxy for external URLs to bypass CORS
-  const proxiedUrl = url.startsWith('http') && !url.includes(window.location.hostname)
-    ? `/api/proxy-pdf?url=${encodeURIComponent(url)}`
-    : url;
+  const [failedDirectUrl, setFailedDirectUrl] = useState<string | null>(null);
+  let external = true;
+  try {
+    external = new URL(url, window.location.href).origin !== window.location.origin;
+  } catch {
+    // Invalid URLs go through the proxy's validation instead of crashing render.
+  }
+  const useDirect = directDelivery && isUploadThingFileUrl(url) && failedDirectUrl !== url;
+  const proxiedUrl = external && !useDirect ? pdfProxyUrl(url) : url;
   const safeDownloadTitle = (title || "dokumen").replace(/[\\/:*?"<>|]+/g, "-");
   const downloadFilename = safeDownloadTitle.toLowerCase().endsWith(".pdf")
     ? safeDownloadTitle
@@ -558,6 +566,10 @@ export const FullPDFViewer = ({
       >
         <Document
           file={proxiedUrl}
+          onLoadError={() => {
+            // Retry a CORS/provider failure once. A failed fallback never loops.
+            if (external && useDirect) setFailedDirectUrl(url);
+          }}
           onLoadSuccess={onDocumentLoadSuccess}
           className="mx-auto flex w-fit min-w-full flex-col items-center gap-8"
           loading={

@@ -4,7 +4,9 @@ import {
 } from "@/lib/i18n/config";
 import { NextResponse, type NextRequest } from "next/server";
 
-function setLocaleCookie(response: NextResponse, locale: "en" | "id") {
+function setLocaleCookie(response: NextResponse, locale: "en" | "id", request: NextRequest) {
+  const current = request.cookies.get(localeCookieName)?.value;
+  if (current === locale || (!current && locale === "id") || request.headers.has("next-router-prefetch") || request.headers.has("next-router-segment-prefetch")) return response;
   response.cookies.set(localeCookieName, locale, {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
@@ -47,16 +49,16 @@ export function proxy(request: NextRequest) {
   if (locale === "id") {
     const url = request.nextUrl.clone();
     url.pathname = pathname.replace(/^\/id(?=\/|$)/, "") || "/";
-    return setLocaleCookie(NextResponse.redirect(url, 308), "id");
+    return setLocaleCookie(NextResponse.redirect(url, 308), "id", request);
   }
 
   if (hasLocale(locale)) {
-    return setLocaleCookie(NextResponse.next(), locale);
+    return setLocaleCookie(NextResponse.next(), locale, request);
   }
 
   const url = request.nextUrl.clone();
   url.pathname = pathname === "/" ? "/id" : `/id${pathname}`;
-  return setLocaleCookie(NextResponse.rewrite(url), "id");
+  return setLocaleCookie(NextResponse.rewrite(url), "id", request);
 }
 
 export { proxy as middleware, proxy as default };

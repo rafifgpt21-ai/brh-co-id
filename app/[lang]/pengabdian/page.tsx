@@ -1,13 +1,11 @@
-import { auth } from "@/auth";
-import { QuickPostFeed } from "@/components/home/QuickPostFeed";
+import { PublicQuickPostFeed } from "@/components/home/PublicQuickPostFeed";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
-import { getQuickPostsByType } from "@/lib/actions/quick-post";
+import { getPublicQuickPostsByType } from "@/lib/data/public-quick-posts";
 import { createPageMetadata } from "@/lib/seo";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
 
 type PageParams = Promise<{ lang: string }>;
 
@@ -39,24 +37,12 @@ function getFeedLabels(dict: Awaited<ReturnType<typeof getDictionary>>) {
 export default async function EngagementPage({ params }: { params: PageParams }) {
   const { lang: rawLang } = await params;
   if (!hasLocale(rawLang)) notFound();
-  await connection();
 
   const lang: Locale = rawLang;
-  const [dict, session, quickPosts] = await Promise.all([
+  const [dict, quickPosts] = await Promise.all([
     getDictionary(lang),
-    auth(),
-    getQuickPostsByType({ includeDrafts: true, limitPerType: 60 }),
+    getPublicQuickPostsByType({ limitPerType: 60 }),
   ]);
-  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  const baseColumns = { ...quickPosts, QUOTE: [] };
-  const teaching = {
-    ...baseColumns,
-    AGENDA: quickPosts.AGENDA.filter((item) => item.agendaCategory === "TEACHING"),
-  };
-  const engagement = {
-    ...baseColumns,
-    AGENDA: quickPosts.AGENDA.filter((item) => item.agendaCategory === "ENGAGEMENT"),
-  };
   const copy = lang === "id"
     ? {
         title: "Pengajaran & Pengabdian",
@@ -97,7 +83,7 @@ export default async function EngagementPage({ params }: { params: PageParams })
               <h2 className="mt-2 font-headline text-3xl font-black text-primary md:text-4xl">{copy.teaching}</h2>
               <p className="mt-3 text-on-surface-variant/70">{copy.teachingIntro}</p>
             </div>
-            <QuickPostFeed quickPosts={teaching} isAdmin={isAdmin} lang={lang} labels={{ ...labels, agenda: copy.teaching }} visibleTypes={["AGENDA"]} variant="full" />
+            <PublicQuickPostFeed quickPosts={quickPosts} agendaCategory="TEACHING" lang={lang} labels={{ ...labels, agenda: copy.teaching }} visibleTypes={["AGENDA"]} variant="full" />
           </section>
 
           <section>
@@ -106,7 +92,7 @@ export default async function EngagementPage({ params }: { params: PageParams })
               <h2 className="mt-2 font-headline text-3xl font-black text-primary md:text-4xl">{copy.engagement}</h2>
               <p className="mt-3 text-on-surface-variant/70">{copy.engagementIntro}</p>
             </div>
-            <QuickPostFeed quickPosts={engagement} isAdmin={isAdmin} lang={lang} labels={{ ...labels, agenda: copy.engagement }} visibleTypes={["AGENDA"]} variant="full" />
+            <PublicQuickPostFeed quickPosts={quickPosts} agendaCategory="ENGAGEMENT" lang={lang} labels={{ ...labels, agenda: copy.engagement }} visibleTypes={["AGENDA"]} variant="full" />
           </section>
         </div>
       </div>

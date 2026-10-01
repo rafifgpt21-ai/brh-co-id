@@ -1,12 +1,10 @@
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
-import { auth } from '@/auth';
-import { connection } from 'next/server';
 import { getHomeFeaturedPosts, getLatestPublishedQuickPostByType, getPublishedPosts } from '@/lib/data/public-content';
-import { getQuickPostsByType } from '@/lib/actions/quick-post';
+import { getPublicQuickPostsByType } from '@/lib/data/public-quick-posts';
 import HomeHero from '@/components/home/HomeHero';
-import { QuickPostFeed } from '@/components/home/QuickPostFeed';
+import { PublicQuickPostFeed } from '@/components/home/PublicQuickPostFeed';
 import { formatLocalizedDate, hasLocale, withLocale, type Locale } from '@/lib/i18n/config';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { getCategoryLabel, localizePost } from '@/lib/i18n/posts';
@@ -28,7 +26,7 @@ import researchSocialWelfare from '@/public/images/research-social-welfare.webp'
 import researchCivilization from '@/public/images/research-civilization.webp';
 
 export const unstable_instant = {
-  prefetch: "runtime",
+  prefetch: "static",
   samples: [
     {
       params: { lang: "en" },
@@ -190,23 +188,11 @@ async function getHeroPanelItems(lang: Locale, dict: Awaited<ReturnType<typeof g
 }
 
 async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Awaited<ReturnType<typeof getDictionary>> }) {
-  await connection();
-  const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  const quickPosts = await getQuickPostsByType({
-    includeDrafts: isAdmin,
+  const quickPosts = await getPublicQuickPostsByType({
     limitPerType: 3,
     upcomingAgendaOnly: true,
   });
   const quickPostFeedLabels = getQuickPostFeedLabels(dict);
-  const teachingPosts = {
-    ...quickPosts,
-    AGENDA: quickPosts.AGENDA.filter((post) => post.agendaCategory === "TEACHING"),
-  };
-  const engagementPosts = {
-    ...quickPosts,
-    AGENDA: quickPosts.AGENDA.filter((post) => post.agendaCategory === "ENGAGEMENT"),
-  };
   const copy = lang === "id"
     ? {
         eyebrow: "PENGAJARAN & PENGABDIAN",
@@ -230,18 +216,20 @@ async function HomeQuickPostsSection({ lang, dict }: { lang: Locale; dict: Await
           </div>
         </ScrollReveal>
         <div className="grid gap-6 lg:grid-cols-2">
-          <QuickPostFeed
-            quickPosts={teachingPosts}
-            isAdmin={isAdmin}
+          <PublicQuickPostFeed
+            quickPosts={quickPosts}
+            agendaCategory="TEACHING"
+            adminOptions={{ limitPerType: 3, upcomingAgendaOnly: true }}
             lang={lang}
             labels={{ ...quickPostFeedLabels, agenda: dict.quickPost.teaching }}
             archiveHrefs={{ AGENDA: withLocale("/pengabdian", lang) }}
             visibleTypes={["AGENDA"]}
             variant="preview"
           />
-          <QuickPostFeed
-            quickPosts={engagementPosts}
-            isAdmin={isAdmin}
+          <PublicQuickPostFeed
+            quickPosts={quickPosts}
+            agendaCategory="ENGAGEMENT"
+            adminOptions={{ limitPerType: 3, upcomingAgendaOnly: true }}
             lang={lang}
             labels={{ ...quickPostFeedLabels, agenda: dict.quickPost.engagement }}
             archiveHrefs={{ AGENDA: withLocale("/pengabdian", lang) }}

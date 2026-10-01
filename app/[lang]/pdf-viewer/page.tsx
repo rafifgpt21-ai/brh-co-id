@@ -47,7 +47,7 @@ export default async function PDFViewerPage({
 
   // Security Check: is this file part of a draft post?
   const decodedUrl = decodeURIComponent(url);
-  const { authorized, category } = await getPostByFileUrl(decodedUrl);
+  const { authorized, category, status } = await getPostByFileUrl(decodedUrl);
 
   if (!authorized) {
     return (
@@ -83,6 +83,7 @@ export default async function PDFViewerPage({
         title={typeof title === 'string' ? decodeURIComponent(title) : "Dokumen"} 
         allowDownload={allowDownload}
         showWatermark={category !== LEARNING_MEDIA_CATEGORY}
+        directDelivery={status === "Published"}
       />
     </Suspense>
   );

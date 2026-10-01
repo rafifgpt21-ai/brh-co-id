@@ -1,6 +1,5 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
 
 if (!process.env.AUTH_SECRET && process.env.NODE_ENV === "production") {
   throw new Error("Missing AUTH_SECRET environment variable.");
@@ -22,6 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         
         const identifier = credentials.identifier as string
         const { prisma } = await import("@/lib/prisma");
+        const { default: bcrypt } = await import("bcryptjs");
         const { checkRateLimit } = await import("@/lib/rate-limit");
         
         // Rate Limiting Check

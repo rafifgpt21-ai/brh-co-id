@@ -1,19 +1,13 @@
 "use client";
 
 import Image from 'next/image';
-import type { Post } from "@prisma/client";
+import type { PostCard } from "@/lib/post-cards";
 import { formatLocalizedDate, withLocale, type Locale } from '@/lib/i18n/config';
 import { getCategoryLabel } from '@/lib/i18n/posts';
 import { OptimisticLink } from '@/components/navigation/NavigationFeedback';
 
-type ArchiveBlock = {
-  type?: string;
-  content?: string | null;
-  url?: string | null;
-};
-
 interface ArchiveCardProps {
-  post: Post;
+  post: PostCard;
   lang: Locale;
   labels: {
     categories: Record<string, string>;
@@ -22,24 +16,15 @@ interface ArchiveCardProps {
 }
 
 export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
-  // Extract snippet from first text block (strip HTML)
-  const firstTextBlock = Array.isArray(post.blocks)
-    ? (post.blocks as ArchiveBlock[]).find((block) => block.type === 'text')
-    : undefined;
-  const firstImageBlock = Array.isArray(post.blocks)
-    ? (post.blocks as ArchiveBlock[]).find((block) => block.type === 'image')
-    : undefined;
-  const thumbnailSrc = post.thumbnail || firstImageBlock?.url || firstImageBlock?.content || "";
+  const thumbnailSrc = post.thumbnail || "";
   const isLocalBookCover =
     thumbnailSrc.startsWith("/book-cover/") || thumbnailSrc.startsWith("/api/book-cover/");
-  const plainContent = firstTextBlock?.content ? firstTextBlock.content.replace(/<[^>]*>?/gm, '') : '';
-  const snippet = plainContent 
-    ? plainContent.substring(0, 100) + (plainContent.length > 100 ? '...' : '')
-    : '';
+  const snippet = post.snippet;
 
   return (
     <OptimisticLink
       href={withLocale(`/post/${post.slug}`, lang)}
+      prefetch={false}
       className="surface-lift-hover group flex h-full min-h-[120px] flex-row overflow-hidden rounded-lg border border-outline-variant/25 bg-surface-container-lowest md:min-h-0"
     >
       {/* Thumbnail (Left) */}
@@ -51,7 +36,7 @@ export default function ArchiveCard({ post, lang, labels }: ArchiveCardProps) {
               alt={post.title}
               src={thumbnailSrc}
               fill
-              sizes="(max-width: 768px) 36vw, (max-width: 1024px) 160px, 208px"
+              sizes="(min-width: 1280px) 208px, (min-width: 1024px) 192px, (min-width: 768px) 160px, (min-width: 380px) 144px, 112px"
               unoptimized={isLocalBookCover}
             />
             <div className="absolute inset-0 bg-black/5 transition-colors duration-300 group-hover:bg-transparent"></div>

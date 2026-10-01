@@ -15,6 +15,7 @@ import {
   normalizePostCategory,
 } from "@/lib/post-categories";
 import { z } from "zod";
+import { HOME_FEATURED_TAG, POST_CONTENT_TAG, postMutationTags, type PostCacheIdentity } from "@/lib/content-cache";
 
 // Helper: generate slug from title
 function generateSlug(title: string): string {
@@ -106,24 +107,17 @@ function isAdminSession(session: Awaited<ReturnType<typeof getSession>>) {
 }
 
 function refreshHomePaths() {
-  revalidatePath("/");
-  revalidatePath("/id");
-  revalidatePath("/en");
-  updateTag("posts");
+  updateTag(HOME_FEATURED_TAG);
 }
 
-function refreshPublicationPaths() {
-  revalidatePath("/publikasi");
-  revalidatePath("/en/publications");
-  revalidatePath("/id/publikasi");
-  revalidatePath("/en/publikasi");
-  revalidatePath("/id/publications");
-}
-
-function refreshLearningMediaPaths() {
-  revalidatePath("/media-pembelajaran");
-  revalidatePath("/id/media-pembelajaran");
-  revalidatePath("/en/media-pembelajaran");
+function refreshPostContent(post: PostCacheIdentity, previous?: PostCacheIdentity) {
+  for (const tag of postMutationTags(post, previous)) updateTag(tag);
+  for (const item of [post, previous]) {
+    if (!item) continue;
+    revalidatePath(`/post/${item.slug}`);
+    revalidatePath(`/id/post/${item.slug}`);
+    revalidatePath(`/en/post/${item.slugEn || item.slug}`);
+  }
 }
 
 async function refreshPostKnowledgeIndex(postId: string) {
@@ -231,13 +225,7 @@ export async function savePost(data: PostFormData) {
       }
 
       revalidatePath("/admin");
-      revalidatePath(`/post/${post.slug}`);
-      revalidatePath(`/id/post/${post.slug}`);
-      revalidatePath(`/en/post/${post.slugEn || post.slug}`);
-      refreshHomePaths();
-      refreshPublicationPaths();
-      refreshLearningMediaPaths();
-      updateTag(`post-${post.id}`);
+      refreshPostContent(post, oldPost);
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     } else {
@@ -292,9 +280,7 @@ export async function savePost(data: PostFormData) {
         },
       });
       revalidatePath("/admin");
-      refreshHomePaths();
-      refreshPublicationPaths();
-      refreshLearningMediaPaths();
+      refreshPostContent(post);
       await refreshPostKnowledgeIndex(post.id);
       return { success: true, post };
     }
@@ -345,10 +331,7 @@ export async function deletePost(id: string) {
     }
     
     revalidatePath("/admin");
-    refreshHomePaths();
-    refreshPublicationPaths();
-    refreshLearningMediaPaths();
-    updateTag(`post-${id}`);
+    refreshPostContent(post);
     
     return { success: true };
   } catch (error) {
@@ -516,7 +499,8 @@ export async function getPostById(id: string) {
 
 async function getPostByIdInternal(id: string, isAdmin: boolean) {
   'use cache';
-  cacheTag("posts", `post-${id}`);
+  cacheTag(POST_CONTENT_TAG, `post-${id}`);
+  cacheLife("hours");
   
   try {
     const prisma = await getPrisma();
@@ -539,7 +523,8 @@ export async function getPostBySlug(slug: string) {
 
 async function getPostBySlugInternal(slug: string, isAdmin: boolean) {
   'use cache';
-  cacheTag("posts", `post-slug-${slug}`);
+  cacheTag(POST_CONTENT_TAG, `post-slug-${slug}`);
+  cacheLife("hours");
 
   try {
     const prisma = await getPrisma();
@@ -562,26 +547,17 @@ async function getPostBySlugInternal(slug: string, isAdmin: boolean) {
 
 // Check if a file URL (PDF/Image) is authorized to be viewed
 export async function getPostByFileUrl(url: string) {
-  const session = await getSession();
-  const role = session?.user?.role;
-  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-
   try {
-    const prisma = await getPrisma();
-    // Find any post containing this URL in its blocks
-    const post = await prisma.post.findFirst({
-      where: {
-        blocks: {
-          some: {
-            url: { equals: url }
-          }
-        }
-      }
-    });
+    const { getFilePostMetadata } = await import("@/lib/data/public-content");
+    const post = await getFilePostMetadata(url);
 
     // If post not found, we assume it's OK (could be a public asset not tied to a post)
     // BUT for PDF viewer, we want to be safe.
     if (!post) return { authorized: true };
+
+    if (post.status === "Published") return { authorized: true, status: post.status, category: post.category };
+    const session = await getSession();
+    const isAdmin = isAdminSession(session);
 
     if (post.status !== "Published" && !isAdmin) {
       return { authorized: false, status: post.status, category: post.category };

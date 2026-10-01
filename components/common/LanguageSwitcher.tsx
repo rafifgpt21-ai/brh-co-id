@@ -20,6 +20,7 @@ export function LanguageSwitcher({ currentLocale, variant = "topbar" }: Language
   const { startNavigation } = useNavigationFeedback();
 
   function switchLocale(locale: Locale) {
+    if (locale === currentLocale) return;
     setLocaleCookie(locale);
     const query = searchParams.toString();
     const currentPath = pathname || "/";
@@ -29,7 +30,9 @@ export function LanguageSwitcher({ currentLocale, variant = "topbar" }: Language
     const href = query ? `${nextPath}?${query}` : nextPath;
     startNavigation(href);
     router.push(href);
-    router.refresh();
+    // Public language changes are already a navigation. Only admin routes
+    // need refresh because their pathname does not include the locale.
+    if (currentPath.startsWith("/admin")) router.refresh();
   }
 
   const isDrawer = variant === "drawer";

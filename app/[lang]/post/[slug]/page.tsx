@@ -12,7 +12,7 @@ import { LEARNING_MEDIA_CATEGORY } from "@/lib/post-categories";
 import { AdminViewCount } from "@/components/analytics/AdminViewCount";
 
 export const unstable_instant = {
-  prefetch: "runtime",
+  prefetch: "static",
   samples: [
     {
       params: {

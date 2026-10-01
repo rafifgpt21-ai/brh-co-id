@@ -1,3 +1,5 @@
+import { revalidateImportedContent } from "./revalidate-content";
+import { prepareUploadImage } from "./prepare-upload-image";
 import "dotenv/config";
 
 import { createHash } from "node:crypto";
@@ -29,6 +31,8 @@ type PreparedImage = {
   slug: string;
   fileName: string;
   bytes: Buffer;
+  contentType: string;
+  originalBytes: number;
   checksum: string;
   customId: string;
 };
@@ -55,11 +59,11 @@ async function prepareImages(): Promise<PreparedImage[]> {
         throw new Error(`${fileName} is not a valid PNG file.`);
       }
 
-      const checksum = sha256(bytes);
+      const prepared = await prepareUploadImage(bytes, fileName);
+      const checksum = sha256(prepared.bytes);
       return {
         slug,
-        fileName,
-        bytes,
+        ...prepared,
         checksum,
         customId: `artikel-seri-ii-${slug}-${checksum.slice(0, 16)}`,
       };
@@ -97,7 +101,7 @@ async function uploadOrReuse(image: PreparedImage): Promise<UploadedImage> {
   uploadBytes.set(image.bytes);
   const file = new UTFile([uploadBytes], image.fileName, {
     customId: image.customId,
-    type: "image/png",
+    type: image.contentType,
   });
   const result = await utapi.uploadFiles(file, {
     acl: "public-read",
@@ -184,7 +188,7 @@ async function main() {
   const prepared = await prepareImages();
   console.log("Validated local article images:");
   for (const image of prepared) {
-    console.log(`- ${image.fileName} (${image.bytes.byteLength} bytes, ${image.checksum})`);
+    console.log(`- ${image.fileName} (${image.originalBytes} -> ${image.bytes.byteLength} bytes, ${image.checksum})`);
   }
 
   if (!process.argv.includes("--apply")) {
@@ -203,6 +207,7 @@ async function main() {
     await Promise.all(uploaded.map(verifyPublicUrl));
     await updatePosts(uploaded);
     await verifyDatabase(uploaded);
+    await revalidateImportedContent();
     console.log("All six article images are public and linked in the database.");
   } catch (error) {
     const newKeys = uploaded.filter((image) => image.uploadedNow).map((image) => image.key);

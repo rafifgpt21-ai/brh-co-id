@@ -1,13 +1,12 @@
-import { auth } from "@/auth";
-import { QuickPostFeed } from "@/components/home/QuickPostFeed";
+import { PublicQuickPostFeed } from "@/components/home/PublicQuickPostFeed";
 import { OptimisticLink } from "@/components/navigation/NavigationFeedback";
-import { getQuickPostsByType, type QuickPostType } from "@/lib/actions/quick-post";
+import { getPublicQuickPostsByType } from "@/lib/data/public-quick-posts";
+import type { QuickPostType } from "@/lib/actions/quick-post";
 import { hasLocale, withLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { createPageMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { connection } from "next/server";
 import { Suspense } from "react";
 
 const archiveTypes = {
@@ -121,15 +120,11 @@ async function ArchiveFeed({
   type: QuickPostType;
   dict: Awaited<ReturnType<typeof getDictionary>>;
 }) {
-  await connection();
-  const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN";
-  const quickPosts = await getQuickPostsByType({ includeDrafts: isAdmin, limitPerType: 60 });
+  const quickPosts = await getPublicQuickPostsByType({ limitPerType: 60 });
 
   return (
-    <QuickPostFeed
+    <PublicQuickPostFeed
       quickPosts={quickPosts}
-      isAdmin={isAdmin}
       lang={lang}
       labels={getQuickPostFeedLabels(dict)}
       visibleTypes={[type]}

@@ -81,91 +81,9 @@ function getErrorInfo(error: unknown) {
   };
 }
 
-function getChatEnvStatus() {
-  return {
-    databaseUrl: Boolean(process.env.DATABASE_URL),
-    geminiApiKey: Boolean(process.env.GEMINI_API_KEY),
-    geminiLlmModel: process.env.GEMINI_LLM_MODEL || "gemini-2.5-flash",
-    geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001",
-    rateLimitWindowMs: Number(process.env.CHAT_RATE_LIMIT_WINDOW_MS || 60_000),
-    rateLimitMaxRequests: Number(process.env.CHAT_RATE_LIMIT_MAX_REQUESTS || 5),
-    vectorIndexName: process.env.CHAT_VECTOR_INDEX_NAME || "knowledge_embedding_vector_index",
-    nodeEnv: process.env.NODE_ENV,
-    vercelEnv: process.env.VERCEL_ENV || null,
-    vercelRegion: process.env.VERCEL_REGION || null,
-  };
-}
-
 export async function GET() {
-  const startedAt = Date.now();
-
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    const [
-      knowledgeTotal,
-      knowledgeId,
-      knowledgeEn,
-      knowledgeQuickPosts,
-      publishedPosts,
-      publishedQuickPosts,
-    ] = await Promise.all([
-      prisma.knowledgeChunk.count(),
-      prisma.knowledgeChunk.count({ where: { locale: "id" } }),
-      prisma.knowledgeChunk.count({ where: { locale: "en" } }),
-      prisma.knowledgeChunk.count({ where: { sourceType: "quick_post" } }),
-      prisma.post.count({ where: { status: "Published" } }),
-      prisma.quickPost.count({ where: { status: "Published" } }),
-    ]);
-
-    return NextResponse.json({
-      ok: true,
-      service: "chat",
-      checkedAt: new Date().toISOString(),
-      durationMs: Date.now() - startedAt,
-      env: getChatEnvStatus(),
-      database: {
-        connected: true,
-        publishedPosts,
-        publishedQuickPosts,
-        knowledgeTotal,
-        knowledgeByLocale: {
-          id: knowledgeId,
-          en: knowledgeEn,
-        },
-        knowledgeBySourceType: {
-          quickPost: knowledgeQuickPosts,
-        },
-      },
-      notes: [
-        "This endpoint does not expose secret values.",
-        "If knowledgeTotal is 0, run npm run index:chatbot against the production DATABASE_URL.",
-        "If POST /api/chat fails but this endpoint is ok, check Gemini quota/model logs.",
-      ],
-    });
-  } catch (error) {
-    const errorInfo = getErrorInfo(error);
-    console.error("Chat health check failed:", errorInfo);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        service: "chat",
-        checkedAt: new Date().toISOString(),
-        durationMs: Date.now() - startedAt,
-        env: getChatEnvStatus(),
-        database: {
-          connected: false,
-        },
-        error: {
-          name: errorInfo.name,
-          message: errorInfo.message,
-          status: errorInfo.status,
-          code: errorInfo.code,
-        },
-      },
-      { status: 500 }
-    );
-  }
+  // Liveness needs no database queries. Diagnostics have a private endpoint.
+  return NextResponse.json({ ok: true, service: "chat" });
 }
 
 export async function POST(request: NextRequest) {
